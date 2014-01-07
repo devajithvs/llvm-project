@@ -331,7 +331,9 @@ FileManager::getFileRef(StringRef Filename, bool openFile, bool CacheFailure) {
   }
 
   FileEntryRef ReturnedRef(*NamedFileEnt);
-  if (ReusingEntry) { // Already have an entry with this inode, return it.
+  if (ReusingEntry &&
+      llvm::sys::toTimeT(Status.getLastModificationTime()) == UFE->ModTime) {
+    // Already have an entry with this inode, return it.
     return ReturnedRef;
   }
 
