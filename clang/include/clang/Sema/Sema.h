@@ -10938,6 +10938,23 @@ public:
   FunctionDecl *SubstSpaceshipAsEqualEqual(CXXRecordDecl *RD,
                                            FunctionDecl *Spaceship);
 
+  class SavePendingInstantiationsRAII {
+  public:
+    SavePendingInstantiationsRAII(Sema &S):
+      SavedPendingLocalImplicitInstantiations(S), S(S) {
+      SavedPendingInstantiations.swap(S.PendingInstantiations);
+    }
+    ~SavePendingInstantiationsRAII() {
+      assert(S.PendingInstantiations.empty() &&
+             "there shouldn't be any pending instantiations");
+      SavedPendingInstantiations.swap(S.PendingInstantiations);
+    }
+  private:
+    LocalEagerInstantiationScope SavedPendingLocalImplicitInstantiations;
+    Sema &S;
+    std::deque<PendingImplicitInstantiation> SavedPendingInstantiations;
+  };
+
   void PerformPendingInstantiations(bool LocalOnly = false);
 
   TemplateParameterList *
