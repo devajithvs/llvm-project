@@ -49,13 +49,13 @@ struct attr_value_binder {
 
 /// The matcher that matches operations that have the `ConstantLike` trait.
 struct constant_op_matcher {
-  bool match(Operation *op) { return op->hasTrait<OpTrait::ConstantLike>(); }
+  bool match(Operation *op) const { return op->hasTrait<OpTrait::ConstantLike>(); }
 };
 
 /// The matcher that matches operations that have the specified op name.
 struct NameOpMatcher {
   NameOpMatcher(StringRef name) : name(name) {}
-  bool match(Operation *op) { return op->getName().getStringRef() == name; }
+  bool match(Operation *op) const { return op->getName().getStringRef() == name; }
 
   StringRef name;
 };
@@ -63,7 +63,7 @@ struct NameOpMatcher {
 /// The matcher that matches operations that have the specified attribute name.
 struct AttrOpMatcher {
   AttrOpMatcher(StringRef attrName) : attrName(attrName) {}
-  bool match(Operation *op) { return op->hasAttr(attrName); }
+  bool match(Operation *op) const { return op->hasAttr(attrName); }
 
   StringRef attrName;
 };
@@ -153,7 +153,7 @@ struct constant_float_op_binder {
 struct constant_float_predicate_matcher {
   bool (*predicate)(const APFloat &);
 
-  bool match(Operation *op) {
+  bool match(Operation *op) const {
     APFloat value(APFloat::Bogus());
     return constant_float_op_binder(&value).match(op) && predicate(value);
   }
@@ -190,7 +190,7 @@ struct constant_int_op_binder {
 struct constant_int_predicate_matcher {
   bool (*predicate)(const APInt &);
 
-  bool match(Operation *op) {
+  bool match(Operation *op) const {
     APInt value;
     return constant_int_op_binder(&value).match(op) && predicate(value);
   }
