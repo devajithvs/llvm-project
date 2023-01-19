@@ -14,7 +14,7 @@
 #include "llvm/ADT/Optional.h"
 #include <string>
 
-namespace clang {
+namespace mlir {
 namespace query {
 
 enum OutputKind { OK_Diag, OK_Print, OK_DetailedAST, OK_SrcLoc };
@@ -44,21 +44,21 @@ struct Query : llvm::RefCountedBase<Query> {
   /// \return false if an error occurs, otherwise return true.
   virtual bool run(llvm::raw_ostream &OS, QuerySession &QS) const = 0;
 
-  StringRef RemainingContent;
+  llvm::StringRef RemainingContent;
   const QueryKind Kind;
 };
 
 typedef llvm::IntrusiveRefCntPtr<Query> QueryRef;
 
 /// Any query which resulted in a parse error.  The error message is in ErrStr.
-struct InvalidQuery : Query {
-  InvalidQuery(const Twine &ErrStr) : Query(QK_Invalid), ErrStr(ErrStr.str()) {}
-  bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
+// struct InvalidQuery : Query {
+//   InvalidQuery(const llvm::Twine &ErrStr) : Query(QK_Invalid), ErrStr(ErrStr.str()) {}
+//   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  std::string ErrStr;
+//   std::string ErrStr;
 
-  static bool classof(const Query *Q) { return Q->Kind == QK_Invalid; }
-};
+//   static bool classof(const Query *Q) { return Q->Kind == QK_Invalid; }
+// };
 
 /// No-op query (i.e. a blank line).
 struct NoOpQuery : Query {
@@ -86,28 +86,24 @@ struct QuitQuery : Query {
 
 /// Query for "match MATCHER".
 struct MatchQuery : Query {
-  MatchQuery(StringRef Source,
-             const ast_matchers::dynamic::DynTypedMatcher &Matcher)
+  MatchQuery(llvm::StringRef Source)
+            //  const ast_matchers::dynamic::DynTypedMatcher &Matcher)
       : Query(QK_Match), Matcher(Matcher), Source(Source) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
-
-  ast_matchers::dynamic::DynTypedMatcher Matcher;
-
-  StringRef Source;
 
   static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
 };
 
 struct LetQuery : Query {
-  LetQuery(StringRef Name, const ast_matchers::dynamic::VariantValue &Value)
+  LetQuery(llvm::StringRef Name, const ast_matchers::dynamic::VariantValue &Value)
       : Query(QK_Let), Name(Name), Value(Value) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  std::string Name;
-  ast_matchers::dynamic::VariantValue Value;
+//   std::string Name;
+//   ast_matchers::dynamic::VariantValue Value;
 
-  static bool classof(const Query *Q) { return Q->Kind == QK_Let; }
-};
+//   static bool classof(const Query *Q) { return Q->Kind == QK_Let; }
+// };
 
 template <typename T> struct SetQueryKind {};
 
@@ -119,9 +115,9 @@ template <> struct SetQueryKind<OutputKind> {
   static const QueryKind value = QK_SetOutputKind;
 };
 
-template <> struct SetQueryKind<TraversalKind> {
-  static const QueryKind value = QK_SetTraversalKind;
-};
+// template <> struct SetQueryKind<TraversalKind> {
+//   static const QueryKind value = QK_SetTraversalKind;
+// };
 
 /// Query for "set VAR VALUE".
 template <typename T> struct SetQuery : Query {

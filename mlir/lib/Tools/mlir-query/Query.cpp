@@ -13,16 +13,16 @@
 namespace mlir {
 namespace query {
 
-Query::~Query() {}
+// Query::~Query() {}
 
-bool InvalidQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  OS << ErrStr << "\n";
-  return false;
-}
+// bool InvalidQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+//   OS << ErrStr << "\n";
+//   return false;
+// }
 
-bool NoOpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  return true;
-}
+// bool NoOpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+//   return true;
+// }
 
 bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   OS << "Available commands:\n\n"
@@ -66,26 +66,29 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
-bool QuitQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  QS.Terminate = true;
-  return true;
-}
+// bool QuitQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+//   QS.Terminate = true;
+//   return true;
+// }
+
+namespace {
+} // namespace
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   unsigned MatchCount = 0;
 
-  for (auto &AST : QS.ASTs) {
-    MatchFinder Finder;
-    std::vector<BoundNodes> Matches;
-    DynTypedMatcher MaybeBoundMatcher = Matcher;
-    if (QS.BindRoot) {
-      llvm::Optional<DynTypedMatcher> M = Matcher.tryBind("root");
-      if (M)
-        MaybeBoundMatcher = *M;
-    }
-  }
+  // for (auto &AST : QS.ASTs) {
+  //   MatchFinder Finder;
+  //   std::vector<BoundNodes> Matches;
+  //   DynTypedMatcher MaybeBoundMatcher = Matcher;
+  //   if (QS.BindRoot) {
+  //     llvm::Optional<DynTypedMatcher> M = Matcher.tryBind("root");
+  //     if (M)
+  //       MaybeBoundMatcher = *M;
+  //   }
+  // }
 
-  OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
+  // OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;
 }
 

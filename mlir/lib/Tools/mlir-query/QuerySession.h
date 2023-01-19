@@ -12,19 +12,17 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringMap.h"
 
-namespace clang {
+namespace mlir {
 
 namespace query {
 
 /// Represents the state for a particular clang-query session.
 class QuerySession {
 public:
-  QuerySession(llvm::ArrayRef<std::unique_ptr<ASTUnit>> ASTs)
-      : ASTs(ASTs), PrintOutput(false), DiagOutput(true),
+  QuerySession()
+      : PrintOutput(false), DiagOutput(true),
         DetailedASTOutput(false), SrcLocOutput(false), BindRoot(true),
-        PrintMatcher(false), Terminate(false), TK(TK_AsIs) {}
-
-  llvm::ArrayRef<std::unique_ptr<ASTUnit>> ASTs;
+        PrintMatcher(false), Terminate(false) {}
 
   bool PrintOutput;
   bool DiagOutput;
@@ -34,9 +32,6 @@ public:
   bool BindRoot;
   bool PrintMatcher;
   bool Terminate;
-
-  TraversalKind TK;
-  llvm::StringMap<ast_matchers::dynamic::VariantValue> NamedValues;
 };
 
 } // namespace query
