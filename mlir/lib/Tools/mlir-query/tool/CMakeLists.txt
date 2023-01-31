@@ -1,0 +1,19 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+llvm_add_library(mlir-query
+  MlirQuery.cpp
+  )
+target_link_libraries(mlir-query
+  PRIVATE
+  clangAST
+  clangASTMatchers
+  clangBasic
+  clangDynamicASTMatchers
+  clangFrontend
+  clangSerialization
+  clangTooling
+  )
+target_link_libraries(mlir-query
+  PRIVATE
+  mlirQuery
+  )

@@ -1,12 +1,26 @@
-add_mlir_library(MLIRQueryLib
-  MlirQueryMain.cpp
+set(LLVM_LINK_COMPONENTS
+  lineeditor
+  support
+  FrontendOpenMP
+  )
+
+add_mlir_library(mlirQuery
   Query.cpp
   QueryParser.cpp
 
-  ADDITIONAL_HEADER_DIRS
-  ${MLIR_MAIN_INCLUDE_DIR}/mlir/Tools/mlir-query
-
-  LINK_LIBS PUBLIC
-  MLIRIR
-  MLIRParser
+  DEPENDS
+  omp_gen
   )
+
+target_link_libraries(mlirQuery
+  PRIVATE
+  clangAST
+  clangASTMatchers
+  clangBasic
+  clangDynamicASTMatchers
+  clangFrontend
+  clangTooling
+  clangSerialization
+  )
+
+add_subdirectory(tool)

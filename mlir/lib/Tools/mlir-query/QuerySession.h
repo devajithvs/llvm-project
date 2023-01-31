@@ -9,6 +9,8 @@
 #ifndef LLVM_CLANG_TOOLS_EXTRA_CLANG_QUERY_QUERY_SESSION_H
 #define LLVM_CLANG_TOOLS_EXTRA_CLANG_QUERY_QUERY_SESSION_H
 
+// #include "clang/AST/ASTTypeTraits.h"
+// #include "clang/ASTMatchers/Dynamic/VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringMap.h"
 
@@ -16,7 +18,7 @@ namespace mlir {
 
 namespace query {
 
-/// Represents the state for a particular clang-query session.
+/// Represents the state for a particular mlir-query session.
 class QuerySession {
 public:
   QuerySession()
@@ -35,6 +37,6 @@ public:
 };
 
 } // namespace query
-} // namespace clang
+} // namespace mlir
 
 #endif

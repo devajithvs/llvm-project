@@ -1,4 +1,4 @@
-//===---- Query.cpp - clang-query query -----------------------------------===//
+//===---- Query.cpp - mlir-query query -----------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -8,21 +8,29 @@
 
 #include "Query.h"
 #include "QuerySession.h"
+// #include "clang/AST/ASTDumper.h"
+// #include "clang/ASTMatchers/ASTMatchFinder.h"
+// #include "clang/Frontend/ASTUnit.h"
+// #include "clang/Frontend/TextDiagnostic.h"
+// #include "clang/Tooling/NodeIntrospection.h"
 #include "llvm/Support/raw_ostream.h"
+
+// using namespace clang::ast_matchers;
+// using namespace clang::ast_matchers::dynamic;
 
 namespace mlir {
 namespace query {
 
-// Query::~Query() {}
+Query::~Query() {}
 
-// bool InvalidQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-//   OS << ErrStr << "\n";
-//   return false;
-// }
+bool InvalidQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+  OS << ErrStr << "\n";
+  return false;
+}
 
-// bool NoOpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-//   return true;
-// }
+bool NoOpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+  return true;
+}
 
 bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   OS << "Available commands:\n\n"
@@ -66,29 +74,31 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
-// bool QuitQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-//   QS.Terminate = true;
-//   return true;
-// }
+bool QuitQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+  QS.Terminate = true;
+  return true;
+}
 
 namespace {
+
+struct CollectBoundNodes : MatchFinder::MatchCallback {
+  std::vector<BoundNodes> &Bindings;
+  CollectBoundNodes(std::vector<BoundNodes> &Bindings) : Bindings(Bindings) {}
+  void run(const MatchFinder::MatchResult &Result) override {
+    Bindings.push_back(Result.Nodes);
+  }
+};
+
+void dumpLocations(llvm::raw_ostream &OS, DynTypedNode Node, ASTContext &Ctx,
+                   const DiagnosticsEngine &Diags, SourceManager const &SM) {
+  OS << "\n";
+}
+
 } // namespace
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   unsigned MatchCount = 0;
-
-  // for (auto &AST : QS.ASTs) {
-  //   MatchFinder Finder;
-  //   std::vector<BoundNodes> Matches;
-  //   DynTypedMatcher MaybeBoundMatcher = Matcher;
-  //   if (QS.BindRoot) {
-  //     llvm::Optional<DynTypedMatcher> M = Matcher.tryBind("root");
-  //     if (M)
-  //       MaybeBoundMatcher = *M;
-  //   }
-  // }
-
-  // OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
+  OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;
 }
 
@@ -100,6 +110,11 @@ bool LetQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   }
   return true;
 }
+
+#ifndef _MSC_VER
+const QueryKind SetQueryKind<bool>::value;
+const QueryKind SetQueryKind<OutputKind>::value;
+#endif
 
 } // namespace query
 } // namespace clang

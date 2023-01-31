@@ -1,4 +1,4 @@
-//===--- QueryParser.h - clang-query ----------------------------*- C++ -*-===//
+//===--- QueryParser.h - mlir-query ----------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -24,7 +24,7 @@ public:
   /// Parse \a Line as a query.
   ///
   /// \return A QueryRef representing the query, which may be an InvalidQuery.
-  static QueryRef parse(llvm::StringRef Line, const QuerySession &QS);
+  static QueryRef parse(StringRef Line, const QuerySession &QS);
 
   /// Compute a list of completions for \a Line assuming a cursor at
   /// \param Pos characters past the start of \a Line, ordered from most
@@ -32,13 +32,13 @@ public:
   ///
   /// \return A vector of completions for \a Line.
   static std::vector<llvm::LineEditor::Completion>
-  complete(llvm::StringRef Line, size_t Pos, const QuerySession &QS);
+  complete(StringRef Line, size_t Pos, const QuerySession &QS);
 
 private:
-  QueryParser(llvm::StringRef Line, const QuerySession &QS)
+  QueryParser(StringRef Line, const QuerySession &QS)
       : Line(Line), CompletionPos(nullptr), QS(QS) {}
 
-  llvm::StringRef lexWord();
+  StringRef lexWord();
 
   template <typename T> struct LexOrCompleteWord;
 
@@ -55,7 +55,7 @@ private:
   /// \c InvalidQuery if a parse error occurs.
   QueryRef doParse();
 
-  llvm::StringRef Line;
+  StringRef Line;
 
   const char *CompletionPos;
   std::vector<llvm::LineEditor::Completion> Completions;
