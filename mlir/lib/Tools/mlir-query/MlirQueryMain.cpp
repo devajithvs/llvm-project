@@ -12,6 +12,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "Query.h"
+#include "QuerySession.h"
+#include "QueryParser.h"
+
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Parser/Parser.h"
@@ -27,6 +31,11 @@
 #include "llvm/Support/ToolOutputFile.h"
 
 using namespace mlir;
+
+static char *ReturnPrompt(EditLine *EL) {
+  static char Prompt[] = "clang-query> ";
+  return Prompt;
+}
 
 //===----------------------------------------------------------------------===//
 // Query Parser
