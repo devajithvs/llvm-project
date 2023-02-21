@@ -17,12 +17,14 @@
 #include "QueryParser.h"
 
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
-#include "mlir/Reducer/Passes.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/Support/InitLLVM.h"
 
 #include "llvm/LineEditor/LineEditor.h"
 #include "llvm/Support/CommandLine.h"
+
+#include "mlir/Support/FileUtilities.h"
+#include "llvm/Support/SourceMgr.h"
 
 using namespace mlir;
 using namespace mlir::query;
@@ -55,6 +57,14 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
   if (help) {
     llvm::cl::PrintHelpMessage();
     return success();
+  }
+
+  // Set up the input file.
+  std::string errorMessage;
+  auto file = openInputFile(inputFilename, &errorMessage);
+  if (!file) {
+    llvm::errs() << errorMessage << "\n";
+    return failure();
   }
 
   QuerySession QS;
