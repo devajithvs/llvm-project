@@ -1,3 +1,8 @@
+set(LLVM_LINK_COMPONENTS
+  lineeditor
+  # support
+  )
+
 add_mlir_library(MLIRQueryLib
   MlirQueryMain.cpp
   Query.cpp

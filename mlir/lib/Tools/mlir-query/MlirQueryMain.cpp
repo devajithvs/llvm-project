@@ -21,7 +21,12 @@
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/Support/InitLLVM.h"
 
+#include "llvm/LineEditor/LineEditor.h"
+#include "llvm/Support/CommandLine.h"
+
 using namespace mlir;
+using namespace mlir::query;
+using namespace llvm;
 
 //===----------------------------------------------------------------------===//
 // Query Parser
@@ -52,20 +57,18 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
     return success();
   }
 
-  // QuerySession QS;
-  // LineEditor LE("clang-query");
-  // LE.setListCompleter([&QS](StringRef Line, size_t Pos) {
-  //   return QueryParser::complete(Line, Pos, QS);
-  // });
-  // while (llvm::Optional<std::string> Line = LE.readLine()) {
-  //   QueryRef Q = QueryParser::parse(*Line, QS);
-  //   Q->run(llvm::outs(), QS);
-  //   llvm::outs().flush();
-  //   if (QS.Terminate)
-  //     break;
-  // }
-  
-
+  QuerySession QS;
+  LineEditor LE("mlir-query");
+  LE.setListCompleter([&QS](StringRef Line, size_t Pos) {
+    return QueryParser::complete(Line, Pos, QS);
+  });
+  while (llvm::Optional<std::string> Line = LE.readLine()) {
+    QueryRef Q = QueryParser::parse(*Line, QS);
+    Q->run(llvm::outs(), QS);
+    llvm::outs().flush();
+    if (QS.Terminate)
+      break;
+  }
 
   // Operation *op = getOperation();
   // resetIndent();

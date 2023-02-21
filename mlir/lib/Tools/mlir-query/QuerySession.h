@@ -23,6 +23,7 @@ public:
 
   OutputKind OutKind;
   bool BindRoot;
+  bool Terminate;
 };
 
 } // namespace query
