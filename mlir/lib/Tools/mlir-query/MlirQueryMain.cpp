@@ -26,6 +26,9 @@
 #include "mlir/Support/FileUtilities.h"
 #include "llvm/Support/SourceMgr.h"
 
+#include "mlir/Tools/ParseUtilities.h"
+
+
 using namespace mlir;
 using namespace mlir::query;
 using namespace llvm;
@@ -34,8 +37,25 @@ using namespace llvm;
 // Query Parser
 //===----------------------------------------------------------------------===//
 
+// Parse and verify the input MLIR file. Returns null on error.
+OwningOpRef<Operation *> loadModule(MLIRContext &context,
+                                    StringRef inputFilename,
+                                    bool insertImplictModule) {
+  // Set up the input file.
+  std::string errorMessage;
+  auto file = openInputFile(inputFilename, &errorMessage);
+  if (!file) {
+    llvm::errs() << errorMessage << "\n";
+    return nullptr;
+  }
+
+  llvm::SourceMgr sourceMgr;
+  sourceMgr.AddNewSourceBuffer(std::move(file), SMLoc());
+  return parseSourceFileForTool(sourceMgr, &context, insertImplictModule);
+}
+
 LogicalResult mlir::mlirQueryMain(int argc, char **argv,
-                                  llvm::StringRef toolName) {
+                                  MLIRContext &context) {
   // Override the default '-h' and use the default PrintHelpMessage() which
   // won't print options in categories.
   static llvm::cl::opt<bool> help("h", llvm::cl::desc("Alias for -help"),
@@ -46,6 +66,12 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
   static llvm::cl::opt<std::string> inputFilename(
       llvm::cl::Positional, llvm::cl::desc("<input file>"),
       llvm::cl::cat(mlirQueryCategory));
+  
+  static llvm::cl::opt<bool> noImplicitModule{
+      "no-implicit-module",
+      llvm::cl::desc(
+          "Disable implicit addition of a top-level module op during parsing"),
+      llvm::cl::init(false)};
 
   llvm::cl::HideUnrelatedOptions(mlirQueryCategory);
 
@@ -66,6 +92,11 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
     llvm::errs() << errorMessage << "\n";
     return failure();
   }
+
+  OwningOpRef<Operation *> opRef =
+      loadModule(context, inputFilename, !noImplicitModule);
+  if (!opRef)
+    return failure();
 
   QuerySession QS;
   LineEditor LE("mlir-query");
