@@ -17,25 +17,11 @@
 #include "QueryParser.h"
 
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
-#include "mlir/IR/PatternMatch.h"
-#include "mlir/Parser/Parser.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
 #include "mlir/Reducer/Passes.h"
-#include "mlir/Rewrite/FrozenRewritePatternSet.h"
-#include "mlir/Support/FileUtilities.h"
 #include "mlir/Support/LogicalResult.h"
-#include "mlir/Tools/ParseUtilities.h"
 #include "llvm/Support/InitLLVM.h"
-#include "llvm/Support/SourceMgr.h"
-#include "llvm/Support/ToolOutputFile.h"
 
 using namespace mlir;
-
-static char *ReturnPrompt(EditLine *EL) {
-  static char Prompt[] = "clang-query> ";
-  return Prompt;
-}
 
 //===----------------------------------------------------------------------===//
 // Query Parser
@@ -54,10 +40,6 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
       llvm::cl::Positional, llvm::cl::desc("<input file>"),
       llvm::cl::cat(mlirQueryCategory));
 
-  static llvm::cl::opt<std::string> outputFilename(
-      "o", llvm::cl::desc("Output filename for the queried result"),
-      llvm::cl::init("-"), llvm::cl::cat(mlirQueryCategory));
-
   llvm::cl::HideUnrelatedOptions(mlirQueryCategory);
 
   llvm::InitLLVM y(argc, argv);
@@ -70,11 +52,20 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
     return success();
   }
 
-  std::string errorMessage;
+  // QuerySession QS;
+  // LineEditor LE("clang-query");
+  // LE.setListCompleter([&QS](StringRef Line, size_t Pos) {
+  //   return QueryParser::complete(Line, Pos, QS);
+  // });
+  // while (llvm::Optional<std::string> Line = LE.readLine()) {
+  //   QueryRef Q = QueryParser::parse(*Line, QS);
+  //   Q->run(llvm::outs(), QS);
+  //   llvm::outs().flush();
+  //   if (QS.Terminate)
+  //     break;
+  // }
+  
 
-  auto output = openOutputFile(outputFilename, &errorMessage);
-  if (!output)
-    return failure();
 
   // Operation *op = getOperation();
   // resetIndent();
