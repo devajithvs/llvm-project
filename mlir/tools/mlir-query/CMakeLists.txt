@@ -5,15 +5,17 @@ set(LLVM_LINK_COMPONENTS
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(translation_libs GLOBAL PROPERTY MLIR_QUERY_LIBS)
 
-add_mlir_tool(mlir-query
-  mlir-query.cpp
-  )
-llvm_update_compile_flags(mlir-query)
-target_link_libraries(mlir-query
-  PRIVATE
+if(MLIR_INCLUDE_TESTS)
+  set(test_libs
+    MLIRTestDialect
+    )
+endif()
+
+set(LIBS
+  ${conversion_libs}
   ${dialect_libs}
-  ${translation_libs}
   ${test_libs}
+  MLIRDialect
   MLIRIR
   MLIRParser
   MLIRPass
@@ -22,4 +24,13 @@ target_link_libraries(mlir-query
   MLIRSupport
   )
 
-mlir_check_link_libraries(mlir-query)
+add_mlir_tool(mlir-query
+  mlir-query.cpp
+
+  DEPENDS
+  ${LIBS}
+  )
+llvm_update_compile_flags(mlir-query)
+target_link_libraries(mlir-query PRIVATE ${LIBS})
+
+mlir_check_all_link_libraries(mlir-query)

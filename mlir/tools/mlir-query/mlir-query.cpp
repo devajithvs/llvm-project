@@ -11,10 +11,29 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/IR/Dialect.h"
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/InitAllDialects.h"
+#include "mlir/InitAllPasses.h"
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
 
 using namespace mlir;
 
+namespace test {
+#ifdef MLIR_INCLUDE_TESTS
+void registerTestDialect(DialectRegistry &);
+#endif
+} // namespace test
+
 int main(int argc, char **argv) {
-  return failed(mlirQueryMain(argc, argv, "MLIR Query Testing Tool"));
+  registerAllPasses();
+
+  DialectRegistry registry;
+  registerAllDialects(registry);
+#ifdef MLIR_INCLUDE_TESTS
+  test::registerTestDialect(registry);
+#endif
+  MLIRContext context(registry);
+
+  return failed(mlirQueryMain(argc, argv, context));
 }

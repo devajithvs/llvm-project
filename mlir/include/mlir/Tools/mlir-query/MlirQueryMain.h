@@ -18,11 +18,13 @@
 #include "llvm/ADT/StringRef.h"
 
 namespace mlir {
+
+class MLIRContext;
 /// This is the entry point for the implementation
 /// of tools like `mlir-query`. The query to perform is parsed from
 /// the command line. The `toolName` argument is used for the header displayed
 /// by `--help`.
-LogicalResult mlirQueryMain(int argc, char **argv, StringRef toolName);
+LogicalResult mlirQueryMain(int argc, char **argv, MLIRContext &context);
 } // namespace mlir
 
 #endif // MLIR_TOOLS_MLIRQUERY_MLIRQUERYMAIN_H
