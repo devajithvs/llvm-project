@@ -26,7 +26,7 @@ void registerTestDialect(DialectRegistry &);
 } // namespace test
 
 int main(int argc, char **argv) {
-  registerAllPasses();
+  // registerAllPasses();
 
   DialectRegistry registry;
   registerAllDialects(registry);
@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
   test::registerTestDialect(registry);
 #endif
   MLIRContext context(registry);
+  context.allowUnregisteredDialects(true);
 
   return failed(mlirQueryMain(argc, argv, context));
 }
