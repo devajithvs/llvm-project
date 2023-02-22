@@ -11,15 +11,19 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "Query.h"
+#include "mlir/Tools/ParseUtilities.h"
 
+using namespace mlir;
 namespace mlir {
 namespace query {
 
 /// Represents the state for a particular clang-query session.
 class QuerySession {
 public:
-  QuerySession()
-      : OutKind(OK_Diag), BindRoot(true) {}
+  QuerySession(Operation *Op)
+      : Op(Op), OutKind(OK_Diag), BindRoot(true) {}
+
+  Operation *Op;
 
   OutputKind OutKind;
   bool BindRoot;
