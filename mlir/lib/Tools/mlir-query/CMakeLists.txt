@@ -1,6 +1,6 @@
 set(LLVM_LINK_COMPONENTS
   lineeditor
-  # support
+  Support
   )
 
 add_mlir_library(MLIRQueryLib

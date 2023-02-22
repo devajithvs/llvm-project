@@ -28,6 +28,12 @@
 
 #include "mlir/Tools/ParseUtilities.h"
 
+#include "llvm/Support/Debug.h"
+using llvm::dbgs;
+
+#define DEBUG_TYPE "mlir-query"
+
+#define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 
 using namespace mlir;
 using namespace mlir::query;
@@ -97,8 +103,10 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
       loadModule(context, inputFilename, !noImplicitModule);
   if (!opRef)
     return failure();
+  
+  LLVM_DEBUG(DBGS() << opRef.get()->getName().getStringRef() << "\n");
 
-  QuerySession QS;
+  QuerySession QS(opRef.get());
   LineEditor LE("mlir-query");
   LE.setListCompleter([&QS](StringRef Line, size_t Pos) {
     return QueryParser::complete(Line, Pos, QS);
@@ -110,10 +118,6 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
     if (QS.Terminate)
       break;
   }
-
-  // Operation *op = getOperation();
-  // resetIndent();
-  // printOperation(op);
 
   return success();
 }

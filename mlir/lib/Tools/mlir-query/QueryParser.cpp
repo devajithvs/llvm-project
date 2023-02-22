@@ -15,6 +15,16 @@
 
 using namespace llvm;
 
+#include "llvm/Support/Debug.h"
+using llvm::dbgs;
+
+#define DEBUG_TYPE "mlir-query"
+
+#define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
+
+static bool isWhitespace(char C) {
+  return C == ' ' || C == '\t' || C == '\r' || C == '\n';
+}
 namespace mlir {
 namespace query {
 
@@ -38,8 +48,7 @@ StringRef QueryParser::lexWord() {
   if (Line.front() == '#')
     Word = Line.substr(0, 1);
   else
-  // TODO replace this with mlir parser functions
-    Word = Line;
+    Word = Line.take_until(isWhitespace);
 
   Line = Line.drop_front(Word.size());
   return Word;
@@ -154,6 +163,7 @@ enum ParsedQueryVariable {
 
 } // namespace
 
+
 QueryRef QueryParser::doParse() {
 
   StringRef CommandStr;
@@ -177,6 +187,9 @@ QueryRef QueryParser::doParse() {
     return endQuery(new HelpQuery);
 
   case PQK_Match: {
+    auto MatcherSource = Line.ltrim();
+    auto OrigMatcherSource = MatcherSource;
+    LLVM_DEBUG(DBGS() << MatcherSource << "\n");
     // Diagnostics Diag;
     // Optional<DynTypedMatcher> Matcher;
     // //     = Parser::parseMatcherExpression(StringRef(Begin, End - Begin), &Diag);
