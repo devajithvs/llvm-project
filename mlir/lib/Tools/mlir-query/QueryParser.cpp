@@ -13,6 +13,27 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
 
+#include "mlir/Conversion/ArithCommon/AttrToLLVMConverter.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
+#include "mlir/Conversion/ComplexToLLVM/ComplexToLLVM.h"
+#include "mlir/Conversion/ComplexToStandard/ComplexToStandard.h"
+#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
+#include "mlir/Conversion/LLVMCommon/Pattern.h"
+#include "mlir/Conversion/MathToFuncs/MathToFuncs.h"
+#include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
+#include "mlir/Conversion/MathToLibm/MathToLibm.h"
+#include "mlir/Conversion/OpenMPToLLVM/ConvertOpenMPToLLVM.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/OpenMP/OpenMPDialect.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/Matchers.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Target/LLVMIR/ModuleTranslation.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/TypeSwitch.h"
+
 using namespace llvm;
 
 #include "llvm/Support/Debug.h"
@@ -25,6 +46,31 @@ using llvm::dbgs;
 static bool isWhitespace(char C) {
   return C == ' ' || C == '\t' || C == '\r' || C == '\n';
 }
+
+struct HasNamePattern : public RewritePattern {
+  using RewritePattern::RewritePattern;
+
+  void initialize() {
+    setDebugName("mlir-query");
+    addDebugLabels("HasNamePatternPass");
+  }
+
+  HasNamePattern(PatternBenefit benefit, MLIRContext *context,
+                StringRef operationName)
+      : operationName(operationName), RewritePattern(operationName, benefit, context) {}
+  StringRef operationName;
+  LogicalResult match(Operation *op) const override {
+    // The `match` method returns `success()` if the pattern is a match, failure
+    // otherwise.
+    // ...
+    if (this->operationName != op->getName().getStringRef())
+      return failure();
+    LLVM_DEBUG(DBGS() << op->getName().getStringRef() << "\n");
+
+    return success();
+  }
+};
+
 namespace mlir {
 namespace query {
 
@@ -190,6 +236,10 @@ QueryRef QueryParser::doParse() {
     auto MatcherSource = Line.ltrim();
     auto OrigMatcherSource = MatcherSource;
     LLVM_DEBUG(DBGS() << MatcherSource << "\n");
+    auto x = HasNamePattern(1, this->QS.Op->getContext(), StringRef("func.func"));
+    // LLVM_DEBUG(DBGS() << x << "\n");
+    x.match(this->QS.Op);
+    LLVM_DEBUG(DBGS() << "Working" << "\n");
     // Diagnostics Diag;
     // Optional<DynTypedMatcher> Matcher;
     // //     = Parser::parseMatcherExpression(StringRef(Begin, End - Begin), &Diag);
@@ -200,8 +250,8 @@ QueryRef QueryParser::doParse() {
     //   // return new InvalidQuery(OS.str());
     // }
     // // return new MatchQuery(*Matcher);
-    // return new MatchQuery();
-    return new NoOpQuery;
+    return new MatchQuery();
+    // return new NoOpQuery;
   }
 
   case PQK_Invalid:
