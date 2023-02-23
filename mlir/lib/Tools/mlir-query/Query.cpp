@@ -109,10 +109,17 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 
   // OperationName(StringRef name, MLIRContext *context)
   auto operation_name = OperationName(StringRef("arith.addf"), rootOp->getContext());
-  OS << "Operation name " << operation_name.getImpl() << " times\n";
+  OS << "Operation name " << operation_name << " times\n";
 
-  auto matcher = m_Op<operation_name.getTypeID()>();
-  // auto matcher = m_Op<arith::AddFOp>();
+  auto context = rootOp->getContext();
+  auto operation = Operation::create(UnknownLoc::get(context),
+                           OperationName("arith.addf", context), llvm::None,
+                           llvm::None, llvm::None, llvm::None, 0);
+  // OS << "Operation name " << operation->getQualCppClassName() << " times\n";
+  // OS << "Operation name " << operation->getQualCppClassName() << " times\n";
+// .getQualCppClassName()
+  // auto matcher = m_Op<operation>();
+  auto matcher = m_Name(StringRef("arith.addf"));
 
   OS << "Pattern add(*) matched " << countMatches(rootOp, matcher) << " times\n";
 
