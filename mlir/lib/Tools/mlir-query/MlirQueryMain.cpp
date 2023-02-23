@@ -105,6 +105,7 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
     return failure();
   
   LLVM_DEBUG(DBGS() << opRef.get()->getName().getStringRef() << "\n");
+  LLVM_DEBUG(DBGS() << opRef.get()->getName().getStringRef() << "\n");
 
   QuerySession QS(opRef.get());
   LineEditor LE("mlir-query");
