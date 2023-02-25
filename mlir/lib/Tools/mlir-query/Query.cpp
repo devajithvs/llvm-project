@@ -74,7 +74,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 
   Operation *rootOp = QS.Op;
   // TODO: Parse matcher expression and create matcher.
-  auto matcher = m_Name(StringRef("arith.addf"));
+  auto matcher = Matcher;
   auto matches = getMatches(rootOp, matcher);
   for (auto op: matches){
     OS << "\nMatch #" << ++MatchCount << ":\n\n";

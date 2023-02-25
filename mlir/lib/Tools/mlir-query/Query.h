@@ -15,6 +15,7 @@
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/Twine.h"
 
+#include "mlir/IR/Matchers.h"
 namespace mlir {
 namespace query {
 
@@ -78,8 +79,14 @@ struct HelpQuery : Query {
 
 /// Query for "match MATCHER".
 struct MatchQuery : Query {
-  MatchQuery() : Query(QK_Match) {}
+  MatchQuery(StringRef Source,
+             const detail::name_op_matcher &Matcher)
+      : Query(QK_Match), Matcher(Matcher), Source(Source) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
+
+  detail::name_op_matcher Matcher;
+
+  StringRef Source;
 
   static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
 };
