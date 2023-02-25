@@ -34,7 +34,10 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/TypeSwitch.h"
 
+#include "mlir/IR/Matchers.h"
+
 using namespace llvm;
+using namespace mlir;
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
@@ -47,29 +50,9 @@ static bool isWhitespace(char C) {
   return C == ' ' || C == '\t' || C == '\r' || C == '\n';
 }
 
-struct HasNamePattern : public RewritePattern {
-  using RewritePattern::RewritePattern;
-
-  void initialize() {
-    setDebugName("mlir-query");
-    addDebugLabels("HasNamePatternPass");
-  }
-
-  HasNamePattern(PatternBenefit benefit, MLIRContext *context,
-                StringRef operationName)
-      : operationName(operationName), RewritePattern(operationName, benefit, context) {}
-  StringRef operationName;
-  LogicalResult match(Operation *op) const override {
-    // The `match` method returns `success()` if the pattern is a match, failure
-    // otherwise.
-    // ...
-    if (this->operationName != op->getName().getStringRef())
-      return failure();
-    LLVM_DEBUG(DBGS() << op->getName().getStringRef() << "\n");
-
-    return success();
-  }
-};
+Optional<mlir::detail::name_op_matcher> parseMatcherExpression(StringRef &MatcherCode) {
+  return m_Name(MatcherCode);
+}
 
 namespace mlir {
 namespace query {
@@ -236,22 +219,12 @@ QueryRef QueryParser::doParse() {
     auto MatcherSource = Line.ltrim();
     auto OrigMatcherSource = MatcherSource;
     LLVM_DEBUG(DBGS() << MatcherSource << "\n");
-    auto x = HasNamePattern(1, this->QS.Op->getContext(), StringRef("func.func"));
-    // LLVM_DEBUG(DBGS() << x << "\n");
-    x.match(this->QS.Op);
     LLVM_DEBUG(DBGS() << "Working" << "\n");
-    // Diagnostics Diag;
-    // Optional<DynTypedMatcher> Matcher;
-    // //     = Parser::parseMatcherExpression(StringRef(Begin, End - Begin), &Diag);
-    // if (!Matcher) {
-    //   // std::string ErrStr;
-    //   // llvm::raw_string_ostream OS(ErrStr);
-    //   // Diag.printToStreamFull(OS);
-    //   // return new InvalidQuery(OS.str());
-    // }
-    // // return new MatchQuery(*Matcher);
-    return new MatchQuery();
-    // return new NoOpQuery;
+    Optional<detail::name_op_matcher> Matcher = parseMatcherExpression(MatcherSource);
+    auto ActualSource = OrigMatcherSource.slice(0, OrigMatcherSource.size() -
+                                                       MatcherSource.size());
+
+    return new MatchQuery(ActualSource, *Matcher);
   }
 
   case PQK_Invalid:
