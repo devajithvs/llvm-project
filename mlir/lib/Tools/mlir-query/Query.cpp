@@ -32,15 +32,14 @@ using namespace mlir;
 
 // // This could be done better but is not worth the variadic template trouble.
 template <typename Matcher>
-static unsigned countMatches(FunctionOpInterface f, Matcher &matcher) {
-  unsigned count = 0;
-  f.walk([&count, &matcher](Operation *op) {
+static std::vector<Operation*> getMatches(FunctionOpInterface f, Matcher &matcher) {
+  std::vector<Operation*> matches;
+  f.walk([&matches, &matcher](Operation *op) {
     if (matcher.match(op)){
-      llvm::outs() << "matched " << *op << "\n";
-      ++count;
+      matches.push_back(op);
     }
   });
-  return count;
+  return matches;
 }
 
 namespace mlir {
@@ -73,59 +72,16 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   unsigned MatchCount = 0;
 
-  // // std::vector<Operation*> Matches;
-  // std::vector<Value> Matches;
-
-  // Operation *rootOp = QS.Op;
-  // rootOp->walk([&](mlir::Operation *op) {
-  //   for (auto operand: op->getOperands()) {
-  //     if (matchPattern(operand, m_Constant())) {
-  //       Matches.push_back(operand);
-  //       // MatchCount++;
-  //     }
-  //   }
-  // });
-
-  // for (auto op: Matches) {
-  //     OS << "\nMatch #" << ++MatchCount << ":\n\n";
-  //     op.print(OS);
-  //     // op->print(OS);
-  //     // OS << op->getName() << ":\n\n";
-  // }
-
-  // std::vector<Operation*> Matches;
   Operation *rootOp = QS.Op;
-  // rootOp->walk([&](mlir::Operation *op) {
-  //     if (matchPattern(op, m_Op<op->getName()>())) {
-  //       Matches.push_back(operand);
-  //       // MatchCount++;
-  //     }
-  // });
-
-  // for (auto op: Matches) {
-  //     OS << "\nMatch #" << ++MatchCount << ":\n\n";
-  //     op->print(OS);
-  // }
-
-  // OperationName(StringRef name, MLIRContext *context)
-  auto operation_name = OperationName(StringRef("arith.addf"), rootOp->getContext());
-  OS << "Operation name " << operation_name << " times\n";
-
-  auto context = rootOp->getContext();
-  auto operation = Operation::create(UnknownLoc::get(context),
-                           OperationName("arith.addf", context), llvm::None,
-                           llvm::None, llvm::None, llvm::None, 0);
-  // OS << "Operation name " << operation->getQualCppClassName() << " times\n";
-  // OS << "Operation name " << operation->getQualCppClassName() << " times\n";
-// .getQualCppClassName()
-  // auto matcher = m_Op<operation>();
+  // TODO: Parse matcher expression and create matcher.
   auto matcher = m_Name(StringRef("arith.addf"));
+  auto matches = getMatches(rootOp, matcher);
+  for (auto op: matches){
+    OS << "\nMatch #" << ++MatchCount << ":\n\n";
+    // TODO: Get source location and filename
+    OS << "testing: note: 'root' binds here\n" << *op << "\n\n";
+  }
 
-  OS << "Pattern add(*) matched " << countMatches(rootOp, matcher) << " times\n";
-
-
-
-  LLVM_DEBUG(DBGS() << "Query running" << "\n");
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;
 }
