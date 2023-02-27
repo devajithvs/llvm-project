@@ -51,7 +51,8 @@ static bool isWhitespace(char C) {
 }
 
 Optional<mlir::detail::name_op_matcher> parseMatcherExpression(StringRef &MatcherCode) {
-  return m_Name(MatcherCode);
+  
+  return m_OpName(MatcherCode);
 }
 
 namespace mlir {
@@ -181,13 +182,6 @@ enum ParsedQueryKind {
   PQK_NoOp,
   PQK_Help,
   PQK_Match,
-  PQK_Set
-};
-
-enum ParsedQueryVariable {
-  PQV_Invalid,
-  PQV_Output,
-  PQV_BindRoot
 };
 
 } // namespace
@@ -201,7 +195,6 @@ QueryRef QueryParser::doParse() {
                               .Case("help", PQK_Help)
                               .Case("m", PQK_Match)
                               .Case("match", PQK_Match)
-                              .Case("set", PQK_Set)
                               .Default(PQK_Invalid);
 
   switch (QKind) {
