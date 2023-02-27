@@ -9,9 +9,7 @@
 
 #include "Query.h"
 #include "QuerySession.h"
-// #include "clang/ASTMatchers/ASTMatchFinder.h"
-// #include "clang/Frontend/ASTUnit.h"
-// #include "clang/Frontend/TextDiagnostic.h"
+
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/IR/BuiltinOps.h"
