@@ -52,7 +52,6 @@ static bool isWhitespace(char C) {
 }
 
 Optional<mlir::detail::name_op_matcher> parseMatcherExpression(StringRef &MatcherCode) {
-  
   return m_OpName(MatcherCode);
 }
 
