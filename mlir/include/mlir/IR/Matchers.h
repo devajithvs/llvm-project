@@ -387,6 +387,18 @@ auto m_OpName(StringRef opN, Matchers... matchers) {
   return detail::RecursivePatternMatcherByName<Matchers...>(opN, matchers...);
 }
 
+/// Base matcher struct
+// template <typename Matcher>
+struct MatcherBase {
+  StringRef opName;
+  MatcherBase(StringRef opN) : opName(opN) {}
+  detail::name_op_matcher matcher = m_OpName(this->opName);
+  // Matcher matcher = m_OpName(this->opName);
+
+  bool match(Operation *op) { return this->matcher.match(op); }
+
+};
+
 namespace matchers {
 inline auto m_Any() { return detail::AnyValueMatcher(); }
 inline auto m_Any(Value *val) { return detail::AnyCapturedValueMatcher(val); }

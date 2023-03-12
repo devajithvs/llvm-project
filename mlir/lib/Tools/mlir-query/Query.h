@@ -80,11 +80,11 @@ struct HelpQuery : Query {
 /// Query for "match MATCHER".
 struct MatchQuery : Query {
   MatchQuery(StringRef Source,
-             const detail::name_op_matcher &Matcher)
+             const MatcherBase &Matcher)
       : Query(QK_Match), Matcher(Matcher), Source(Source) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  detail::name_op_matcher Matcher;
+  MatcherBase Matcher;
 
   StringRef Source;
 

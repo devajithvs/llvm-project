@@ -31,6 +31,7 @@ using namespace mlir;
 // // This could be done better but is not worth the variadic template trouble.
 template <typename Matcher>
 static std::vector<Operation*> getMatches(FunctionOpInterface f, Matcher &matcher) {
+  LLVM_DEBUG(DBGS() << "Running getMatches" << "\n");
   std::vector<Operation*> matches;
   f.walk([&matches, &matcher](Operation *op) {
     if (matcher.match(op)){
@@ -70,15 +71,20 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   unsigned MatchCount = 0;
 
+  LLVM_DEBUG(DBGS() << "Running run" << "\n");
   Operation *rootOp = QS.Op;
+  LLVM_DEBUG(DBGS() << "Running run2" << "\n");
   // TODO: Parse matcher expression and create matcher.
   auto matcher = Matcher;
+  LLVM_DEBUG(DBGS() << "Running run3" << "\n");
   auto matches = getMatches(rootOp, matcher);
+  LLVM_DEBUG(DBGS() << "Running run4" << "\n");
   for (auto op: matches){
     OS << "\nMatch #" << ++MatchCount << ":\n\n";
     // TODO: Get source location and filename
     OS << "testing: note: 'root' binds here\n" << *op << "\n\n";
   }
+  LLVM_DEBUG(DBGS() << "Running run5" << "\n");
 
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;

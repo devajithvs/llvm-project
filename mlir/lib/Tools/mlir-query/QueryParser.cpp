@@ -51,8 +51,10 @@ static bool isWhitespace(char C) {
   return C == ' ' || C == '\t' || C == '\r' || C == '\n';
 }
 
-Optional<mlir::detail::name_op_matcher> parseMatcherExpression(StringRef &MatcherCode) {
-  return m_OpName(MatcherCode);
+Optional<MatcherBase> parseMatcherExpression(StringRef &MatcherCode) {
+  LLVM_DEBUG(DBGS() << "Parsing matcher expression" << "\n");
+
+  return MatcherBase(MatcherCode);
 }
 
 namespace mlir {
@@ -213,15 +215,16 @@ QueryRef QueryParser::doParse() {
     auto OrigMatcherSource = MatcherSource;
     LLVM_DEBUG(DBGS() << MatcherSource << "\n");
     LLVM_DEBUG(DBGS() << "Working" << "\n");
-    auto lexer = new Lexer(MatcherSource);
+    // auto lexer = new Lexer(MatcherSource);
     
-    auto curToken = lexer->lexToken();
-    int i = 0;
-    while(i<200) {
-      curToken = lexer->lexToken();
-      i++;
-    }
-    Optional<detail::name_op_matcher> Matcher = parseMatcherExpression(MatcherSource);
+    // auto curToken = lexer->lexToken();
+    // int i = 0;
+    // while(i<200) {
+    //   curToken = lexer->lexToken();
+    //   i++;
+    // }
+    Optional<MatcherBase> Matcher = parseMatcherExpression(MatcherSource);
+    LLVM_DEBUG(DBGS() << "Working2" << "\n");
     auto ActualSource = OrigMatcherSource.slice(0, OrigMatcherSource.size() -
                                                        MatcherSource.size());
 
