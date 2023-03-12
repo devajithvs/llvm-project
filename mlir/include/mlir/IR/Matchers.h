@@ -22,11 +22,6 @@ namespace mlir {
 
 namespace detail {
 
-/// Base matcher struct
-struct MatcherBase {
-    bool match();
-};
-
 /// The matcher that matches a certain kind of Attribute and binds the value
 /// inside the Attribute.
 template <
@@ -37,7 +32,7 @@ template <
         std::is_base_of<Attribute, AttrClass>::value, AttrClass>::ValueType,
     // Require the ValueType is not void
     typename = std::enable_if_t<!std::is_void<ValueType>::value>>
-struct attr_value_binder : MatcherBase {
+struct attr_value_binder {
   ValueType *bind_value;
 
   /// Creates a matcher instance that binds the value to bv if match succeeds.
@@ -53,12 +48,12 @@ struct attr_value_binder : MatcherBase {
 };
 
 /// The matcher that matches operations that have the `ConstantLike` trait.
-struct constant_op_matcher : MatcherBase {
+struct constant_op_matcher {
   bool match(Operation *op) { return op->hasTrait<OpTrait::ConstantLike>(); }
 };
 
 /// The matcher that matches operations that have the specified op name.
-struct name_op_matcher : MatcherBase {
+struct name_op_matcher {
   StringRef opName;
   name_op_matcher(StringRef opN) : opName(opN) {}
   bool match(Operation *op) { return op->getName().getStringRef() == opName; }
@@ -67,7 +62,7 @@ struct name_op_matcher : MatcherBase {
 /// The matcher that matches operations that have the `ConstantLike` trait, and
 /// binds the folded attribute value.
 template <typename AttrT>
-struct constant_op_binder : MatcherBase {
+struct constant_op_binder {
   AttrT *bind_value;
 
   /// Creates a matcher instance that binds the constant attribute value to
@@ -97,7 +92,7 @@ struct constant_op_binder : MatcherBase {
 
 /// The matcher that matches a constant scalar / vector splat / tensor splat
 /// float operation and binds the constant float value.
-struct constant_float_op_binder : MatcherBase {
+struct constant_float_op_binder {
   FloatAttr::ValueType *bind_value;
 
   /// Creates a matcher instance that binds the value to bv if match succeeds.
@@ -134,7 +129,7 @@ struct constant_float_predicate_matcher {
 
 /// The matcher that matches a constant scalar / vector splat / tensor splat
 /// integer operation and binds the constant integer value.
-struct constant_int_op_binder : MatcherBase {
+struct constant_int_op_binder {
   IntegerAttr::ValueType *bind_value;
 
   /// Creates a matcher instance that binds the value to bv if match succeeds.
@@ -171,7 +166,7 @@ struct constant_int_predicate_matcher {
 
 /// The matcher that matches a certain kind of op.
 template <typename OpClass>
-struct op_matcher : MatcherBase {
+struct op_matcher {
   bool match(Operation *op) { return isa<OpClass>(op); }
 };
 
@@ -202,12 +197,12 @@ matchOperandOrValueAtIndex(Operation *op, unsigned idx, MatcherClass &matcher) {
 }
 
 /// Terminal matcher, always returns true.
-struct AnyValueMatcher : MatcherBase {
+struct AnyValueMatcher {
   bool match(Value op) const { return true; }
 };
 
 /// Terminal matcher, always returns true.
-struct AnyCapturedValueMatcher : MatcherBase {
+struct AnyCapturedValueMatcher {
   Value *what;
   AnyCapturedValueMatcher(Value *what) : what(what) {}
   bool match(Value op) const {
@@ -217,7 +212,7 @@ struct AnyCapturedValueMatcher : MatcherBase {
 };
 
 /// Binds to a specific value and matches it.
-struct PatternMatcherValue : MatcherBase {
+struct PatternMatcherValue {
   PatternMatcherValue(Value val) : value(val) {}
   bool match(Value val) const { return val == value; }
   Value value;
@@ -239,7 +234,7 @@ constexpr void enumerate(std::tuple<Tys...> &tuple, CallbackT &&callback) {
 
 /// RecursivePatternMatcher that composes.
 template <typename OpType, typename... OperandMatchers>
-struct RecursivePatternMatcher : MatcherBase {
+struct RecursivePatternMatcher {
   RecursivePatternMatcher(OperandMatchers... matchers)
       : operandMatchers(matchers...) {}
   bool match(Operation *op) {
@@ -256,7 +251,7 @@ struct RecursivePatternMatcher : MatcherBase {
 
 /// RecursivePatternMatcher by name that composes.
 template <typename... OperandMatchers>
-struct RecursivePatternMatcherByName : MatcherBase {
+struct RecursivePatternMatcherByName {
   StringRef opName;
   RecursivePatternMatcherByName(StringRef opName, OperandMatchers... matchers)
       : opName(opName), operandMatchers(matchers...) {}
