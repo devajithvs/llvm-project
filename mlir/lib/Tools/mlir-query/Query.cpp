@@ -30,10 +30,10 @@ using namespace mlir;
 
 // // This could be done better but is not worth the variadic template trouble.
 template <typename Matcher>
-static std::vector<Operation*> getMatches(FunctionOpInterface f, Matcher &matcher) {
+static std::vector<Operation*> getMatches(Operation* f, Matcher &matcher) {
   LLVM_DEBUG(DBGS() << "Running getMatches" << "\n");
   std::vector<Operation*> matches;
-  f.walk([&matches, &matcher](Operation *op) {
+  f->walk([&matches, &matcher](Operation *op) {
     if (matcher.match(op)){
       matches.push_back(op);
     }
