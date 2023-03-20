@@ -51,10 +51,13 @@ static bool isWhitespace(char C) {
   return C == ' ' || C == '\t' || C == '\r' || C == '\n';
 }
 
-Optional<MatcherBase> parseMatcherExpression(StringRef &MatcherCode) {
+mlir::detail::DynamicMatcher::~DynamicMatcher() {}
+
+mlir::detail::DynamicMatcherRef parseMatcherExpression(StringRef &MatcherCode) {
   LLVM_DEBUG(DBGS() << "Parsing matcher expression" << "\n");
 
-  return MatcherBase(MatcherCode);
+  auto M = new mlir::detail::name_op_matcher(MatcherCode);
+  return M;
 }
 
 namespace mlir {
@@ -223,12 +226,12 @@ QueryRef QueryParser::doParse() {
     //   curToken = lexer->lexToken();
     //   i++;
     // }
-    Optional<MatcherBase> Matcher = parseMatcherExpression(MatcherSource);
+    detail::DynamicMatcherRef Matcher = parseMatcherExpression(MatcherSource);
     LLVM_DEBUG(DBGS() << "Working2" << "\n");
     auto ActualSource = OrigMatcherSource.slice(0, OrigMatcherSource.size() -
                                                        MatcherSource.size());
 
-    return new MatchQuery(ActualSource, *Matcher);
+    return new MatchQuery(ActualSource, Matcher);
   }
 
   case PQK_Invalid:

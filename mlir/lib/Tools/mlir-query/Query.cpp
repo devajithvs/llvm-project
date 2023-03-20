@@ -34,7 +34,7 @@ static std::vector<Operation*> getMatches(Operation* f, Matcher &matcher) {
   LLVM_DEBUG(DBGS() << "Running getMatches" << "\n");
   std::vector<Operation*> matches;
   f->walk([&matches, &matcher](Operation *op) {
-    if (matcher.match(op)){
+    if (matcher->match(op)){
       matches.push_back(op);
     }
   });
