@@ -74,22 +74,6 @@ struct HelpQuery : Query {
   static bool classof(const Query *Q) { return Q->Kind == QK_Help; }
 };
 
-/*
-struct name_op_matcher  {
-  StringRef opName;
-  name_op_matcher(StringRef opN) : opName(opN) {}
-
-  bool match(Operation *op) { return op->getName().getStringRef() == opName; }
-};
-
-struct attr_op_matcher  {
-  StringRef opAttr;
-  attr_op_matcher(StringRef opN) : opAttr(opN) {}
-
-  bool match(Operation *op) { return op->hasAttr(opAttr); }
-};
-*/
-
 /// Query for "match MATCHER".
 template <typename T>
 struct MatchQuery : Query {
