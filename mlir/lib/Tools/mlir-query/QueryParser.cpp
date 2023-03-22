@@ -37,6 +37,9 @@
 #include "mlir/IR/Matchers.h"
 #include "Lexer.h"
 
+#include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/BuiltinTypes.h"
+
 using namespace llvm;
 using namespace mlir;
 
@@ -193,10 +196,9 @@ enum ParsedQueryKind {
   PQK_Match,
 };
 
-} // namespace
-mlir::detail::DynamicMatcherRef QueryParser::parseMatcherExpression() {
 
-}
+
+} // namespace
 
 QueryRef QueryParser::doParse() {
 
@@ -252,12 +254,12 @@ QueryRef QueryParser::doParse() {
         return new InvalidQuery("expected variable name");
     switch (MKind) {
       case M_OpName: {
-        auto M = new mlir::detail::name_op_matcher(MatchExpr);
-        return new MatchQuery(MatchExpr, M);
+        auto M =  mlir::detail::name_op_matcher(MatchExpr);
+        return new MatchQuery<mlir::detail::name_op_matcher>(MatchExpr, M);
       }
       case M_OpAttr: {
-        auto M = new mlir::detail::attr_op_matcher(MatchExpr);
-        return new MatchQuery(MatchExpr, M);
+        auto M = mlir::detail::attr_op_matcher(MatchExpr);
+        return new MatchQuery<mlir::detail::attr_op_matcher>(MatchExpr, M);
       }
     }
   }

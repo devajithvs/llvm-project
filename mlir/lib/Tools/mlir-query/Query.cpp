@@ -34,7 +34,7 @@ static std::vector<Operation*> getMatches(Operation* f, Matcher &matcher) {
   LLVM_DEBUG(DBGS() << "Running getMatches" << "\n");
   std::vector<Operation*> matches;
   f->walk([&matches, &matcher](Operation *op) {
-    if (matcher->match(op)){
+    if (matcher.match(op)){
       matches.push_back(op);
     }
   });
@@ -68,14 +68,15 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
-bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+template <typename T>
+bool MatchQuery<T>::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   unsigned MatchCount = 0;
 
   LLVM_DEBUG(DBGS() << "Running run" << "\n");
   Operation *rootOp = QS.Op;
   LLVM_DEBUG(DBGS() << "Running run2" << "\n");
   // TODO: Parse matcher expression and create matcher.
-  auto matcher = Matcher;
+  T matcher = Matcher;
   LLVM_DEBUG(DBGS() << "Running run3" << "\n");
   auto matches = getMatches(rootOp, matcher);
   LLVM_DEBUG(DBGS() << "Running run4" << "\n");
@@ -89,6 +90,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;
 }
+
 
 const QueryKind SetQueryKind<bool>::value;
 const QueryKind SetQueryKind<OutputKind>::value;

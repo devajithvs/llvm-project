@@ -71,20 +71,18 @@ struct constant_op_matcher {
 };
 
 /// The matcher that matches operations that have the specified op name.
-struct name_op_matcher : DynamicMatcher {
+struct name_op_matcher  {
   StringRef opName;
-  name_op_matcher(StringRef opN) : DynamicMatcher(M_OpName), opName(opN) {}
+  name_op_matcher(StringRef opN) : opName(opN) {}
 
-  static bool classof(const DynamicMatcher *M) { return M->Kind == M_OpName; }
-  bool match(Operation *op) override { return op->getName().getStringRef() == opName; }
+  bool match(Operation *op) { return op->getName().getStringRef() == opName; }
 };
 
-struct attr_op_matcher : DynamicMatcher {
+struct attr_op_matcher  {
   StringRef opAttr;
-  attr_op_matcher(StringRef opN) : DynamicMatcher(M_OpAttr), opAttr(opN) {}
+  attr_op_matcher(StringRef opN) : opAttr(opN) {}
 
-  static bool classof(const DynamicMatcher *M) { return M->Kind == M_OpAttr; }
-  bool match(Operation *op) override { return op->hasAttr(opAttr); }
+  bool match(Operation *op) { return op->hasAttr(opAttr); }
 };
 
 /// The matcher that matches operations that have the `ConstantLike` trait, and
@@ -303,8 +301,8 @@ inline detail::constant_op_matcher m_Constant() {
 }
 
 /// Matches a named operation.
-inline detail::DynamicMatcherRef m_OpName(StringRef opN) {
-  return new detail::name_op_matcher(opN);
+inline detail::name_op_matcher m_OpName(StringRef opN) {
+  return detail::name_op_matcher(opN);
 }
 
 /// Matches a value from a constant foldable operation and writes the value to
