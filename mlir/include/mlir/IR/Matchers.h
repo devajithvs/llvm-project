@@ -25,6 +25,7 @@ namespace detail {
 
 enum MatcherKind {
   M_OpName,
+  M_OpAttr,
 };
 
 struct DynamicMatcher : llvm::RefCountedBase<DynamicMatcher> {
@@ -76,6 +77,14 @@ struct name_op_matcher : DynamicMatcher {
 
   static bool classof(const DynamicMatcher *M) { return M->Kind == M_OpName; }
   bool match(Operation *op) override { return op->getName().getStringRef() == opName; }
+};
+
+struct attr_op_matcher : DynamicMatcher {
+  StringRef opAttr;
+  attr_op_matcher(StringRef opN) : DynamicMatcher(M_OpAttr), opAttr(opN) {}
+
+  static bool classof(const DynamicMatcher *M) { return M->Kind == M_OpAttr; }
+  bool match(Operation *op) override { return op->hasAttr(opAttr); }
 };
 
 /// The matcher that matches operations that have the `ConstantLike` trait, and

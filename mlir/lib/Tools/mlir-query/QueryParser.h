@@ -15,6 +15,7 @@
 #include "llvm/LineEditor/LineEditor.h"
 #include <cstddef>
 
+#include "mlir/IR/Matchers.h"
 using namespace llvm;
 
 namespace mlir {
@@ -56,6 +57,7 @@ private:
   /// \return A reference to the parsed query object, which may be an
   /// \c InvalidQuery if a parse error occurs.
   QueryRef doParse();
+  mlir::detail::DynamicMatcherRef parseMatcherExpression();
 
   StringRef Line;
 

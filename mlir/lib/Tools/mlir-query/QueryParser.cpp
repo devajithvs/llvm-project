@@ -42,6 +42,7 @@ using namespace mlir;
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
+//using mlir::detail::MatcherKind;
 
 #define DEBUG_TYPE "mlir-query"
 
@@ -51,15 +52,9 @@ static bool isWhitespace(char C) {
   return C == ' ' || C == '\t' || C == '\r' || C == '\n';
 }
 
+
+
 mlir::detail::DynamicMatcher::~DynamicMatcher() {}
-
-mlir::detail::DynamicMatcherRef parseMatcherExpression(StringRef &MatcherCode) {
-  LLVM_DEBUG(DBGS() << "Parsing matcher expression" << "\n");
-
-  auto M = new mlir::detail::name_op_matcher(MatcherCode);
-  return M;
-}
-
 namespace mlir {
 namespace query {
 
@@ -182,6 +177,15 @@ QueryRef QueryParser::endQuery(QueryRef Q) {
 
 namespace {
 
+
+} // namespace
+
+
+namespace {
+enum MatcherKind {
+  M_OpName,
+  M_OpAttr,
+};
 enum ParsedQueryKind {
   PQK_Invalid,
   PQK_NoOp,
@@ -190,7 +194,9 @@ enum ParsedQueryKind {
 };
 
 } // namespace
+mlir::detail::DynamicMatcherRef QueryParser::parseMatcherExpression() {
 
+}
 
 QueryRef QueryParser::doParse() {
 
@@ -214,24 +220,46 @@ QueryRef QueryParser::doParse() {
     return endQuery(new HelpQuery);
 
   case PQK_Match: {
-    auto MatcherSource = Line.ltrim();
-    auto OrigMatcherSource = MatcherSource;
-    LLVM_DEBUG(DBGS() << MatcherSource << "\n");
-    LLVM_DEBUG(DBGS() << "Working" << "\n");
-    // auto lexer = new Lexer(MatcherSource);
+    // LLVM_DEBUG(DBGS() << Line << "\n");
+    // auto MatcherSource = Line.ltrim();
+    // auto OrigMatcherSource = MatcherSource;
+    // LLVM_DEBUG(DBGS() << MatcherSource << "\n");
+    // LLVM_DEBUG(DBGS() << "Working" << "\n");
+    // // auto lexer = new Lexer(MatcherSource);
     
-    // auto curToken = lexer->lexToken();
-    // int i = 0;
-    // while(i<200) {
-    //   curToken = lexer->lexToken();
-    //   i++;
-    // }
-    detail::DynamicMatcherRef Matcher = parseMatcherExpression(MatcherSource);
-    LLVM_DEBUG(DBGS() << "Working2" << "\n");
-    auto ActualSource = OrigMatcherSource.slice(0, OrigMatcherSource.size() -
-                                                       MatcherSource.size());
+    // // auto curToken = lexer->lexToken();
+    // // int i = 0;
+    // // while(i<200) {
+    // //   curToken = lexer->lexToken();
+    // //   i++;
+    // // }
+    // detail::DynamicMatcherRef Matcher = parseMatcherExpression();
+    // LLVM_DEBUG(DBGS() << "Working2" << "\n");
+    // auto ActualSource = OrigMatcherSource.slice(0, OrigMatcherSource.size() -
+    //                                                    MatcherSource.size());
 
-    return new MatchQuery(ActualSource, Matcher);
+    // return new MatchQuery(ActualSource, Matcher);
+
+    LLVM_DEBUG(DBGS() << "Parsing matcher expression" << "\n");
+    StringRef MatchExpr;
+    LLVM_DEBUG(DBGS() << "New matcher source: "<<MatchExpr << "\n");
+    MatcherKind MKind = LexOrCompleteWord<MatcherKind>(this, MatchExpr)
+                                .Case("dialect.op1", M_OpName)
+                                .Case("attributename", M_OpAttr)
+                                .Default(M_OpName);
+    LLVM_DEBUG(DBGS() << "New matcher source: "<<MatchExpr << "\n");
+    if (MatchExpr.empty())
+        return new InvalidQuery("expected variable name");
+    switch (MKind) {
+      case M_OpName: {
+        auto M = new mlir::detail::name_op_matcher(MatchExpr);
+        return new MatchQuery(MatchExpr, M);
+      }
+      case M_OpAttr: {
+        auto M = new mlir::detail::attr_op_matcher(MatchExpr);
+        return new MatchQuery(MatchExpr, M);
+      }
+    }
   }
 
   case PQK_Invalid:
