@@ -68,6 +68,10 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
+
+template bool MatchQuery<mlir::detail::name_op_matcher>::run(llvm::raw_ostream &OS, QuerySession &QS) const;
+template bool MatchQuery<mlir::detail::attr_op_matcher>::run(llvm::raw_ostream &OS, QuerySession &QS) const;
+
 template <typename T>
 bool MatchQuery<T>::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   unsigned MatchCount = 0;

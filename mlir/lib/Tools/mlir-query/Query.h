@@ -109,9 +109,6 @@ struct MatchQuery : Query {
   static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
 };
 
-//template<> bool MatchQuery<mlir::detail::name_op_matcher>::run(llvm::raw_ostream &OS, QuerySession &QS) const;
-//template<> bool MatchQuery<mlir::detail::attr_op_matcher>::run(llvm::raw_ostream &OS, QuerySession &QS) const;
-
 template <typename T> struct SetQueryKind {};
 
 template <> struct SetQueryKind<bool> {
