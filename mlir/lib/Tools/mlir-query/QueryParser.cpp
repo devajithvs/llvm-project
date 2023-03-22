@@ -10,42 +10,16 @@
 #include "QueryParser.h"
 #include "Query.h"
 #include "QuerySession.h"
+#include "mlir/IR/Matchers.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
-
-#include "mlir/Conversion/ArithCommon/AttrToLLVMConverter.h"
-#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
-#include "mlir/Conversion/ComplexToLLVM/ComplexToLLVM.h"
-#include "mlir/Conversion/ComplexToStandard/ComplexToStandard.h"
-#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
-#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
-#include "mlir/Conversion/LLVMCommon/Pattern.h"
-#include "mlir/Conversion/MathToFuncs/MathToFuncs.h"
-#include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
-#include "mlir/Conversion/MathToLibm/MathToLibm.h"
-#include "mlir/Conversion/OpenMPToLLVM/ConvertOpenMPToLLVM.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/OpenMP/OpenMPDialect.h"
-#include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/Matchers.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Target/LLVMIR/ModuleTranslation.h"
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/TypeSwitch.h"
-
-#include "mlir/IR/Matchers.h"
-#include "Lexer.h"
-
-#include "mlir/IR/OpDefinition.h"
-#include "mlir/IR/BuiltinTypes.h"
 
 using namespace llvm;
 using namespace mlir;
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
-//using mlir::detail::MatcherKind;
+// using mlir::detail::MatcherKind;
 
 #define DEBUG_TYPE "mlir-query"
 
@@ -54,8 +28,6 @@ using llvm::dbgs;
 static bool isWhitespace(char C) {
   return C == ' ' || C == '\t' || C == '\r' || C == '\n';
 }
-
-
 
 mlir::detail::DynamicMatcher::~DynamicMatcher() {}
 namespace mlir {
@@ -89,7 +61,8 @@ StringRef QueryParser::lexWord() {
 
 // This is the StringSwitch-alike used by lexOrCompleteWord below. See that
 // function for details.
-template <typename T> struct QueryParser::LexOrCompleteWord {
+template <typename T>
+struct QueryParser::LexOrCompleteWord {
   StringRef Word;
   StringSwitch<T> Switch;
 
@@ -118,7 +91,8 @@ template <typename T> struct QueryParser::LexOrCompleteWord {
 
     if (WordCompletionPos == StringRef::npos)
       Switch.Case(CaseStr, Value);
-    else if (CaseStr.size() != 0 && IsCompletion && WordCompletionPos <= CaseStr.size() &&
+    else if (CaseStr.size() != 0 && IsCompletion &&
+             WordCompletionPos <= CaseStr.size() &&
              CaseStr.substr(0, WordCompletionPos) ==
                  Word.substr(0, WordCompletionPos))
       P->Completions.push_back(LineEditor::Completion(
@@ -129,31 +103,6 @@ template <typename T> struct QueryParser::LexOrCompleteWord {
 
   T Default(T Value) { return Switch.Default(Value); }
 };
-
-static QueryRef ParseSetBool(bool QuerySession::*Var, StringRef ValStr) {
-  unsigned Value = StringSwitch<unsigned>(ValStr)
-                      .Case("false", 0)
-                      .Case("true", 1)
-                      .Default(~0u);
-  if (Value == ~0u) {
-    return new InvalidQuery("expected 'true' or 'false', got '" + ValStr + "'");
-  }
-  return new SetQuery<bool>(Var, Value);
-}
-
-static QueryRef ParseSetOutputKind(StringRef ValStr) {
-  unsigned OutKind = StringSwitch<unsigned>(ValStr)
-                         .Case("diag", OK_Diag)
-                         .Case("print", OK_Print)
-                         .Case("dump", OK_Dump)
-                         .Default(~0u);
-  if (OutKind == ~0u) {
-    return new InvalidQuery("expected 'diag', 'print' or 'dump', got '" +
-                            ValStr + "'");
-  }
-  return new SetQuery<OutputKind>(&QuerySession::OutKind, OutputKind(OutKind));
-}
-
 
 QueryRef QueryParser::endQuery(QueryRef Q) {
   StringRef Extra = Line;
@@ -179,12 +128,6 @@ QueryRef QueryParser::endQuery(QueryRef Q) {
 }
 
 namespace {
-
-
-} // namespace
-
-
-namespace {
 enum MatcherKind {
   M_OpName,
   M_OpAttr,
@@ -195,9 +138,6 @@ enum ParsedQueryKind {
   PQK_Help,
   PQK_Match,
 };
-
-
-
 } // namespace
 
 QueryRef QueryParser::doParse() {
@@ -222,45 +162,23 @@ QueryRef QueryParser::doParse() {
     return endQuery(new HelpQuery);
 
   case PQK_Match: {
-    // LLVM_DEBUG(DBGS() << Line << "\n");
-    // auto MatcherSource = Line.ltrim();
-    // auto OrigMatcherSource = MatcherSource;
-    // LLVM_DEBUG(DBGS() << MatcherSource << "\n");
-    // LLVM_DEBUG(DBGS() << "Working" << "\n");
-    // // auto lexer = new Lexer(MatcherSource);
-    
-    // // auto curToken = lexer->lexToken();
-    // // int i = 0;
-    // // while(i<200) {
-    // //   curToken = lexer->lexToken();
-    // //   i++;
-    // // }
-    // detail::DynamicMatcherRef Matcher = parseMatcherExpression();
-    // LLVM_DEBUG(DBGS() << "Working2" << "\n");
-    // auto ActualSource = OrigMatcherSource.slice(0, OrigMatcherSource.size() -
-    //                                                    MatcherSource.size());
-
-    // return new MatchQuery(ActualSource, Matcher);
-
-    LLVM_DEBUG(DBGS() << "Parsing matcher expression" << "\n");
     StringRef MatchExpr;
-    LLVM_DEBUG(DBGS() << "New matcher source: "<<MatchExpr << "\n");
     MatcherKind MKind = LexOrCompleteWord<MatcherKind>(this, MatchExpr)
-                                .Case("dialect.op1", M_OpName)
-                                .Case("attributename", M_OpAttr)
-                                .Default(M_OpName);
-    LLVM_DEBUG(DBGS() << "New matcher source: "<<MatchExpr << "\n");
+                            .Case("dialect.op1", M_OpName)
+                            .Case("attributename", M_OpAttr)
+                            .Default(M_OpName);
     if (MatchExpr.empty())
-        return new InvalidQuery("expected variable name");
+      return new InvalidQuery("expected variable name");
     switch (MKind) {
-      case M_OpName: {
-        auto M =  mlir::detail::name_op_matcher(MatchExpr);
-        return new MatchQuery<mlir::detail::name_op_matcher>(MatchExpr, M);
-      }
-      case M_OpAttr: {
-        auto M = mlir::detail::attr_op_matcher(MatchExpr);
-        return new MatchQuery<mlir::detail::attr_op_matcher>(MatchExpr, M);
-      }
+    case M_OpName: {
+      // TODO: implement parser
+      auto M = mlir::detail::name_op_matcher(MatchExpr);
+      return new MatchQuery<mlir::detail::name_op_matcher>(MatchExpr, M);
+    }
+    case M_OpAttr: {
+      auto M = mlir::detail::attr_op_matcher(MatchExpr);
+      return new MatchQuery<mlir::detail::attr_op_matcher>(MatchExpr, M);
+    }
     }
   }
 

@@ -13,8 +13,8 @@
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Support/SourceMgr.h"
 
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/raw_ostream.h"
 using llvm::dbgs;
 
 #define DEBUG_TYPE "mlir-query"
@@ -83,21 +83,23 @@ std::string Token::getStringValue() const {
 // Lexer::Lexer(StringRef &matcherString) {
 // }
 
-Lexer::~Lexer() {
-}
+Lexer::~Lexer() {}
 
 Token Lexer::emitError(SMRange loc, const Twine &msg) {
-  LLVM_DEBUG(DBGS() << msg << ": Error" << "\n");
+  LLVM_DEBUG(DBGS() << msg << ": Error"
+                    << "\n");
 
   return formToken(Token::error, loc.Start.getPointer());
 }
 Token Lexer::emitErrorAndNote(SMRange loc, const Twine &msg, SMRange noteLoc,
                               const Twine &note) {
-  LLVM_DEBUG(DBGS() << msg << ": Error" << "\n");
+  LLVM_DEBUG(DBGS() << msg << ": Error"
+                    << "\n");
   return formToken(Token::error, loc.Start.getPointer());
 }
 Token Lexer::emitError(const char *loc, const Twine &msg) {
-  LLVM_DEBUG(DBGS() << msg << ": Error" << "\n");
+  LLVM_DEBUG(DBGS() << msg << ": Error"
+                    << "\n");
   return emitError(
       SMRange(SMLoc::getFromPointer(loc), SMLoc::getFromPointer(loc + 1)), msg);
 }
@@ -299,9 +301,11 @@ Token Lexer::lexNumber(const char *tokStart) {
 
 Token Lexer::lexString(const char *tokStart, bool isStringBlock) {
   while (true) {
-    // // Check to see if there is a code completion location within the string. In
+    // // Check to see if there is a code completion location within the string.
+    // In
     // // these cases we generate a completion location and place the currently
-    // // lexed string within the token (without the quotes). This allows for the
+    // // lexed string within the token (without the quotes). This allows for
+    // the
     // // parser to use the partially lexed string when computing the completion
     // // results.
     // if (curPtr == codeCompletionLocation) {

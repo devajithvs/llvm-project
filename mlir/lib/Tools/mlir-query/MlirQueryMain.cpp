@@ -13,11 +13,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "Query.h"
-#include "QuerySession.h"
 #include "QueryParser.h"
+#include "QuerySession.h"
 
-#include "mlir/Tools/mlir-query/MlirQueryMain.h"
 #include "mlir/Support/LogicalResult.h"
+#include "mlir/Tools/mlir-query/MlirQueryMain.h"
 #include "llvm/Support/InitLLVM.h"
 
 #include "llvm/LineEditor/LineEditor.h"
@@ -60,8 +60,7 @@ OwningOpRef<Operation *> loadModule(MLIRContext &context,
   return parseSourceFileForTool(sourceMgr, &context, insertImplictModule);
 }
 
-LogicalResult mlir::mlirQueryMain(int argc, char **argv,
-                                  MLIRContext &context) {
+LogicalResult mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context) {
   // Override the default '-h' and use the default PrintHelpMessage() which
   // won't print options in categories.
   static llvm::cl::opt<bool> help("h", llvm::cl::desc("Alias for -help"),
@@ -72,7 +71,7 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
   static llvm::cl::opt<std::string> inputFilename(
       llvm::cl::Positional, llvm::cl::desc("<input file>"),
       llvm::cl::cat(mlirQueryCategory));
-  
+
   static llvm::cl::opt<bool> noImplicitModule{
       "no-implicit-module",
       llvm::cl::desc(
@@ -83,8 +82,7 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
 
   llvm::InitLLVM y(argc, argv);
 
-  llvm::cl::ParseCommandLineOptions(argc, argv,
-                                    "MLIR test case query tool.\n");
+  llvm::cl::ParseCommandLineOptions(argc, argv, "MLIR test case query tool.\n");
 
   if (help) {
     llvm::cl::PrintHelpMessage();
@@ -103,7 +101,7 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv,
       loadModule(context, inputFilename, !noImplicitModule);
   if (!opRef)
     return failure();
-  
+
   LLVM_DEBUG(DBGS() << opRef.get()->getName().getStringRef() << "\n");
   LLVM_DEBUG(DBGS() << opRef.get()->getName().getStringRef() << "\n");
 

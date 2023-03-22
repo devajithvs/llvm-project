@@ -1,6 +1,8 @@
-// //===- Parser.cpp - Matcher expression parser -----------------------------===//
+// //===- Parser.cpp - Matcher expression parser
+// -----------------------------===//
 // //
-// // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// // Part of the LLVM Project, under the Apache License v2.0 with LLVM
+// Exceptions.
 // // See https://llvm.org/LICENSE.txt for license information.
 // // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // //
@@ -173,7 +175,8 @@
 //         // Parse an identifier
 //         size_t TokenLength = 1;
 //         while (true) {
-//           // A code completion location in/immediately after an identifier will
+//           // A code completion location in/immediately after an identifier
+//           will
 //           // cause the portion of the identifier before the code completion
 //           // location to become a code completion token.
 //           if (CodeCompletionLocation == Code.data() + TokenLength) {
@@ -183,7 +186,8 @@
 //             Code = Code.drop_front(TokenLength);
 //             return Result;
 //           }
-//           if (TokenLength == Code.size() || !isAlphanumeric(Code[TokenLength]))
+//           if (TokenLength == Code.size() ||
+//           !isAlphanumeric(Code[TokenLength]))
 //             break;
 //           ++TokenLength;
 //         }
@@ -371,8 +375,8 @@
 //       Tokenizer->consumeNextToken();
 //       TokenInfo ChainCallToken = Tokenizer->consumeNextToken();
 //       if (ChainCallToken.Kind == TokenInfo::TK_CodeCompletion) {
-//         addCompletion(ChainCallToken, MatcherCompletion("bind(\"", "bind", 1));
-//         return false;
+//         addCompletion(ChainCallToken, MatcherCompletion("bind(\"", "bind",
+//         1)); return false;
 //       }
 
 //       if (ChainCallToken.Kind != TokenInfo::TK_Ident ||
@@ -384,7 +388,8 @@
 //       }
 //       if (ChainCallToken.Text == TokenInfo::ID_With) {
 
-//         Diagnostics::Context Ctx(Diagnostics::Context::ConstructMatcher, Error,
+//         Diagnostics::Context Ctx(Diagnostics::Context::ConstructMatcher,
+//         Error,
 //                                  NameToken.Text, NameToken.Range);
 
 //         Error->addError(ChainCallToken.Range,
@@ -468,7 +473,8 @@
 //   return true;
 // }
 
-// bool Parser::parseMatcherBuilder(MatcherCtor Ctor, const TokenInfo &NameToken,
+// bool Parser::parseMatcherBuilder(MatcherCtor Ctor, const TokenInfo
+// &NameToken,
 //                                  const TokenInfo &OpenToken,
 //                                  VariantValue *Value) {
 //   std::vector<ParserValue> Args;
@@ -509,7 +515,8 @@
 //       TokenInfo NodeMatcherToken = Tokenizer->consumeNextToken();
 
 //       if (NodeMatcherToken.Kind != TokenInfo::TK_Ident) {
-//         Error->addError(NameToken.Range, Error->ET_ParserFailedToBuildMatcher)
+//         Error->addError(NameToken.Range,
+//         Error->ET_ParserFailedToBuildMatcher)
 //             << NameToken.Text;
 //         return false;
 //       }
@@ -623,7 +630,8 @@
 // }
 
 // /// Parse and validate a matcher expression.
-// /// \return \c true on success, in which case \c Value has the matcher parsed.
+// /// \return \c true on success, in which case \c Value has the matcher
+// parsed.
 // ///   If the input is malformed, or some argument has an error, it
 // ///   returns \c false.
 // bool Parser::parseMatcherExpressionImpl(const TokenInfo &NameToken,
@@ -633,7 +641,8 @@
 //   if (!Ctor) {
 //     Error->addError(NameToken.Range, Error->ET_RegistryMatcherNotFound)
 //         << NameToken.Text;
-//     // Do not return here. We need to continue to give completion suggestions.
+//     // Do not return here. We need to continue to give completion
+//     suggestions.
 //   }
 
 //   if (Ctor && *Ctor && S->isBuilderMatcher(*Ctor))
@@ -863,7 +872,8 @@
 // }
 
 // internal::MatcherDescriptorPtr
-// Parser::RegistrySema::buildMatcherCtor(MatcherCtor Ctor, SourceRange NameRange,
+// Parser::RegistrySema::buildMatcherCtor(MatcherCtor Ctor, SourceRange
+// NameRange,
 //                                        ArrayRef<ParserValue> Args,
 //                                        Diagnostics *Error) const {
 //   return Registry::buildMatcherCtor(Ctor, NameRange, Args, Error);
@@ -885,7 +895,8 @@
 // }
 
 // std::vector<MatcherCompletion>
-// Parser::completeExpression(StringRef &Code, unsigned CompletionOffset, Sema *S,
+// Parser::completeExpression(StringRef &Code, unsigned CompletionOffset, Sema
+// *S,
 //                            const NamedValueMap *NamedValues) {
 //   Diagnostics Error;
 //   CodeTokenizer Tokenizer(Code, &Error, CompletionOffset);

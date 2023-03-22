@@ -196,7 +196,6 @@ private:
   int curBufferID;
   StringRef curBuffer;
   const char *curPtr;
-
 };
 } // namespace query
 } // namespace mlir

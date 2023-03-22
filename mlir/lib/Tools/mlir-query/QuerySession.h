@@ -9,9 +9,9 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERYSESSION_H
 #define MLIR_TOOLS_MLIRQUERY_QUERYSESSION_H
 
-#include "llvm/ADT/ArrayRef.h"
 #include "Query.h"
 #include "mlir/Tools/ParseUtilities.h"
+#include "llvm/ADT/ArrayRef.h"
 
 using namespace mlir;
 namespace mlir {
@@ -20,8 +20,7 @@ namespace query {
 /// Represents the state for a particular clang-query session.
 class QuerySession {
 public:
-  QuerySession(Operation *Op)
-      : Op(Op), OutKind(OK_Diag), BindRoot(true) {}
+  QuerySession(Operation *Op) : Op(Op), OutKind(OK_Diag), BindRoot(true) {}
 
   Operation *Op;
 

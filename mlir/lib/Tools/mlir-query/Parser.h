@@ -1,6 +1,8 @@
-// //===- Parser.h - Matcher expression parser ---------------------*- C++ -*-===//
+// //===- Parser.h - Matcher expression parser ---------------------*- C++
+// -*-===//
 // //
-// // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// // Part of the LLVM Project, under the Apache License v2.0 with LLVM
+// Exceptions.
 // // See https://llvm.org/LICENSE.txt for license information.
 // // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // //
@@ -12,13 +14,15 @@
 // /// The parser understands matcher expressions of the form:
 // ///   MatcherName(Arg0, Arg1, ..., ArgN)
 // /// as well as simple types like strings.
-// /// The parser does not know how to process the matchers. It delegates this task
+// /// The parser does not know how to process the matchers. It delegates this
+// task
 // /// to a Sema object received as an argument.
 // ///
 // /// \code
 // /// Grammar for the expressions supported:
 // /// <Expression>        := <Literal> | <NamedValue> | <MatcherExpression>
-// /// <Literal>           := <StringLiteral> | <Boolean> | <Double> | <Unsigned>
+// /// <Literal>           := <StringLiteral> | <Boolean> | <Double> |
+// <Unsigned>
 // /// <StringLiteral>     := "quoted string"
 // /// <Boolean>           := true | false
 // /// <Double>            := [0-9]+.[0-9]* | [0-9]+.[0-9]*[eE][-+]?[0-9]+
@@ -62,7 +66,8 @@
 //   /// the matchers.
 //   /// However, a more complex processor might decide to intercept the matcher
 //   /// creation and do some extra work. For example, it could apply some
-//   /// transformation to the matcher by adding some id() nodes, or could detect
+//   /// transformation to the matcher by adding some id() nodes, or could
+//   detect
 //   /// specific matcher nodes for more efficient lookup.
 //   class Sema {
 //   public:
@@ -77,7 +82,8 @@
 //     /// \param NameRange The location of the name in the matcher source.
 //     ///   Useful for error reporting.
 //     ///
-//     /// \param BindID The ID to use to bind the matcher, or a null \c StringRef
+//     /// \param BindID The ID to use to bind the matcher, or a null \c
+//     StringRef
 //     ///   if no ID is specified.
 //     ///
 //     /// \param Args The argument list for the matcher.
@@ -106,12 +112,15 @@
 
 //     virtual internal::MatcherDescriptorPtr
 //     buildMatcherCtor(MatcherCtor, SourceRange NameRange,
-//                      ArrayRef<ParserValue> Args, Diagnostics *Error) const = 0;
+//                      ArrayRef<ParserValue> Args, Diagnostics *Error) const =
+//                      0;
 
 //     /// Compute the list of completion types for \p Context.
 //     ///
-//     /// Each element of \p Context represents a matcher invocation, going from
-//     /// outermost to innermost. Elements are pairs consisting of a reference to
+//     /// Each element of \p Context represents a matcher invocation, going
+//     from
+//     /// outermost to innermost. Elements are pairs consisting of a reference
+//     to
 //     /// the matcher constructor and the index of the next element in the
 //     /// argument list of that matcher (or for the last element, the index of
 //     /// the completion point in the argument list). An empty list requests
@@ -182,9 +191,11 @@
 //   ///   The caller takes ownership of the DynTypedMatcher object returned.
 //   static llvm::Optional<DynTypedMatcher>
 //   parseMatcherExpression(StringRef &MatcherCode, Sema *S,
-//                          const NamedValueMap *NamedValues, Diagnostics *Error);
+//                          const NamedValueMap *NamedValues, Diagnostics
+//                          *Error);
 //   static llvm::Optional<DynTypedMatcher>
-//   parseMatcherExpression(StringRef &MatcherCode, Sema *S, Diagnostics *Error) {
+//   parseMatcherExpression(StringRef &MatcherCode, Sema *S, Diagnostics *Error)
+//   {
 //     return parseMatcherExpression(MatcherCode, S, nullptr, Error);
 //   }
 //   static llvm::Optional<DynTypedMatcher>
@@ -195,7 +206,8 @@
 //   /// Parse an expression.
 //   ///
 //   /// Parses any expression supported by this parser. In general, the
-//   /// \c parseMatcherExpression function is a better approach to get a matcher
+//   /// \c parseMatcherExpression function is a better approach to get a
+//   matcher
 //   /// object.
 //   ///
 //   /// \param S The Sema instance that will help the parser

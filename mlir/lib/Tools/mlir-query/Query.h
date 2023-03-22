@@ -10,20 +10,16 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERY_H
 #define MLIR_TOOLS_MLIRQUERY_QUERY_H
 
-#include <string>
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/Twine.h"
+#include <string>
 
 #include "mlir/IR/Matchers.h"
 namespace mlir {
 namespace query {
 
-enum OutputKind {
-  OK_Diag,
-  OK_Print,
-  OK_Dump
-};
+enum OutputKind { OK_Diag, OK_Print, OK_Dump };
 
 enum QueryKind {
   QK_Invalid,
@@ -53,7 +49,8 @@ typedef llvm::IntrusiveRefCntPtr<Query> QueryRef;
 
 /// Any query which resulted in a parse error.  The error message is in ErrStr.
 struct InvalidQuery : Query {
-  InvalidQuery(const llvm::Twine &ErrStr) : Query(QK_Invalid), ErrStr(ErrStr.str()) {}
+  InvalidQuery(const llvm::Twine &ErrStr)
+      : Query(QK_Invalid), ErrStr(ErrStr.str()) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
   std::string ErrStr;
@@ -93,12 +90,10 @@ struct attr_op_matcher  {
 };
 */
 
-
 /// Query for "match MATCHER".
 template <typename T>
 struct MatchQuery : Query {
-  MatchQuery(StringRef Source,
-             const T &Matcher)
+  MatchQuery(StringRef Source, const T &Matcher)
       : Query(QK_Match), Matcher(Matcher), Source(Source) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
@@ -109,18 +104,22 @@ struct MatchQuery : Query {
   static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
 };
 
-template <typename T> struct SetQueryKind {};
+template <typename T>
+struct SetQueryKind {};
 
-template <> struct SetQueryKind<bool> {
+template <>
+struct SetQueryKind<bool> {
   static const QueryKind value = QK_SetBool;
 };
 
-template <> struct SetQueryKind<OutputKind> {
+template <>
+struct SetQueryKind<OutputKind> {
   static const QueryKind value = QK_SetOutputKind;
 };
 
 /// Query for "set VAR VALUE".
-template <typename T> struct SetQuery : Query {
+template <typename T>
+struct SetQuery : Query {
   SetQuery(T QuerySession::*Var, T Value)
       : Query(SetQueryKind<T>::value), Var(Var), Value(Value) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override {

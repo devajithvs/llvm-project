@@ -10,10 +10,10 @@
 #include "Query.h"
 #include "QuerySession.h"
 
-#include "llvm/Support/raw_ostream.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/FunctionInterfaces.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "mlir/IR/Matchers.h"
 
@@ -30,11 +30,12 @@ using namespace mlir;
 
 // // This could be done better but is not worth the variadic template trouble.
 template <typename Matcher>
-static std::vector<Operation*> getMatches(Operation* f, Matcher &matcher) {
-  LLVM_DEBUG(DBGS() << "Running getMatches" << "\n");
-  std::vector<Operation*> matches;
+static std::vector<Operation *> getMatches(Operation *f, Matcher &matcher) {
+  LLVM_DEBUG(DBGS() << "Running getMatches"
+                    << "\n");
+  std::vector<Operation *> matches;
   f->walk([&matches, &matcher](Operation *op) {
-    if (matcher.match(op)){
+    if (matcher.match(op)) {
       matches.push_back(op);
     }
   });
@@ -68,36 +69,43 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
-
-template bool MatchQuery<mlir::detail::name_op_matcher>::run(llvm::raw_ostream &OS, QuerySession &QS) const;
-template bool MatchQuery<mlir::detail::attr_op_matcher>::run(llvm::raw_ostream &OS, QuerySession &QS) const;
+template bool
+MatchQuery<mlir::detail::name_op_matcher>::run(llvm::raw_ostream &OS,
+                                               QuerySession &QS) const;
+template bool
+MatchQuery<mlir::detail::attr_op_matcher>::run(llvm::raw_ostream &OS,
+                                               QuerySession &QS) const;
 
 template <typename T>
 bool MatchQuery<T>::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   unsigned MatchCount = 0;
 
-  LLVM_DEBUG(DBGS() << "Running run" << "\n");
+  LLVM_DEBUG(DBGS() << "Running run"
+                    << "\n");
   Operation *rootOp = QS.Op;
-  LLVM_DEBUG(DBGS() << "Running run2" << "\n");
+  LLVM_DEBUG(DBGS() << "Running run2"
+                    << "\n");
   // TODO: Parse matcher expression and create matcher.
   T matcher = Matcher;
-  LLVM_DEBUG(DBGS() << "Running run3" << "\n");
+  LLVM_DEBUG(DBGS() << "Running run3"
+                    << "\n");
   auto matches = getMatches(rootOp, matcher);
-  LLVM_DEBUG(DBGS() << "Running run4" << "\n");
-  for (auto op: matches){
+  LLVM_DEBUG(DBGS() << "Running run4"
+                    << "\n");
+  for (auto op : matches) {
     OS << "\nMatch #" << ++MatchCount << ":\n\n";
     // TODO: Get source location and filename
     OS << "testing: note: 'root' binds here\n" << *op << "\n\n";
   }
-  LLVM_DEBUG(DBGS() << "Running run5" << "\n");
+  LLVM_DEBUG(DBGS() << "Running run5"
+                    << "\n");
 
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;
 }
 
-
 const QueryKind SetQueryKind<bool>::value;
 const QueryKind SetQueryKind<OutputKind>::value;
 
+} // namespace query
 } // namespace mlir
-} // namespace clang
