@@ -17,28 +17,10 @@
 
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/OpDefinition.h"
-#include "llvm/ADT/IntrusiveRefCntPtr.h"
 
 namespace mlir {
 
 namespace detail {
-
-enum MatcherKind {
-  M_OpName,
-  M_OpAttr,
-};
-
-struct DynamicMatcher : llvm::RefCountedBase<DynamicMatcher> {
-  DynamicMatcher(MatcherKind Kind) : Kind(Kind) {}
-  virtual ~DynamicMatcher();
-
-  /// \return true if matched, otherwise return false.
-  virtual bool match(Operation *op) = 0;
-
-  const MatcherKind Kind;
-};
-
-typedef llvm::IntrusiveRefCntPtr<DynamicMatcher> DynamicMatcherRef;
 
 /// The matcher that matches a certain kind of Attribute and binds the value
 /// inside the Attribute.
@@ -275,34 +257,11 @@ struct RecursivePatternMatcher {
   std::tuple<OperandMatchers...> operandMatchers;
 };
 
-/// RecursivePatternMatcher by name that composes.
-template <typename... OperandMatchers>
-struct RecursivePatternMatcherByName {
-  StringRef opName;
-  RecursivePatternMatcherByName(StringRef opName, OperandMatchers... matchers)
-      : opName(opName), operandMatchers(matchers...) {}
-  bool match(Operation *op) {
-    if (op->getName().getStringRef() == opName || op->getNumOperands() != sizeof...(OperandMatchers))
-      return false;
-    bool res = true;
-    enumerate(operandMatchers, [&](size_t index, auto &matcher) {
-      res &= matchOperandOrValueAtIndex(op, index, matcher);
-    });
-    return res;
-  }
-  std::tuple<OperandMatchers...> operandMatchers;
-};
-
 } // namespace detail
 
 /// Matches a constant foldable operation.
 inline detail::constant_op_matcher m_Constant() {
   return detail::constant_op_matcher();
-}
-
-/// Matches a named operation.
-inline detail::name_op_matcher m_OpName(StringRef opN) {
-  return detail::name_op_matcher(opN);
 }
 
 /// Matches a value from a constant foldable operation and writes the value to
@@ -405,12 +364,6 @@ m_ConstantInt(IntegerAttr::ValueType *bind_value) {
 template <typename OpType, typename... Matchers>
 auto m_Op(Matchers... matchers) {
   return detail::RecursivePatternMatcher<OpType, Matchers...>(matchers...);
-}
-
-/// Matches a named operation.
-template <typename... Matchers>
-auto m_OpName(StringRef opN, Matchers... matchers) {
-  return detail::RecursivePatternMatcherByName<Matchers...>(opN, matchers...);
 }
 
 namespace matchers {
