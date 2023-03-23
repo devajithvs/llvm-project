@@ -7,7 +7,6 @@ add_mlir_library(MLIRQueryLib
   MlirQueryMain.cpp
   Query.cpp
   QueryParser.cpp
-  Lexer.cpp
   Parser.cpp
 
   ADDITIONAL_HEADER_DIRS
