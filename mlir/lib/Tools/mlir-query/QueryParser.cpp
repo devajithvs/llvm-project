@@ -29,7 +29,6 @@ static bool isWhitespace(char C) {
   return C == ' ' || C == '\t' || C == '\r' || C == '\n';
 }
 
-mlir::detail::DynamicMatcher::~DynamicMatcher() {}
 namespace mlir {
 namespace query {
 
@@ -131,6 +130,7 @@ namespace {
 enum MatcherKind {
   M_OpName,
   M_OpAttr,
+  M_OpConst,
 };
 enum ParsedQueryKind {
   PQK_Invalid,
@@ -162,24 +162,7 @@ QueryRef QueryParser::doParse() {
     return endQuery(new HelpQuery);
 
   case PQK_Match: {
-    StringRef MatchExpr;
-    MatcherKind MKind = LexOrCompleteWord<MatcherKind>(this, MatchExpr)
-                            .Case("dialect.op1", M_OpName)
-                            .Case("attributename", M_OpAttr)
-                            .Default(M_OpName);
-    if (MatchExpr.empty())
-      return new InvalidQuery("expected variable name");
-    switch (MKind) {
-    case M_OpName: {
-      // TODO: implement parser
-      auto M = mlir::detail::name_op_matcher(MatchExpr);
-      return new MatchQuery<mlir::detail::name_op_matcher>(MatchExpr, M);
-    }
-    case M_OpAttr: {
-      auto M = mlir::detail::attr_op_matcher(MatchExpr);
-      return new MatchQuery<mlir::detail::attr_op_matcher>(MatchExpr, M);
-    }
-    }
+    return new MatchQuery(Line.ltrim());
   }
 
   case PQK_Invalid:

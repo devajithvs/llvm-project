@@ -67,13 +67,48 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
-template <typename T>
-bool MatchQuery<T>::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  unsigned MatchCount = 0;
+namespace {
+enum MatcherKind {
+  M_OpName,
+  M_OpAttr,
+  M_OpConst,
+};
+} // namespace
 
+bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+ LLVM_DEBUG(DBGS() << "Running run4" << "\n");
+  MatcherKind MKind = M_OpName;
+  if (MatchExpr.empty())
+    return false;
+  
+  // TODO: PARSING
+
+ LLVM_DEBUG(DBGS() << "Running run5" << "\n");
+  std::vector<Operation *>  matches;
   Operation *rootOp = QS.Op;
-  T matcher = Matcher;
-  auto matches = getMatches(rootOp, matcher);
+
+  switch (MKind) {
+  case M_OpName: {
+    // TODO: implement parser
+    auto M = mlir::detail::name_op_matcher(MatchExpr);
+    matches = getMatches(rootOp, M);
+    break;
+  }
+  case M_OpAttr: {
+    auto M = mlir::detail::attr_op_matcher(MatchExpr);
+    matches = getMatches(rootOp, M);
+    break;
+  }
+  case M_OpConst: {
+    auto M = mlir::detail::constant_op_matcher();
+    matches = getMatches(rootOp, M);
+    break;
+  }
+  }
+ 
+
+ LLVM_DEBUG(DBGS() << "Running run6" << "\n");
+  unsigned MatchCount = 0;
   for (auto op : matches) {
     OS << "\nMatch #" << ++MatchCount << ":\n\n";
     // TODO: Get source location and filename
@@ -82,13 +117,6 @@ bool MatchQuery<T>::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;
 }
-
-template bool
-MatchQuery<mlir::detail::name_op_matcher>::run(llvm::raw_ostream &OS,
-                                               QuerySession &QS) const;
-template bool
-MatchQuery<mlir::detail::attr_op_matcher>::run(llvm::raw_ostream &OS,
-                                               QuerySession &QS) const;
 
 const QueryKind SetQueryKind<bool>::value;
 const QueryKind SetQueryKind<OutputKind>::value;

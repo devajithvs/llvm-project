@@ -75,15 +75,12 @@ struct HelpQuery : Query {
 };
 
 /// Query for "match MATCHER".
-template <typename T>
 struct MatchQuery : Query {
-  MatchQuery(StringRef Source, const T &Matcher)
-      : Query(QK_Match), Matcher(Matcher), Source(Source) {}
+  MatchQuery(StringRef MatchExpr)
+      : Query(QK_Match), MatchExpr(MatchExpr) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  T Matcher;
-
-  StringRef Source;
+  StringRef MatchExpr;
 
   static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
 };
