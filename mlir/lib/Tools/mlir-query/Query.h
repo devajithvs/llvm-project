@@ -37,7 +37,7 @@ public:
   virtual ~SingleMatcherInterface() {}
 
   /// \brief Returns true if 'op' can be matched.
-  virtual bool matches(const Operation *op) const = 0;
+  virtual bool matches( Operation *op)  = 0;
 };
 
 typedef llvm::IntrusiveRefCntPtr<SingleMatcherInterface> SingleMatcherImplementation;
@@ -46,15 +46,16 @@ typedef llvm::IntrusiveRefCntPtr<SingleMatcherInterface> SingleMatcherImplementa
 template <typename T>
 class SingleMatcher : public SingleMatcherInterface {
 public:
-  /// \brief Takes ownership of the provided implementation pointer.
-  explicit SingleMatcher(T &matcher)
-      : Matcher(Matcher) {}
-  bool matches(const Operation *op) const {
-    return Matcher.match(op);
-  }
+  SingleMatcher(T &matcher)
+      : Matcher(matcher) {}
+  bool matches( Operation *op)  override;
   T Matcher;
 };
 
+template <typename T>
+bool SingleMatcher<T>::matches( Operation *op)  {
+  return Matcher.match(op);
+}
 struct Query : llvm::RefCountedBase<Query> {
   Query(QueryKind Kind) : Kind(Kind) {}
   virtual ~Query();

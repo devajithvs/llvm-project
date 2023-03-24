@@ -33,7 +33,7 @@ template <typename T>
 static std::vector<Operation *> getMatches(Operation *f, T &matcher) {
   std::vector<Operation *> matches;
   f->walk([&matches, &matcher](Operation *op) {
-    if (matcher.match(op)) {
+    if (mlir::query::SingleMatcher<T>(matcher).matches(op)) {
       matches.push_back(op);
     }
   });
@@ -84,6 +84,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   // TODO: PARSING
 
  LLVM_DEBUG(DBGS() << "Running run5" << "\n");
+ LLVM_DEBUG(DBGS() << "Running run5" << MatchExpr << "\n");
   std::vector<Operation *>  matches;
   Operation *rootOp = QS.Op;
 
