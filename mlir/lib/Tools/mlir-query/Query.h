@@ -32,6 +32,29 @@ enum QueryKind {
 
 class QuerySession;
 
+class SingleMatcherInterface : public llvm::RefCountedBase<SingleMatcherInterface> {
+public:
+  virtual ~SingleMatcherInterface() {}
+
+  /// \brief Returns true if 'op' can be matched.
+  virtual bool matches(const Operation *op) const = 0;
+};
+
+typedef llvm::IntrusiveRefCntPtr<SingleMatcherInterface> SingleMatcherImplementation;
+
+/// \brief Single matcher that takes the matcher as a template argument.
+template <typename T>
+class SingleMatcher : public SingleMatcherInterface {
+public:
+  /// \brief Takes ownership of the provided implementation pointer.
+  explicit SingleMatcher(T &matcher)
+      : Matcher(Matcher) {}
+  bool matches(const Operation *op) const {
+    return Matcher.match(op);
+  }
+  T Matcher;
+};
+
 struct Query : llvm::RefCountedBase<Query> {
   Query(QueryKind Kind) : Kind(Kind) {}
   virtual ~Query();
