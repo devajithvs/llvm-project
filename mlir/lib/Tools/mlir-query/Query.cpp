@@ -7,6 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "MatchersInternal.h"
 #include "Query.h"
 #include "QuerySession.h"
 
@@ -28,22 +29,24 @@ using llvm::dbgs;
 // using namespace clang::ast_matchers::dynamic;
 using namespace mlir;
 
-// This could be done better but is not worth the variadic template trouble.
-template <typename T>
-static std::vector<Operation *> getMatches(Operation *f, T &matcher) {
-  std::vector<Operation *> matches;
-  f->walk([&matches, &matcher](Operation *op) {
-    if (mlir::query::SingleMatcher<T>(matcher).matches(op)) {
-      matches.push_back(op);
-    }
-  });
-  return matches;
-}
+
 
 namespace mlir {
 namespace query {
 
 Query::~Query() {}
+
+// This could be done better but is not worth the variadic template trouble.
+template <typename T>
+std::vector<Operation *> getMatches(Operation *f, T &matcher) {
+  std::vector<Operation *> matches;
+  f->walk([&matches, &matcher](Operation *op) {
+    if (matcher::SingleMatcher<T>(matcher).matches(op)) {
+      matches.push_back(op);
+    }
+  });
+  return matches;
+}
 
 bool InvalidQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   OS << ErrStr << "\n";
