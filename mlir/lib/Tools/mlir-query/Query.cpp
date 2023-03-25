@@ -36,17 +36,7 @@ namespace query {
 
 Query::~Query() {}
 
-// This could be done better but is not worth the variadic template trouble.
-template <typename T>
-std::vector<Operation *> getMatches(Operation *f, T &matcher) {
-  std::vector<Operation *> matches;
-  f->walk([&matches, &matcher](Operation *op) {
-    if (matcher::SingleMatcher<T>(matcher).matches(op)) {
-      matches.push_back(op);
-    }
-  });
-  return matches;
-}
+
 
 bool InvalidQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   OS << ErrStr << "\n";
@@ -78,6 +68,14 @@ enum MatcherKind {
 };
 } // namespace
 
+// This could be done better but is not worth the variadic template trouble.
+template <typename T>
+std::vector<Operation *> findMatches(Operation *rootOp, T &matcherFn) {
+  auto matcher = new matcher::SingleMatcher<T>(matcherFn);
+  auto matchFinder = matcher::MatchFinder();
+  return matchFinder.getMatches(rootOp, matcher);
+}
+
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
  LLVM_DEBUG(DBGS() << "Running run4" << "\n");
   MatcherKind MKind = M_OpName;
@@ -94,18 +92,18 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   switch (MKind) {
   case M_OpName: {
     // TODO: implement parser
-    auto M = mlir::detail::name_op_matcher(MatchExpr);
-    matches = getMatches(rootOp, M);
+    auto matcherFn = mlir::detail::name_op_matcher(MatchExpr);
+    matches = findMatches(rootOp, matcherFn);
     break;
   }
   case M_OpAttr: {
-    auto M = mlir::detail::attr_op_matcher(MatchExpr);
-    matches = getMatches(rootOp, M);
+    auto matcherFn = mlir::detail::attr_op_matcher(MatchExpr);
+    matches = findMatches(rootOp, matcherFn);
     break;
   }
   case M_OpConst: {
-    auto M = mlir::detail::constant_op_matcher();
-    matches = getMatches(rootOp, M);
+    auto matcherFn = m_Constant();
+    matches = findMatches(rootOp, matcherFn);
     break;
   }
   }
