@@ -264,6 +264,11 @@ inline detail::constant_op_matcher m_Constant() {
   return detail::constant_op_matcher();
 }
 
+/// Matches a named operation.
+inline detail::name_op_matcher m_Name(StringRef opN) {
+  return detail::name_op_matcher(opN);
+}
+
 /// Matches a value from a constant foldable operation and writes the value to
 /// bind_value.
 template <typename AttrT>

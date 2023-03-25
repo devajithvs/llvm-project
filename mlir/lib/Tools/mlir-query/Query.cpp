@@ -92,7 +92,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   switch (MKind) {
   case M_OpName: {
     // TODO: implement parser
-    auto matcherFn = mlir::detail::name_op_matcher(MatchExpr);
+    auto matcherFn = m_Name(MatchExpr);
     matches = findMatches(rootOp, matcherFn);
     break;
   }
