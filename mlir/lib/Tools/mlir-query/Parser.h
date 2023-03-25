@@ -66,8 +66,8 @@ public:
     /// \return The matcher object constructed by the processor, or NULL
     ///   if an error occurred. In that case, \c Error will contain a
     ///   description of the error.
-    ///   The caller takes ownership of the DynTypedMatcher object returned.
-    virtual DynTypedMatcher *
+    ///   The caller takes ownership of the MatcherImplementation object returned.
+    virtual MatcherImplementation *
     actOnMatcherExpression(StringRef MatcherName, 
                            ArrayRef<ParserValue> Args) = 0;
   };
@@ -82,9 +82,8 @@ public:
   ///
   /// \return The matcher object constructed, or NULL if an error occurred.
   //    In that case, \c Error will contain a description of the error.
-  ///   The caller takes ownership of the DynTypedMatcher object returned.
-  static DynTypedMatcher *parseMatcherExpression(StringRef MatcherCode
-                                                 );
+  ///   The caller takes ownership of the MatcherImplementation object returned.
+  static MatcherImplementation *parseMatcherExpression(StringRef MatcherCode);
 
   /// \brief Parse a matcher expression.
   ///
@@ -95,40 +94,34 @@ public:
   /// \return The matcher object constructed by the processor, or NULL
   ///   if an error occurred. In that case, \c Error will contain a
   ///   description of the error.
-  ///   The caller takes ownership of the DynTypedMatcher object returned.
-  static DynTypedMatcher *parseMatcherExpression(StringRef MatcherCode,
-                                                 Sema *S
-                                                 );
+  ///   The caller takes ownership of the MatcherImplementation object returned.
+  static MatcherImplementation *parseMatcherExpression(StringRef MatcherCode, Sema *S);
 
   /// \brief Parse an expression, creating matchers from the registry.
   ///
   /// Parses any expression supported by this parser. In general, the
   /// \c parseMatcherExpression function is a better approach to get a matcher
   /// object.
-  static bool parseExpression(StringRef Code, VariantValue *Value
-                              );
+  static bool parseExpression(StringRef Code, VariantValue *Value);
 
   /// \brief Parse an expression.
   ///
   /// Parses any expression supported by this parser. In general, the
   /// \c parseMatcherExpression function is a better approach to get a matcher
   /// object.
-  static bool parseExpression(StringRef Code, Sema *S,
-                              VariantValue *Value);
+  static bool parseExpression(StringRef Code, Sema *S, VariantValue *Value);
 
 private:
   class CodeTokenizer;
   struct TokenInfo;
 
-  Parser(CodeTokenizer *Tokenizer, Sema *S,
-         Diagnostics *Error);
+  Parser(CodeTokenizer *Tokenizer, Sema *S);
 
   bool parseExpressionImpl(VariantValue *Value);
   bool parseMatcherExpressionImpl(VariantValue *Value);
 
   CodeTokenizer *const Tokenizer;
   Sema *const S;
-  Diagnostics *const Error;
 };
 
 }  // namespace matcher

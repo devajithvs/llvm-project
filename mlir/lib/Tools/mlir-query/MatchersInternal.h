@@ -5,15 +5,19 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
+class MatcherInterface;
+typedef llvm::IntrusiveRefCntPtr<MatcherInterface> MatcherImplementation;
 class MatcherInterface : public llvm::RefCountedBase<MatcherInterface> {
 public:
   virtual ~MatcherInterface() = default;
 
   /// \brief Returns true if 'op' can be matched.
   virtual bool matches( Operation *op)  = 0;
+
+  /// \brief Makes a copy of this matcher object.
+  virtual MatcherImplementation clone() const = 0;
 };
 
-typedef llvm::IntrusiveRefCntPtr<MatcherInterface> MatcherImplementation;
 
 /// The kind provided to the constructor overrides any kind that may be
 /// specified by the `InnerMatcher`.
@@ -35,6 +39,9 @@ class SingleMatcherInterface : public MatcherInterface {
 public:
   /// \brief Returns true if 'op' can be matched.
   virtual bool matches( Operation *op) override = 0;
+
+  virtual MatcherImplementation clone() const override = 0;
+
 };
 //typedef llvm::IntrusiveRefCntPtr<SingleMatcherInterface> SingleMatcherImplementation;
 
@@ -44,14 +51,16 @@ class SingleMatcher : public SingleMatcherInterface {
 public:
   SingleMatcher(T &matcher)
       : Matcher(matcher) {}
-  bool matches( Operation *op)  override;
+  bool matches( Operation *op) override {
+    return Matcher.match(op);
+  }
+
+  /// \brief Makes a copy of this matcher object.
+  MatcherImplementation clone() const override { return new SingleMatcher<T>(*this); }
+
   T Matcher;
 };
 
-template <typename T>
-bool SingleMatcher<T>::matches( Operation *op)  {
-  return Matcher.match(op);
-}
 
 class MatchFinder {
 public:

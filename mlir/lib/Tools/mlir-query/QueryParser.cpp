@@ -25,10 +25,6 @@ using llvm::dbgs;
 
 #define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 
-static bool isWhitespace(char C) {
-  return C == ' ' || C == '\t' || C == '\r' || C == '\n';
-}
-
 namespace mlir {
 namespace query {
 
@@ -49,10 +45,16 @@ StringRef QueryParser::lexWord() {
     return Line;
 
   StringRef Word;
-  if (Line.front() == '#')
+  if (Line.front() == '#') {
     Word = Line.substr(0, 1);
-  else
-    Word = Line.take_until(isWhitespace);
+  } else {
+    //Word = Line.take_until(isSpace);
+    Word = Line.drop_while([](char c) {
+      // Don't trim newlines.
+      return StringRef(" \t\v\f\r").contains(c);
+    });
+  }
+
 
   Line = Line.drop_front(Word.size());
   return Word;

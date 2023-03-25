@@ -18,15 +18,13 @@
 #define MLIR_QUERY_MATCHERS_DYNAMIC_VARIANT_VALUE
 
 #include "mlir/IR/Matchers.h"
-#include "clang/ASTMatchers/ASTMatchersInternal.h"
+#include "MatchersInternal.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/type_traits.h"
 
 namespace mlir {
 namespace query {
 namespace matcher {
-
-typedef ast_matchers::internal::DynTypedMatcher DynTypedMatcher;
 
 /// \brief Variant value class.
 ///
@@ -38,7 +36,7 @@ typedef ast_matchers::internal::DynTypedMatcher DynTypedMatcher;
 ///
 /// Supported types:
 ///  - \c std::string
-///  - \c DynTypedMatcher, and any \c Matcher<T>
+///  - \c Any \c MatcherImplementation
 class VariantValue {
 public:
   VariantValue() : Type(VT_Nothing) {}
@@ -49,7 +47,7 @@ public:
 
   /// \brief Specific constructors for each supported type.
   VariantValue(const std::string &String);
-  VariantValue(const DynTypedMatcher &Matcher);
+  VariantValue(const MatcherImplementation &Implementation);
 
   /// \brief String value functions.
   bool isString() const;
@@ -58,10 +56,10 @@ public:
 
   /// \brief Matcher value functions.
   bool isMatcher() const;
-  const DynTypedMatcher &getMatcher() const;
-  void setMatcher(const DynTypedMatcher &Matcher);
+  const MatcherImplementation &getMatcher() const;
+  void setMatcher(const MatcherImplementation &Implementation);
   /// \brief Set the value to be \c Matcher by taking ownership of the object.
-  void takeMatcher(DynTypedMatcher *Matcher);
+  void takeMatcher(MatcherImplementation *Implementation);
 
   /// \brief Specialized Matcher<T> is/get functions.
   template <class T>
@@ -71,35 +69,8 @@ public:
     return isMatcher();
   }
 
-  template <class T>
-  ast_matchers::internal::Matcher<T> getTypedMatcher() const {
-    return ast_matchers::internal::makeMatcher(
-        new DerivedTypeMatcher<T>(getMatcher()));
-  }
-
 private:
   void reset();
-
-  /// \brief Matcher bridge between a Matcher<T> and a generic DynTypedMatcher.
-  template <class T>
-  class DerivedTypeMatcher :
-      public ast_matchers::internal::MatcherInterface<T> {
-  public:
-    explicit DerivedTypeMatcher(const DynTypedMatcher &DynMatcher)
-        : DynMatcher(DynMatcher.clone()) {}
-    virtual ~DerivedTypeMatcher() {}
-
-    typedef ast_matchers::internal::ASTMatchFinder ASTMatchFinder;
-    typedef ast_matchers::internal::BoundNodesTreeBuilder BoundNodesTreeBuilder;
-    bool matches(const T &Node, ASTMatchFinder *Finder,
-                 BoundNodesTreeBuilder *Builder) const {
-      return DynMatcher->matches(ast_type_traits::DynTypedNode::create(Node),
-                                 Finder, Builder);
-    }
-
-  private:
-    const OwningPtr<DynTypedMatcher> DynMatcher;
-  };
 
   /// \brief All supported value types.
   enum ValueType {
@@ -111,11 +82,18 @@ private:
   /// \brief All supported value types.
   union AllValues {
     std::string *String;
-    DynTypedMatcher *Matcher;
+    MatcherImplementation *Implementation;
   };
 
   ValueType Type;
   AllValues Value;
+};
+
+/// A VariantValue instance annotated with its parser context.
+struct ParserValue {
+  ParserValue() {}
+  StringRef Text;
+  VariantValue Value;
 };
 
 } // end namespace matcher

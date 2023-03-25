@@ -42,8 +42,7 @@ public:
   //    found, or if the number of arguments or argument types do not
   ///   match the signature. In that case \c Error will contain the description
   ///   of the error.
-  static DynTypedMatcher *constructMatcher(StringRef MatcherName,
-                                           ArrayRef<ParserValue> Args);
+  static MatcherImplementation *constructMatcher(StringRef MatcherName, ArrayRef<ParserValue> Args);
 
 };
 
