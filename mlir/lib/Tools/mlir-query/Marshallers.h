@@ -50,9 +50,9 @@ template <> struct ArgTypeTraits<std::string> {
   }
 };
 
-template <class T> struct ArgTypeTraits<MatcherImplementation > {
+template <class T> struct ArgTypeTraits<Matcher > {
   static bool is(const VariantValue &Value) { return Value.isMatcher(); }
-  static MatcherImplementation get(const VariantValue &Value) {
+  static Matcher get(const VariantValue &Value) {
     return Value.getMatcher();
   }
 
@@ -65,7 +65,7 @@ template <class T> struct ArgTypeTraits<MatcherImplementation > {
 class MatcherCreateCallback {
 public:
   virtual ~MatcherCreateCallback() {}
-  virtual MatcherImplementation *run( ArrayRef<ParserValue> Args) const = 0;
+  virtual Matcher *run( ArrayRef<ParserValue> Args) const = 0;
 };
 
 /// \brief Simple callback implementation. Marshaller and function are provided.
@@ -80,7 +80,7 @@ public:
                                      StringRef MatcherName)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName.str()) {}
 
-  MatcherImplementation *run( ArrayRef<ParserValue> Args) const {
+  Matcher *run( ArrayRef<ParserValue> Args) const {
     return Marshaller(Func, MatcherName, Args);
   }
 
@@ -110,7 +110,7 @@ struct remove_const_ref :
 
 /// \brief 0-arg marshaller function.
 template <typename ReturnType>
-MatcherImplementation *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName, ArrayRef<ParserValue> Args) {
+Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName, ArrayRef<ParserValue> Args) {
   CHECK_ARG_COUNT(0);
   if (Args.size() != 0) {                                                  
     return NULL;                                                               
@@ -121,7 +121,7 @@ MatcherImplementation *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherN
 
 /// \brief 1-arg marshaller function.
 template <typename ReturnType, typename InArgType1>
-MatcherImplementation *matcherMarshall1(ReturnType (*Func)(InArgType1),
+Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
                                   StringRef MatcherName,
                                   ArrayRef<ParserValue> Args) {
   typedef typename remove_const_ref<InArgType1>::type ArgType1;

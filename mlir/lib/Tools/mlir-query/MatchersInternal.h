@@ -13,34 +13,35 @@ public:
 
   /// \brief Returns true if 'op' can be matched.
   virtual bool matches( Operation *op)  = 0;
-
-  /// \brief Makes a copy of this matcher object.
-  virtual MatcherImplementation clone() const = 0;
 };
 
 
-/// The kind provided to the constructor overrides any kind that may be
-/// specified by the `InnerMatcher`.
-class TraversalMatcherImpl : public MatcherInterface {
+/// Matcher that works on a \c DynTypedNode.
+///
+/// It is constructed from a \c Matcher<T> object and redirects most calls to
+/// underlying matcher.
+/// It checks whether the \c DynTypedNode is convertible into the type of the
+/// underlying matcher and then do the actual match on the actual node, or
+/// return false if it is not convertible.
+class Matcher {
 public:
-  TraversalMatcherImpl(
-      llvm::IntrusiveRefCntPtr<MatcherInterface> InnerMatcher)
-      : InnerMatcher(std::move(InnerMatcher)) {}
+  Matcher(MatcherInterface *Implementation)
+      : Implementation(Implementation) {}
 
-  bool matches(Operation *op) override {
-    return this->InnerMatcher->matches(op);
+  /// Returns true if the matcher matches the given \c op.
+  bool matches(Operation *op) const {
+    return Implementation->matches(op);
   }
 
+  Matcher *clone() const { return new Matcher(*this); }
 private:
-  llvm::IntrusiveRefCntPtr<MatcherInterface> InnerMatcher;
+  llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
 };
 
 class SingleMatcherInterface : public MatcherInterface {
 public:
   /// \brief Returns true if 'op' can be matched.
   virtual bool matches( Operation *op) override = 0;
-
-  virtual MatcherImplementation clone() const override = 0;
 
 };
 //typedef llvm::IntrusiveRefCntPtr<SingleMatcherInterface> SingleMatcherImplementation;
@@ -54,9 +55,6 @@ public:
   bool matches( Operation *op) override {
     return Matcher.match(op);
   }
-
-  /// \brief Makes a copy of this matcher object.
-  MatcherImplementation clone() const override { return new SingleMatcher<T>(*this); }
 
   T Matcher;
 };

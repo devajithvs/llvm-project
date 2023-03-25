@@ -36,7 +36,7 @@ namespace matcher {
 ///
 /// Supported types:
 ///  - \c std::string
-///  - \c Any \c MatcherImplementation
+///  - \c Any \c Matcher
 class VariantValue {
 public:
   VariantValue() : Type(VT_Nothing) {}
@@ -47,7 +47,7 @@ public:
 
   /// \brief Specific constructors for each supported type.
   VariantValue(const std::string &String);
-  VariantValue(const MatcherImplementation &Implementation);
+  VariantValue(const Matcher &Matcher);
 
   /// \brief String value functions.
   bool isString() const;
@@ -56,10 +56,10 @@ public:
 
   /// \brief Matcher value functions.
   bool isMatcher() const;
-  const MatcherImplementation &getMatcher() const;
-  void setMatcher(const MatcherImplementation &Implementation);
+  const Matcher &getMatcher() const;
+  void setMatcher(const Matcher &Matcher);
   /// \brief Set the value to be \c Matcher by taking ownership of the object.
-  void takeMatcher(MatcherImplementation *Implementation);
+  void takeMatcher(Matcher *Matcher);
 
   /// \brief Specialized Matcher<T> is/get functions.
   template <class T>
@@ -82,7 +82,7 @@ private:
   /// \brief All supported value types.
   union AllValues {
     std::string *String;
-    MatcherImplementation *Implementation;
+    Matcher *Matcher;
   };
 
   ValueType Type;

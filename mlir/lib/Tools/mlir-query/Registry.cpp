@@ -69,7 +69,7 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 } // anonymous namespace
 
 // static
-MatcherImplementation *Registry::constructMatcher(StringRef MatcherName, ArrayRef<ParserValue> Args) {
+Matcher *Registry::constructMatcher(StringRef MatcherName, ArrayRef<ParserValue> Args) {
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
   if (it == RegistryData->constructors().end()) {

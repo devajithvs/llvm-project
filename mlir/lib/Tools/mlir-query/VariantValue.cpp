@@ -83,12 +83,12 @@ bool VariantValue::isMatcher() const {
   return Type == VT_Matcher;
 }
 
-const MatcherImplementation &VariantValue::getMatcher() const {
+const Matcher &VariantValue::getMatcher() const {
   assert(isMatcher());
   return *Value.Matcher;
 }
 
-void VariantValue::setMatcher(const MatcherImplementation &NewValue) {
+void VariantValue::setMatcher(const Matcher &NewValue) {
   reset();
   Type = VT_Matcher;
   Value.Matcher = NewValue
@@ -96,7 +96,7 @@ void VariantValue::setMatcher(const MatcherImplementation &NewValue) {
   //TODO
 }
 
-void VariantValue::takeMatcher(MatcherImplementation *NewValue) {
+void VariantValue::takeMatcher(Matcher *NewValue) {
   reset();
   Type = VT_Matcher;
   Value.Matcher = NewValue;

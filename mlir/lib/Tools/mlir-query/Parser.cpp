@@ -205,7 +205,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   }
 
   // Merge the start and end infos.
-  MatcherImplementation *Result =
+  Matcher *Result =
       S->actOnMatcherExpression(NameToken.Text, Args);
   if (Result == NULL) {
     return false;
@@ -249,7 +249,7 @@ Parser::Parser(CodeTokenizer *Tokenizer, Sema *S)
 class RegistrySema : public Parser::Sema {
 public:
   ~RegistrySema() override;
-  MatcherImplementation *actOnMatcherExpression(StringRef MatcherName, ArrayRef<ParserValue> Args) override {
+  Matcher *actOnMatcherExpression(StringRef MatcherName, ArrayRef<ParserValue> Args) override {
     return Registry::constructMatcher(MatcherName, Args);
   }
 };
@@ -264,12 +264,12 @@ bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value) {
   return Parser(&Tokenizer, S).parseExpressionImpl(Value);
 }
 
-MatcherImplementation *Parser::parseMatcherExpression(StringRef Code) {
+Matcher *Parser::parseMatcherExpression(StringRef Code) {
   RegistrySema S;
   return parseMatcherExpression(Code, &S);
 }
 
-MatcherImplementation *Parser::parseMatcherExpression(StringRef Code,
+Matcher *Parser::parseMatcherExpression(StringRef Code,
                                                 Parser::Sema *S) {
   VariantValue Value;
   if (!parseExpression(Code, S, &Value))
@@ -279,7 +279,7 @@ MatcherImplementation *Parser::parseMatcherExpression(StringRef Code,
   }
   // TODO: Why clone?
   //return Value.getMatcher();
-  return Value.getMatcher()->clone();
+  return Value.getMatcher().clone();
 }
 
 }  // namespace matcher

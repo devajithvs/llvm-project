@@ -42,7 +42,7 @@ public:
   //    found, or if the number of arguments or argument types do not
   ///   match the signature. In that case \c Error will contain the description
   ///   of the error.
-  static MatcherImplementation *constructMatcher(StringRef MatcherName, ArrayRef<ParserValue> Args);
+  static Matcher *constructMatcher(StringRef MatcherName, ArrayRef<ParserValue> Args);
 
 };
 

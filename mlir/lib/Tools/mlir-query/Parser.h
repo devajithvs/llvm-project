@@ -66,8 +66,8 @@ public:
     /// \return The matcher object constructed by the processor, or NULL
     ///   if an error occurred. In that case, \c Error will contain a
     ///   description of the error.
-    ///   The caller takes ownership of the MatcherImplementation object returned.
-    virtual MatcherImplementation *
+    ///   The caller takes ownership of the Matcher object returned.
+    virtual Matcher *
     actOnMatcherExpression(StringRef MatcherName, 
                            ArrayRef<ParserValue> Args) = 0;
   };
@@ -82,8 +82,8 @@ public:
   ///
   /// \return The matcher object constructed, or NULL if an error occurred.
   //    In that case, \c Error will contain a description of the error.
-  ///   The caller takes ownership of the MatcherImplementation object returned.
-  static MatcherImplementation *parseMatcherExpression(StringRef MatcherCode);
+  ///   The caller takes ownership of the Matcher object returned.
+  static Matcher *parseMatcherExpression(StringRef MatcherCode);
 
   /// \brief Parse a matcher expression.
   ///
@@ -94,8 +94,8 @@ public:
   /// \return The matcher object constructed by the processor, or NULL
   ///   if an error occurred. In that case, \c Error will contain a
   ///   description of the error.
-  ///   The caller takes ownership of the MatcherImplementation object returned.
-  static MatcherImplementation *parseMatcherExpression(StringRef MatcherCode, Sema *S);
+  ///   The caller takes ownership of the Matcher object returned.
+  static Matcher *parseMatcherExpression(StringRef MatcherCode, Sema *S);
 
   /// \brief Parse an expression, creating matchers from the registry.
   ///
