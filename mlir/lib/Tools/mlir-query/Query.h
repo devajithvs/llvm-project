@@ -15,8 +15,8 @@
 #include "llvm/ADT/Twine.h"
 #include <string>
 
-#include "mlir/IR/Matchers.h"
 #include "Parser.h"
+#include "mlir/IR/Matchers.h"
 
 namespace mlir {
 namespace query {
@@ -33,8 +33,6 @@ enum QueryKind {
 };
 
 class QuerySession;
-
-
 
 struct Query : llvm::RefCountedBase<Query> {
   Query(QueryKind Kind) : Kind(Kind) {}
@@ -80,8 +78,7 @@ struct HelpQuery : Query {
 
 /// Query for "match MATCHER".
 struct MatchQuery : Query {
-  MatchQuery(StringRef MatchExpr)
-      : Query(QK_Match), MatchExpr(MatchExpr) {}
+  MatchQuery(StringRef MatchExpr) : Query(QK_Match), MatchExpr(MatchExpr) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
   StringRef MatchExpr;

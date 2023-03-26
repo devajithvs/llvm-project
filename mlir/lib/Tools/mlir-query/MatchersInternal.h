@@ -12,9 +12,8 @@ public:
   virtual ~MatcherInterface() = default;
 
   /// \brief Returns true if 'op' can be matched.
-  virtual bool matches( Operation *op)  = 0;
+  virtual bool matches(Operation *op) = 0;
 };
-
 
 /// Matcher that works on a \c DynTypedNode.
 ///
@@ -25,15 +24,13 @@ public:
 /// return false if it is not convertible.
 class Matcher {
 public:
-  Matcher(MatcherInterface *Implementation)
-      : Implementation(Implementation) {}
+  Matcher(MatcherInterface *Implementation) : Implementation(Implementation) {}
 
   /// Returns true if the matcher matches the given \c op.
-  bool matches(Operation *op) const {
-    return Implementation->matches(op);
-  }
+  bool matches(Operation *op) const { return Implementation->matches(op); }
 
   Matcher *clone() const { return new Matcher(*this); }
+
 private:
   llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
 };
@@ -41,36 +38,33 @@ private:
 class SingleMatcherInterface : public MatcherInterface {
 public:
   /// \brief Returns true if 'op' can be matched.
-  virtual bool matches( Operation *op) override = 0;
-
+  virtual bool matches(Operation *op) override = 0;
 };
-//typedef llvm::IntrusiveRefCntPtr<SingleMatcherInterface> SingleMatcherImplementation;
+// typedef llvm::IntrusiveRefCntPtr<SingleMatcherInterface>
+// SingleMatcherImplementation;
 
 /// \brief Single matcher that takes the matcher as a template argument.
 template <typename T>
 class SingleMatcher : public SingleMatcherInterface {
 public:
-  SingleMatcher(T &matcher)
-      : Matcher(matcher) {}
-  bool matches( Operation *op) override {
-    return Matcher.match(op);
-  }
+  SingleMatcher(T &matcher) : Matcher(matcher) {}
+  bool matches(Operation *op) override { return Matcher.match(op); }
 
   T Matcher;
 };
 
-
 class MatchFinder {
 public:
-    std::vector<Operation *> getMatches(Operation *f, Matcher *matcher) {
-        std::vector<Operation *> matches;
-        f->walk([&matches, &matcher](Operation *op) {
-            if (matcher->matches(op)) {
-            matches.push_back(op);
-            }
-        });
-        return matches;
-    }
+  std::vector<Operation *> getMatches(Operation *f, Matcher *matcher) {
+    std::vector<Operation *> matches;
+    f->walk([&matches, &matcher](Operation *op) {
+      if (matcher->matches(op)) {
+        matches.push_back(op);
+      }
+    });
+    return matches;
+  }
+
 private:
 };
 

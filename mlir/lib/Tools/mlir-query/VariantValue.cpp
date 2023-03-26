@@ -33,7 +33,8 @@ VariantValue::VariantValue(const StringRef &String) : Type(VT_Nothing) {
 VariantValue::~VariantValue() { reset(); }
 
 VariantValue &VariantValue::operator=(const VariantValue &Other) {
-  if (this == &Other) return *this;
+  if (this == &Other)
+    return *this;
   reset();
   switch (Other.Type) {
   case VT_String:
@@ -64,9 +65,7 @@ void VariantValue::reset() {
   Type = VT_Nothing;
 }
 
-bool VariantValue::isString() const {
-  return Type == VT_String;
-}
+bool VariantValue::isString() const { return Type == VT_String; }
 
 const StringRef &VariantValue::getString() const {
   assert(isString());
@@ -79,9 +78,7 @@ void VariantValue::setString(const StringRef &NewValue) {
   Value.String = new StringRef(NewValue);
 }
 
-bool VariantValue::isMatcher() const {
-  return Type == VT_Matcher;
-}
+bool VariantValue::isMatcher() const { return Type == VT_Matcher; }
 
 const Matcher &VariantValue::getMatcher() const {
   assert(isMatcher());
@@ -93,7 +90,7 @@ void VariantValue::setMatcher(const Matcher &NewValue) {
   Type = VT_Matcher;
   Value.Matcher = NewValue.clone();
   //.clone();
-  //TODO
+  // TODO
 }
 
 void VariantValue::takeMatcher(Matcher *NewValue) {

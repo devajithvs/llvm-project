@@ -17,8 +17,8 @@
 #ifndef MLIR_QUERY_MATCHERS_DYNAMIC_VARIANT_VALUE
 #define MLIR_QUERY_MATCHERS_DYNAMIC_VARIANT_VALUE
 
-#include "mlir/IR/Matchers.h"
 #include "MatchersInternal.h"
+#include "mlir/IR/Matchers.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/type_traits.h"
 
@@ -73,11 +73,7 @@ private:
   void reset();
 
   /// \brief All supported value types.
-  enum ValueType {
-    VT_Nothing,
-    VT_String,
-    VT_Matcher
-  };
+  enum ValueType { VT_Nothing, VT_String, VT_Matcher };
 
   /// \brief All supported value types.
   union AllValues {
@@ -96,9 +92,8 @@ struct ParserValue {
   VariantValue Value;
 };
 
-
 } // end namespace matcher
 } // end namespace query
 } // end namespace mlir
 
-#endif  // MLIR_QUERY_MATCHERS_DYNAMIC_VARIANT_VALUE
+#endif // MLIR_QUERY_MATCHERS_DYNAMIC_VARIANT_VALUE

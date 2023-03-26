@@ -67,9 +67,8 @@ public:
     ///   if an error occurred. In that case, \c Error will contain a
     ///   description of the error.
     ///   The caller takes ownership of the Matcher object returned.
-    virtual Matcher *
-    actOnMatcherExpression(StringRef MatcherName, 
-                           ArrayRef<ParserValue> Args) = 0;
+    virtual Matcher *actOnMatcherExpression(StringRef MatcherName,
+                                            ArrayRef<ParserValue> Args) = 0;
   };
 
   /// \brief Parse a matcher expression, creating matchers from the registry.
@@ -124,8 +123,8 @@ private:
   Sema *const S;
 };
 
-}  // namespace matcher
-}  // namespace query
-}  // namespace mlir
+} // namespace matcher
+} // namespace query
+} // namespace mlir
 
-#endif  // MLIR_QUERY_MATCHERS_DYNAMIC_PARSER_H
+#endif // MLIR_QUERY_MATCHERS_DYNAMIC_PARSER_H

@@ -24,8 +24,8 @@
 #include <string>
 #include <vector>
 
-#include "mlir/IR/Matchers.h"
 #include "VariantValue.h"
+#include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
 
 namespace mlir {
@@ -37,23 +37,23 @@ namespace internal {
 /// \brief Helper template class to just from argument type to the right is/get
 ///   functions in VariantValue.
 /// Used to verify and extract the matcher arguments below.
-template <class T> struct ArgTypeTraits;
-template <class T> struct ArgTypeTraits<const T &> : public ArgTypeTraits<T> {
-};
+template <class T>
+struct ArgTypeTraits;
+template <class T>
+struct ArgTypeTraits<const T &> : public ArgTypeTraits<T> {};
 
-template <> struct ArgTypeTraits<StringRef> {
+template <>
+struct ArgTypeTraits<StringRef> {
   static bool is(const VariantValue &Value) { return Value.isString(); }
   static const StringRef &get(const VariantValue &Value) {
     return Value.getString();
   }
 };
 
-template <> struct ArgTypeTraits<Matcher > {
+template <>
+struct ArgTypeTraits<Matcher> {
   static bool is(const VariantValue &Value) { return Value.isMatcher(); }
-  static Matcher get(const VariantValue &Value) {
-    return Value.getMatcher();
-  }
-
+  static Matcher get(const VariantValue &Value) { return Value.getMatcher(); }
 };
 
 /// \brief Generic MatcherCreate interface.
@@ -63,7 +63,7 @@ template <> struct ArgTypeTraits<Matcher > {
 class MatcherCreateCallback {
 public:
   virtual ~MatcherCreateCallback() {}
-  virtual Matcher *run( ArrayRef<ParserValue> Args) const = 0;
+  virtual Matcher *run(ArrayRef<ParserValue> Args) const = 0;
 };
 
 /// \brief Simple callback implementation. Marshaller and function are provided.
@@ -78,7 +78,7 @@ public:
                                      StringRef MatcherName)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
-  Matcher *run( ArrayRef<ParserValue> Args) const override {
+  Matcher *run(ArrayRef<ParserValue> Args) const override {
     return Marshaller(Func, MatcherName, Args);
   }
 
@@ -90,9 +90,9 @@ private:
 
 /// \brief Helper function to do template argument deduction.
 template <typename MarshallerType, typename FuncType>
-MatcherCreateCallback *
-createMarshallerCallback(MarshallerType Marshaller, FuncType Func,
-                         StringRef MatcherName) {
+MatcherCreateCallback *createMarshallerCallback(MarshallerType Marshaller,
+                                                FuncType Func,
+                                                StringRef MatcherName) {
   return new FixedArgCountMatcherCreateCallback<MarshallerType, FuncType>(
       Marshaller, Func, MatcherName);
 }
@@ -102,29 +102,29 @@ createMarshallerCallback(MarshallerType Marshaller, FuncType Func,
 /// We need to remove the const& out of the function parameters to be able to
 /// find values on VariantValue.
 template <typename T>
-struct remove_const_ref :
-    public std::remove_const<typename std::remove_reference<T>::type> {
-};
+struct remove_const_ref
+    : public std::remove_const<typename std::remove_reference<T>::type> {};
 
 /// \brief 0-arg marshaller function.
 template <typename ReturnType>
-Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName, ArrayRef<ParserValue> Args) {
-  if (Args.size() != 0) {                                                  
-    return NULL;                                                               
+Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
+                          ArrayRef<ParserValue> Args) {
+  if (Args.size() != 0) {
+    return NULL;
   }
   ReturnType matcherFn = Func();
   MatcherInterface *singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
   return new Matcher(singleMatcher);
-  //return new Matcher(new SingleMatcher<mlir::detail::name_op_matcher>(m_Name("dialect.op1")));
-  //return Matcher(new SingleMatcher<ReturnType>(Func())).clone();
-  //return Func().clone();
+  // return new Matcher(new
+  // SingleMatcher<mlir::detail::name_op_matcher>(m_Name("dialect.op1")));
+  // return Matcher(new SingleMatcher<ReturnType>(Func())).clone();
+  // return Func().clone();
 }
 
 /// \brief 1-arg marshaller function.
 template <typename ReturnType, typename InArgType1>
-Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
-                                  StringRef MatcherName,
-                                  ArrayRef<ParserValue> Args) {
+Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
+                          ArrayRef<ParserValue> Args) {
   typedef typename remove_const_ref<InArgType1>::type ArgType1;
   if (Args.size() != 1) {
     return NULL;
@@ -132,13 +132,15 @@ Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
     return NULL;
   }
-  //return Matcher(new SingleMatcher<ReturnType>(Func(ArgTypeTraits<ArgType1>::get(Args[0].Value)))).clone();
+  // return Matcher(new
+  // SingleMatcher<ReturnType>(Func(ArgTypeTraits<ArgType1>::get(Args[0].Value)))).clone();
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value));
   MatcherInterface *singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
   return new Matcher(singleMatcher);
 
-  //return new Matcher(new SingleMatcher<mlir::detail::name_op_matcher>(m_Name("dialect.op1")));
-  // TODO
+  // return new Matcher(new
+  // SingleMatcher<mlir::detail::name_op_matcher>(m_Name("dialect.op1")));
+  //  TODO
   //.clone();
 }
 
@@ -163,9 +165,9 @@ MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                                   MatcherName);
 }
 
-}  // namespace internal
-}  // namespace matcher
-}  // namespace query
-}  // namespace mlir
+} // namespace internal
+} // namespace matcher
+} // namespace query
+} // namespace mlir
 
-#endif  // LLVM_CLANG_AST_MATCHERS_DYNAMIC_MARSHALLERS_H
+#endif // LLVM_CLANG_AST_MATCHERS_DYNAMIC_MARSHALLERS_H

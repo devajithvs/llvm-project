@@ -17,8 +17,8 @@
 #ifndef MLIR_QUERY_MATCHERS_DYNAMIC_REGISTRY_H
 #define MLIR_QUERY_MATCHERS_DYNAMIC_REGISTRY_H
 
-#include "VariantValue.h"
 #include "Marshallers.h"
+#include "VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -43,12 +43,12 @@ public:
   //    found, or if the number of arguments or argument types do not
   ///   match the signature. In that case \c Error will contain the description
   ///   of the error.
-  static Matcher *constructMatcher(StringRef MatcherName, ArrayRef<ParserValue> Args);
-
+  static Matcher *constructMatcher(StringRef MatcherName,
+                                   ArrayRef<ParserValue> Args);
 };
 
-}  // namespace matcher
-}  // namespace query
-}  // namespace mlir
+} // namespace matcher
+} // namespace query
+} // namespace mlir
 
-#endif  // MLIR_QUERY_MATCHERS_DYNAMIC_REGISTRY_H
+#endif // MLIR_QUERY_MATCHERS_DYNAMIC_REGISTRY_H
