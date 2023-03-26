@@ -21,6 +21,12 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/ManagedStatic.h"
 
+#include "llvm/Support/Debug.h"
+using llvm::dbgs;
+
+#define DEBUG_TYPE "mlir-query"
+
+#define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 namespace mlir {
 namespace query {
 namespace matcher {
@@ -69,12 +75,15 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 
 // static
 Matcher *Registry::constructMatcher(StringRef MatcherName, ArrayRef<ParserValue> Args) {
+  LLVM_DEBUG(DBGS() << "Running constructMatcher" << "\n");
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
   if (it == RegistryData->constructors().end()) {
     return NULL;
   }
 
+  LLVM_DEBUG(DBGS() << "Running constructMatcher" << "\n");
+  LLVM_DEBUG(DBGS() << it->second->run(Args) << "\n");
   return it->second->run(Args);
 }
 

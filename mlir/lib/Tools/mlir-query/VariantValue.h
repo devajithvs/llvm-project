@@ -35,7 +35,7 @@ namespace matcher {
 /// copy/assignment.
 ///
 /// Supported types:
-///  - \c std::string
+///  - \c StringRef
 ///  - \c Any \c Matcher
 class VariantValue {
 public:
@@ -46,13 +46,13 @@ public:
   VariantValue &operator=(const VariantValue &Other);
 
   /// \brief Specific constructors for each supported type.
-  VariantValue(const std::string &String);
+  VariantValue(const StringRef &String);
   VariantValue(const Matcher &Matcher);
 
   /// \brief String value functions.
   bool isString() const;
-  const std::string &getString() const;
-  void setString(const std::string &String);
+  const StringRef &getString() const;
+  void setString(const StringRef &String);
 
   /// \brief Matcher value functions.
   bool isMatcher() const;
@@ -81,7 +81,7 @@ private:
 
   /// \brief All supported value types.
   union AllValues {
-    std::string *String;
+    StringRef *String;
     Matcher *Matcher;
   };
 

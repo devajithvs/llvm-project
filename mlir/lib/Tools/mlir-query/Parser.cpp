@@ -19,6 +19,12 @@
 #include "Registry.h"
 #include "llvm/ADT/Twine.h"
 
+#include "llvm/Support/Debug.h"
+using llvm::dbgs;
+
+#define DEBUG_TYPE "mlir-query"
+
+#define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 namespace mlir {
 namespace query {
 namespace matcher {
@@ -69,11 +75,13 @@ private:
     consumeWhitespace();
     TokenInfo Result;
 
+      LLVM_DEBUG(DBGS() << "get Next token" << Code << "\n");
     if (Code.empty()) {
       Result.Kind = TokenInfo::TK_Eof;
       Result.Text = "";
       return Result;
     }
+      LLVM_DEBUG(DBGS() << "get Next token - not empty" << "\n");
 
     switch (Code[0]) {
     case ',':
@@ -82,6 +90,7 @@ private:
       Code = Code.drop_front();
       break;
     case '(':
+      LLVM_DEBUG(DBGS() << "openParen token" << "\n");
       Result.Kind = TokenInfo::TK_OpenParen;
       Result.Text = Code.substr(0, 1);
       Code = Code.drop_front();
@@ -99,10 +108,10 @@ private:
       break;
 
     default:
-      if (isalnum(Code[0])) {
+      if (isalnum(Code[0]) || Code[0] == '_') {
         // Parse an identifier
         size_t TokenLength = 1;
-        while (TokenLength < Code.size() && isalnum(Code[TokenLength]))
+        while (TokenLength < Code.size() && (isalnum(Code[TokenLength]) || Code[TokenLength] == '_'))
           ++TokenLength;
         Result.Kind = TokenInfo::TK_Ident;
         Result.Text = Code.substr(0, TokenLength);
@@ -137,7 +146,7 @@ private:
       if (Code[Length] == Marker) {
         Result->Kind = TokenInfo::TK_Literal;
         Result->Text = Code.substr(0, Length + 1);
-        Result->Value = Code.substr(1, Length - 1).str();
+        Result->Value = Code.substr(1, Length - 1);
         Code = Code.drop_front(Length + 1);
         return;
       }
@@ -167,14 +176,20 @@ Parser::Sema::~Sema() {}
 ///   If the input is malformed, or some argument has an error, it
 ///   returns \c false.
 bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
+
+    LLVM_DEBUG(DBGS() << "parseMatcherExpressionImpl" << "\n");
   const TokenInfo NameToken = Tokenizer->consumeNextToken();
   // TODO: Remove this assert
+    LLVM_DEBUG(DBGS() << "parseMatcherExpressionImpl after nameToken" << "\n");
   assert(NameToken.Kind == TokenInfo::TK_Ident);
   const TokenInfo OpenToken = Tokenizer->consumeNextToken();
+
+    LLVM_DEBUG(DBGS() << "parseMatcherExpressionImpl after openToken" << "\n");
   if (OpenToken.Kind != TokenInfo::TK_OpenParen) {
     return false;
   }
 
+    LLVM_DEBUG(DBGS() << "parseMatcherExpressionImpl extracting args" << "\n");
   std::vector<ParserValue> Args;
   TokenInfo EndToken;
   while (Tokenizer->nextTokenKind() != TokenInfo::TK_Eof) {
@@ -204,14 +219,20 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     return false;
   }
 
+
+    LLVM_DEBUG(DBGS() << "parseMatcherExpressionImpl after extracting args" << "\n");
+    LLVM_DEBUG(DBGS() << NameToken.Text << "parseMatcherExpressionImpl  args" << "\n");
   // Merge the start and end infos.
   Matcher *Result =
       S->actOnMatcherExpression(NameToken.Text, Args);
+
+  LLVM_DEBUG(DBGS() << NameToken.Text  << "After call  " << "\n");
   if (Result == NULL) {
     return false;
   }
 
   Value->takeMatcher(Result);
+  LLVM_DEBUG(DBGS() << NameToken.Text  << "takeMatcher call after  " << "\n");
   return true;
 }
 
@@ -219,16 +240,21 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
 bool Parser::parseExpressionImpl(VariantValue *Value) {
   switch (Tokenizer->nextTokenKind()) {
   case TokenInfo::TK_Literal:
+
+    LLVM_DEBUG(DBGS() << "Tokenizer TK_literal" << "\n");
     *Value = Tokenizer->consumeNextToken().Value;
     return true;
 
   case TokenInfo::TK_Ident:
+    LLVM_DEBUG(DBGS() << "Tokenizer TK_ident" << "\n");
     return parseMatcherExpressionImpl(Value);
 
   case TokenInfo::TK_Eof:
+    LLVM_DEBUG(DBGS() << "Tokenizer TK_EOF" << "\n");
     return false;
 
   case TokenInfo::TK_Error:
+    LLVM_DEBUG(DBGS() << "Tokenizer TK_ERROR" << "\n");
     // This error was already reported by the tokenizer.
     return false;
 
@@ -250,7 +276,9 @@ class RegistrySema : public Parser::Sema {
 public:
   virtual ~RegistrySema() {};
   Matcher *actOnMatcherExpression(StringRef MatcherName, ArrayRef<ParserValue> Args) override {
+    LLVM_DEBUG(DBGS() << "Acto on matching expr run8" << "\n");
     return Registry::constructMatcher(MatcherName, Args);
+
   }
 };
 
@@ -260,25 +288,34 @@ bool Parser::parseExpression(StringRef Code, VariantValue *Value) {
 }
 
 bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value) {
+  LLVM_DEBUG(DBGS() << "parseMatcherExpression code, S, Value" << "\n");
   CodeTokenizer Tokenizer(Code);
+  LLVM_DEBUG(DBGS() << "Tokenizer code, S, Value" << "\n");
   return Parser(&Tokenizer, S).parseExpressionImpl(Value);
 }
 
 Matcher *Parser::parseMatcherExpression(StringRef Code) {
   RegistrySema S;
+    LLVM_DEBUG(DBGS() << "parseMatcherExpression on matching expr run8" << "\n");
   return parseMatcherExpression(Code, &S);
 }
 
 Matcher *Parser::parseMatcherExpression(StringRef Code,
                                                 Parser::Sema *S) {
   VariantValue Value;
-  if (!parseExpression(Code, S, &Value))
+    LLVM_DEBUG(DBGS() << "parseMatcherExpression " << "\n");
+  if (!parseExpression(Code, S, &Value)){
+
     return NULL;
+  }
+    LLVM_DEBUG(DBGS() << "parseMatcherExpression before.isMatcher" << "\n");
   if (!Value.isMatcher()) {
     return NULL;
   }
   // TODO: Why clone?
   //return Value.getMatcher();
+    LLVM_DEBUG(DBGS() << "parseMatcherExpression before.getMatcher" << "\n");
+    LLVM_DEBUG(DBGS() << Value.getMatcher().clone() << "\n");
   return Value.getMatcher().clone();
 }
 

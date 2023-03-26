@@ -116,36 +116,26 @@ LLVM_DEBUG(DBGS() << "Running run4" << "\n");
     OS << "testing: note: 'root' binds here\n" << *op << "\n\n";
   }
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
-  return true;
 
-/*
- LLVM_DEBUG(DBGS() << "Running run4" << "\n");
-  if (MatchExpr.empty())
-    return false;
-  
-  // TODO: PARSING
-
- LLVM_DEBUG(DBGS() << "Running run5" << "\n");
- LLVM_DEBUG(DBGS() << "Running run5" << MatchExpr << "\n");
-  std::vector<Operation *>  matches;
-  Operation *rootOp = QS.Op;
-
-  unsigned MatchCount = 0;
+  MatchCount = 0;
   LLVM_DEBUG(DBGS() << "Running run7" << "\n");
-  matcher::Matcher *matcher = matcher::Parser::parseMatcherExpression(MatchExpr)->clone();
-  std::vector<Operation *> Matches = getMatches(rootOp, matcher);
+  matcher::Matcher *matcher = matcher::Parser::parseMatcherExpression(MatchExpr);
+  if (!matcher) {
+    return false;
+  }
   LLVM_DEBUG(DBGS() << "Running run8" << "\n");
+  matches = getMatches(rootOp, matcher);
+  LLVM_DEBUG(DBGS() << "Running run9" << "\n");
 
-  for (auto op : Matches) {
+  for (auto op : matches) {
     OS << "\nMatch #" << ++MatchCount << ":\n\n";
     // TODO: Get source location and filename
     OS << "testing: note: 'root' binds here\n" << *op << "\n\n";
-    LLVM_DEBUG(DBGS() << "Running run9" << "\n");
+    LLVM_DEBUG(DBGS() << "Running run10" << "\n");
   }
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
-  LLVM_DEBUG(DBGS() << "Running run10" << "\n");
+  LLVM_DEBUG(DBGS() << "Running run11" << "\n");
   return true;
-  */
 
 }
 

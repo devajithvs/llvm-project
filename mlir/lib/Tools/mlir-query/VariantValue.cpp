@@ -26,7 +26,7 @@ VariantValue::VariantValue(const Matcher &Matcher) : Type(VT_Nothing) {
   setMatcher(Matcher);
 }
 
-VariantValue::VariantValue(const std::string &String) : Type(VT_Nothing) {
+VariantValue::VariantValue(const StringRef &String) : Type(VT_Nothing) {
   setString(String);
 }
 
@@ -68,15 +68,15 @@ bool VariantValue::isString() const {
   return Type == VT_String;
 }
 
-const std::string &VariantValue::getString() const {
+const StringRef &VariantValue::getString() const {
   assert(isString());
   return *Value.String;
 }
 
-void VariantValue::setString(const std::string &NewValue) {
+void VariantValue::setString(const StringRef &NewValue) {
   reset();
   Type = VT_String;
-  Value.String = new std::string(NewValue);
+  Value.String = new StringRef(NewValue);
 }
 
 bool VariantValue::isMatcher() const {
