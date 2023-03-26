@@ -115,7 +115,7 @@ Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName, ArrayRef<
   if (Args.size() != 0) {                                                  
     return NULL;                                                               
   }
-  return Func();
+  return Matcher(Func());
   //return Func().clone();
 }
 
@@ -131,7 +131,7 @@ Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
     return NULL;
   }
-  return Func(ArgTypeTraits<ArgType1>::get(Args[0].Value))
+  return Matcher(Func(ArgTypeTraits<ArgType1>::get(Args[0].Value)));
   // TODO
   //.clone();
 }

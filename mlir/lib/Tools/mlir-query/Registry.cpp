@@ -53,7 +53,7 @@ RegistryMaps::RegistryMaps() {
   // which are the simplest to add to the system. Overloaded matchers require
   // more supporting code that was omitted from the first revision for
   // simplicitly of code review.
-  registerMatcher("m_OpName", internal::makeMatcherAutoMarshall(m_OpName(), "m_OpName"));
+  registerMatcher("m_Name", internal::makeMatcherAutoMarshall(m_Name, "m_Name"));
 }
 
 RegistryMaps::~RegistryMaps() {

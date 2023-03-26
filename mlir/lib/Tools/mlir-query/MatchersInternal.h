@@ -62,17 +62,16 @@ public:
 
 class MatchFinder {
 public:
-    std::vector<Operation *> getMatches(Operation *f, const MatcherImplementation &Implementation) {
+    std::vector<Operation *> getMatches(Operation *f, Matcher *matcher) {
         std::vector<Operation *> matches;
-        f->walk([&matches, &Implementation](Operation *op) {
-            if (Implementation->matches(op)) {
+        f->walk([&matches, &matcher](Operation *op) {
+            if (matcher->matches(op)) {
             matches.push_back(op);
             }
         });
         return matches;
     }
 private:
-  llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
 };
 
 } // namespace matcher
