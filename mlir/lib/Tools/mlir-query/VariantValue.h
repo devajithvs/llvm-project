@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-///
-/// Polymorphic value type.
-///
-/// Supports all the types required for dynamic Matcher construction.
-///  Used by the registry to construct matchers in a generic way.
-///
+//
+// Polymorphic value type.
+//
+// Supports all the types required for dynamic Matcher construction.
+// Used by the registry to construct matchers in a generic way.
+//
 //===----------------------------------------------------------------------===//
 
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_VARIANTVALUE_H

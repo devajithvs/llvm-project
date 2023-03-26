@@ -86,9 +86,8 @@ const Matcher &VariantValue::getMatcher() const {
 void VariantValue::setMatcher(const Matcher &NewValue) {
   reset();
   Type = VT_Matcher;
+  // FIXME
   Value.Matcher = NewValue.clone();
-  //.clone();
-  // TODO
 }
 
 void VariantValue::takeMatcher(Matcher *NewValue) {

@@ -45,7 +45,6 @@ StringRef QueryParser::lexWord() {
   if (Line.front() == '#') {
     Word = Line.substr(0, 1);
   } else {
-    // Word = Line.take_until(isSpace);
     Word = Line.take_until([](char c) {
       // Don't trim newlines.
       return StringRef(" \t\v\f\r").contains(c);

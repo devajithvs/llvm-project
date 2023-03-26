@@ -9,7 +9,7 @@
 //  Implements the base layer of the matcher framework.
 //
 //  Matchers are methods that return a Matcher which provides a method
-//  matches(Operation *op) 
+//  matches(Operation *op)
 //
 //  In general, matchers have two parts:
 //  1. A function Matcher MatcherName(<arguments>) which returns a Matcher

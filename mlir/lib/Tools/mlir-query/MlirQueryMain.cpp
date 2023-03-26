@@ -12,17 +12,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Support/LogicalResult.h"
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
-#include "llvm/Support/InitLLVM.h"
-#include "llvm/LineEditor/LineEditor.h"
-#include "llvm/Support/CommandLine.h"
-#include "mlir/Support/FileUtilities.h"
-#include "llvm/Support/SourceMgr.h"
-#include "mlir/Tools/ParseUtilities.h"
 #include "Query.h"
 #include "QueryParser.h"
 #include "QuerySession.h"
+#include "mlir/Support/FileUtilities.h"
+#include "mlir/Support/LogicalResult.h"
+#include "mlir/Tools/ParseUtilities.h"
+#include "llvm/LineEditor/LineEditor.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/SourceMgr.h"
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;

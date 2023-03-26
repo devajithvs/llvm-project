@@ -50,13 +50,17 @@ void RegistryMaps::registerMatcher(StringRef MatcherName,
 
 /// \brief Generate a registry map with all the known matchers.
 RegistryMaps::RegistryMaps() {
-  // TODO: This list is not complete. It only has non-overloaded matchers,
-  // which are the simplest to add to the system. Overloaded matchers require
+
+  // TODO: This list is not complete. It only has non-templated matchers,
+  // which are the simplest to add to the system. Templated matchers require
   // more supporting code that was omitted from the first revision for
   // simplicitly of code review.
+
   // FIXME: m_Constant will not work due to templated m_Constant function
-  // registerMatcher("m_Constant", internal::makeMatcherAutoMarshall(m_Constant,
-  // "m_Constant"));
+  // registerMatcher("m_Constant",
+  //                  internal::makeMatcherAutoMarshall(m_Constant,
+  //                  "m_Constant"));
+
   registerMatcher("m_AttrName",
                   internal::makeMatcherAutoMarshall(m_AttrName, "m_AttrName"));
   registerMatcher("m_Name",
@@ -101,17 +105,12 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 // static
 Matcher *Registry::constructMatcher(StringRef MatcherName,
                                     ArrayRef<ParserValue> Args) {
-  LLVM_DEBUG(DBGS() << "Running constructMatcher"
-                    << "\n");
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
   if (it == RegistryData->constructors().end()) {
     return NULL;
   }
 
-  LLVM_DEBUG(DBGS() << "Running constructMatcher"
-                    << "\n");
-  LLVM_DEBUG(DBGS() << it->second->run(Args) << "\n");
   return it->second->run(Args);
 }
 
