@@ -73,6 +73,52 @@ std::vector<Operation *> getMatches(Operation *rootOp, matcher::Matcher *matcher
 }
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
+LLVM_DEBUG(DBGS() << "Running run4" << "\n");
+  MatcherKind MKind = M_OpName;
+  if (MatchExpr.empty())
+    return false;
+  
+  // TODO: PARSING
+
+ LLVM_DEBUG(DBGS() << "Running run5" << "\n");
+ LLVM_DEBUG(DBGS() << "Running run5" << MatchExpr << "\n");
+  std::vector<Operation *>  matches;
+  Operation *rootOp = QS.Op;
+
+  switch (MKind) {
+  case M_OpName: {
+    // TODO: implement parser
+    auto matcherFn = m_Name(MatchExpr);
+    auto matcher = new matcher::Matcher(new matcher::SingleMatcher(matcherFn));
+    matches = getMatches(rootOp, matcher);
+    break;
+  }
+  case M_OpAttr: {
+    auto matcherFn = mlir::detail::attr_op_matcher(MatchExpr);
+    auto matcher = new matcher::Matcher(new matcher::SingleMatcher(matcherFn));
+    matches = getMatches(rootOp, matcher);
+    break;
+  }
+  case M_OpConst: {
+    auto matcherFn = m_Constant();
+    auto matcher = new matcher::Matcher(new matcher::SingleMatcher(matcherFn));
+    matches = getMatches(rootOp, matcher);
+    break;
+  }
+  }
+ 
+
+ LLVM_DEBUG(DBGS() << "Running run6" << "\n");
+  unsigned MatchCount = 0;
+  for (auto op : matches) {
+    OS << "\nMatch #" << ++MatchCount << ":\n\n";
+    // TODO: Get source location and filename
+    OS << "testing: note: 'root' binds here\n" << *op << "\n\n";
+  }
+  OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
+  return true;
+
+/*
  LLVM_DEBUG(DBGS() << "Running run4" << "\n");
   if (MatchExpr.empty())
     return false;
@@ -99,6 +145,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   LLVM_DEBUG(DBGS() << "Running run10" << "\n");
   return true;
+  */
 
 }
 

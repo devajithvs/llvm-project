@@ -91,7 +91,7 @@ const Matcher &VariantValue::getMatcher() const {
 void VariantValue::setMatcher(const Matcher &NewValue) {
   reset();
   Type = VT_Matcher;
-  Value.Matcher = NewValue;
+  Value.Matcher = NewValue.clone();
   //.clone();
   //TODO
 }

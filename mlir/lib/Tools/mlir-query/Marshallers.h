@@ -25,9 +25,7 @@
 #include <vector>
 
 #include "mlir/IR/Matchers.h"
-#include "MatchersInternal.h"
 #include "VariantValue.h"
-#include "clang/Basic/LLVM.h"
 #include "llvm/Support/type_traits.h"
 
 namespace mlir {
@@ -43,14 +41,14 @@ template <class T> struct ArgTypeTraits;
 template <class T> struct ArgTypeTraits<const T &> : public ArgTypeTraits<T> {
 };
 
-template <> struct ArgTypeTraits<std::string> {
+template <> struct ArgTypeTraits<StringRef> {
   static bool is(const VariantValue &Value) { return Value.isString(); }
-  static const std::string &get(const VariantValue &Value) {
+  static const StringRef &get(const VariantValue &Value) {
     return Value.getString();
   }
 };
 
-template <class T> struct ArgTypeTraits<Matcher > {
+template <> struct ArgTypeTraits<Matcher > {
   static bool is(const VariantValue &Value) { return Value.isMatcher(); }
   static Matcher get(const VariantValue &Value) {
     return Value.getMatcher();
@@ -78,16 +76,16 @@ class FixedArgCountMatcherCreateCallback : public MatcherCreateCallback {
 public:
   FixedArgCountMatcherCreateCallback(MarshallerType Marshaller, FuncType Func,
                                      StringRef MatcherName)
-      : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName.str()) {}
+      : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
-  Matcher *run( ArrayRef<ParserValue> Args) const {
+  Matcher *run( ArrayRef<ParserValue> Args) const override {
     return Marshaller(Func, MatcherName, Args);
   }
 
 private:
   const MarshallerType Marshaller;
   const FuncType Func;
-  const std::string MatcherName;
+  const StringRef MatcherName;
 };
 
 /// \brief Helper function to do template argument deduction.
@@ -105,17 +103,16 @@ createMarshallerCallback(MarshallerType Marshaller, FuncType Func,
 /// find values on VariantValue.
 template <typename T>
 struct remove_const_ref :
-    public llvm::remove_const<typename llvm::remove_reference<T>::type> {
+    public std::remove_const<typename std::remove_reference<T>::type> {
 };
 
 /// \brief 0-arg marshaller function.
 template <typename ReturnType>
 Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName, ArrayRef<ParserValue> Args) {
-  CHECK_ARG_COUNT(0);
   if (Args.size() != 0) {                                                  
     return NULL;                                                               
   }
-  return Matcher(Func());
+  return Matcher(new SingleMatcher<ReturnType>(Func())).clone();
   //return Func().clone();
 }
 
@@ -131,7 +128,7 @@ Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
     return NULL;
   }
-  return Matcher(Func(ArgTypeTraits<ArgType1>::get(Args[0].Value)));
+  return Matcher(new SingleMatcher<ReturnType>(Func(ArgTypeTraits<ArgType1>::get(Args[0].Value)))).clone();
   // TODO
   //.clone();
 }

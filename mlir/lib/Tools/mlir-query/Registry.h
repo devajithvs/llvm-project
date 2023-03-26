@@ -18,6 +18,7 @@
 #define MLIR_QUERY_MATCHERS_DYNAMIC_REGISTRY_H
 
 #include "VariantValue.h"
+#include "Marshallers.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 
