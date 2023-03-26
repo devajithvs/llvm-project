@@ -1,4 +1,4 @@
-//===- MlirQueryMain.h - MLIR Query main -----*- C++ -*-===//
+//===- MlirQueryMain.h - MLIR Query main ------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -12,17 +12,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/Support/LogicalResult.h"
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
+#include "llvm/Support/InitLLVM.h"
+#include "llvm/LineEditor/LineEditor.h"
+#include "llvm/Support/CommandLine.h"
+#include "mlir/Support/FileUtilities.h"
+#include "llvm/Support/SourceMgr.h"
+#include "mlir/Tools/ParseUtilities.h"
 #include "Query.h"
 #include "QueryParser.h"
 #include "QuerySession.h"
-#include "mlir/Support/FileUtilities.h"
-#include "mlir/Support/LogicalResult.h"
-#include "mlir/Tools/ParseUtilities.h"
-#include "llvm/LineEditor/LineEditor.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/InitLLVM.h"
-#include "llvm/Support/SourceMgr.h"
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
@@ -96,9 +96,6 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context) {
       loadModule(context, inputFilename, !noImplicitModule);
   if (!opRef)
     return failure();
-
-  LLVM_DEBUG(DBGS() << opRef.get()->getName().getStringRef() << "\n");
-  LLVM_DEBUG(DBGS() << opRef.get()->getName().getStringRef() << "\n");
 
   QuerySession QS(opRef.get());
   LineEditor LE("mlir-query");

@@ -8,20 +8,17 @@
 //
 //  Implements the base layer of the matcher framework.
 //
-//  Matchers are methods that return a Matcher<T> which provides a method
-//  Matches(...) which is a predicate on an AST node. The Matches method's
-//  parameters define the context of the match, which allows matchers to recurse
-//  or store the current node as bound to a specific string, so that it can be
-//  retrieved later.
+//  Matchers are methods that return a Matcher which provides a method
+//  matches(Operation *op) 
 //
 //  In general, matchers have two parts:
 //  1. A function Matcher MatcherName(<arguments>) which returns a Matcher
-//     based on the arguments and optionally on template type deduction based
-//     on the arguments.
-//  2. An implementation of a class derived from MatcherInterface<T>.
+//     based on the arguments.
+//  2. An implementation of a class derived from MatcherInterface.
 //
 //  The matcher functions are defined in include/mlir/IR/Matchers.h.
-//  This file contains the base classes needed to construct the actual matchers.
+//  This file contains the wrapper classes needed to construct matchers for
+//  mlir-query.
 //
 //===----------------------------------------------------------------------===//
 
@@ -45,13 +42,8 @@ public:
   virtual bool matches(Operation *op) = 0;
 };
 
-/// Matcher that works on a \c DynTypedNode.
-///
-/// It is constructed from a \c Matcher<T> object and redirects most calls to
-/// underlying matcher.
-/// It checks whether the \c DynTypedNode is convertible into the type of the
-/// underlying matcher and then do the actual match on the actual node, or
-/// return false if it is not convertible.
+/// It is constructed from a \c MatcherImplementation and redirects calls to
+/// underlying implementation.
 class Matcher {
 public:
   Matcher(MatcherInterface *Implementation) : Implementation(Implementation) {}
@@ -65,17 +57,9 @@ private:
   llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
 };
 
-class SingleMatcherInterface : public MatcherInterface {
-public:
-  /// \brief Returns true if 'op' can be matched.
-  virtual bool matches(Operation *op) override = 0;
-};
-// typedef llvm::IntrusiveRefCntPtr<SingleMatcherInterface>
-// SingleMatcherImplementation;
-
 /// \brief Single matcher that takes the matcher as a template argument.
 template <typename T>
-class SingleMatcher : public SingleMatcherInterface {
+class SingleMatcher : public MatcherInterface {
 public:
   SingleMatcher(T &matcher) : Matcher(matcher) {}
   bool matches(Operation *op) override { return Matcher.match(op); }
@@ -94,8 +78,6 @@ public:
     });
     return matches;
   }
-
-private:
 };
 
 } // namespace matcher

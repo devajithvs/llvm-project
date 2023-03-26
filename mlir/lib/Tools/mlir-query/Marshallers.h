@@ -113,10 +113,6 @@ Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
   ReturnType matcherFn = Func();
   MatcherInterface *singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
   return new Matcher(singleMatcher);
-  // return new Matcher(new
-  // SingleMatcher<mlir::detail::name_op_matcher>(m_Name("dialect.op1")));
-  // return Matcher(new SingleMatcher<ReturnType>(Func())).clone();
-  // return Func().clone();
 }
 
 /// \brief 1-arg marshaller function.
@@ -130,16 +126,9 @@ Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
     return NULL;
   }
-  // return Matcher(new
-  // SingleMatcher<ReturnType>(Func(ArgTypeTraits<ArgType1>::get(Args[0].Value)))).clone();
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value));
   MatcherInterface *singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
   return new Matcher(singleMatcher);
-
-  // return new Matcher(new
-  // SingleMatcher<mlir::detail::name_op_matcher>(m_Name("dialect.op1")));
-  //  TODO
-  //.clone();
 }
 
 /// \brief TODO Variadic marshaller function.
