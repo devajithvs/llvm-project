@@ -1,9 +1,8 @@
-//===---- QueryParser.cpp - clang-query command parser --------------------===//
+//===---- QueryParser.cpp - mlir-query command parser --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,16 +13,14 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
 
-using namespace llvm;
-using namespace mlir;
-
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
-// using mlir::detail::MatcherKind;
 
 #define DEBUG_TYPE "mlir-query"
-
 #define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
+
+using namespace llvm;
+using namespace mlir;
 
 namespace mlir {
 namespace query {

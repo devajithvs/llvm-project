@@ -1,15 +1,13 @@
 //===---- Query.cpp - mlir-query query -----------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "Query.h"
 #include "QuerySession.h"
-
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/FunctionInterfaces.h"
@@ -19,11 +17,8 @@
 using llvm::dbgs;
 
 #define DEBUG_TYPE "mlir-query"
-
 #define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 
-// using namespace clang::ast_matchers;
-// using namespace clang::ast_matchers::dynamic;
 using namespace mlir;
 
 namespace mlir {

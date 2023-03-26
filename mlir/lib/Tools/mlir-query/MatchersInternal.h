@@ -1,3 +1,33 @@
+//===- MatchersInternal.h - Structural query framework ----------*- C++ -*-===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+//
+//  Implements the base layer of the matcher framework.
+//
+//  Matchers are methods that return a Matcher<T> which provides a method
+//  Matches(...) which is a predicate on an AST node. The Matches method's
+//  parameters define the context of the match, which allows matchers to recurse
+//  or store the current node as bound to a specific string, so that it can be
+//  retrieved later.
+//
+//  In general, matchers have two parts:
+//  1. A function Matcher MatcherName(<arguments>) which returns a Matcher
+//     based on the arguments and optionally on template type deduction based
+//     on the arguments.
+//  2. An implementation of a class derived from MatcherInterface<T>.
+//
+//  The matcher functions are defined in include/mlir/IR/Matchers.h.
+//  This file contains the base classes needed to construct the actual matchers.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MATCHERSINTERNAL_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERS_MATCHERSINTERNAL_H
+
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 
@@ -71,3 +101,5 @@ private:
 } // namespace matcher
 } // namespace query
 } // namespace mlir
+
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_MATCHERSINTERNAL_H

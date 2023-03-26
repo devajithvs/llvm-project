@@ -1,34 +1,30 @@
-//===--- Parser.h - Matcher expression parser -----*- C++ -*-===//
+//===--- Parser.h - Matcher expression parser -------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-///
-/// \file
-/// \brief Simple matcher expression parser.
-///
-/// The parser understands matcher expressions of the form:
-///   MatcherName(Arg0, Arg1, ..., ArgN)
-/// as well as simple types like strings.
-/// The parser does not know how to process the matchers. It delegates this task
-/// to a Sema object received as an argument.
-///
-/// \code
-/// Grammar for the expressions supported:
-/// <Expression>        := <StringLiteral> | <MatcherExpression>
-/// <StringLiteral>     := "quoted string"
-/// <MatcherExpression> := <MatcherName>(<ArgumentList>)
-/// <MatcherName>       := [a-zA-Z]+
-/// <ArgumentList>      := <Expression> | <Expression>,<ArgumentList>
-/// \endcode
-///
+//
+// Simple matcher expression parser.
+//
+// The parser understands matcher expressions of the form:
+//   MatcherName(Arg0, Arg1, ..., ArgN)
+// as well as simple types like strings.
+// The parser does not know how to process the matchers. It delegates this task
+// to a Sema object received as an argument.
+//
+// Grammar for the expressions supported:
+// <Expression>        := <StringLiteral> | <MatcherExpression>
+// <StringLiteral>     := "quoted string"
+// <MatcherExpression> := <MatcherName>(<ArgumentList>)
+// <MatcherName>       := [a-zA-Z]+
+// <ArgumentList>      := <Expression> | <Expression>,<ArgumentList>
+//
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_QUERY_MATCHERS_DYNAMIC_PARSER_H
-#define MLIR_QUERY_MATCHERS_DYNAMIC_PARSER_H
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_PARSER_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERS_PARSER_H
 
 #include "VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -127,4 +123,4 @@ private:
 } // namespace query
 } // namespace mlir
 
-#endif // MLIR_QUERY_MATCHERS_DYNAMIC_PARSER_H
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_PARSER_H

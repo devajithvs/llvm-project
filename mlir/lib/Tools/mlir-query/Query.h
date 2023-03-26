@@ -1,22 +1,20 @@
 //===--- Query.h - mlir-query ----------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERY_H
 #define MLIR_TOOLS_MLIRQUERY_QUERY_H
 
+#include "Parser.h"
+#include "mlir/IR/Matchers.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/Twine.h"
 #include <string>
-
-#include "Parser.h"
-#include "mlir/IR/Matchers.h"
 
 namespace mlir {
 namespace query {

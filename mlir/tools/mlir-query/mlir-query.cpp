@@ -26,6 +26,7 @@ void registerTestDialect(DialectRegistry &);
 } // namespace test
 
 int main(int argc, char **argv) {
+  // FIXME: Is this needed?
   // registerAllPasses();
 
   DialectRegistry registry;

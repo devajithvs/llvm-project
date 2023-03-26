@@ -1,21 +1,20 @@
 //===--- VariantValue.h - Polymorphic value type -*- C++ -*-===/
-//                     The LLVM Compiler Infrastructure
 //
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file
-/// \brief Polymorphic value type.
+/// Polymorphic value type.
 ///
 /// Supports all the types required for dynamic Matcher construction.
 ///  Used by the registry to construct matchers in a generic way.
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_QUERY_MATCHERS_DYNAMIC_VARIANT_VALUE
-#define MLIR_QUERY_MATCHERS_DYNAMIC_VARIANT_VALUE
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_VARIANTVALUE_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERS_VARIANTVALUE_H
 
 #include "MatchersInternal.h"
 #include "mlir/IR/Matchers.h"
@@ -96,4 +95,4 @@ struct ParserValue {
 } // end namespace query
 } // end namespace mlir
 
-#endif // MLIR_QUERY_MATCHERS_DYNAMIC_VARIANT_VALUE
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_VARIANTVALUE_H

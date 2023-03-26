@@ -1,30 +1,27 @@
 //===--- Parser.cpp - Matcher expression parser -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-///
-/// \file
-/// \brief Recursive parser implementation for the matcher expression grammar.
-///
+//
+// Recursive parser implementation for the matcher expression grammar.
+//
 //===----------------------------------------------------------------------===//
-
-#include <string>
-#include <vector>
 
 #include "Parser.h"
 #include "Registry.h"
 #include "llvm/ADT/Twine.h"
+#include <string>
+#include <vector>
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
 
 #define DEBUG_TYPE "mlir-query"
-
 #define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
+
 namespace mlir {
 namespace query {
 namespace matcher {

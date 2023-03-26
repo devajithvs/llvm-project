@@ -1,24 +1,22 @@
-//===--- Marshallers.h - Generic matcher function marshallers -*- C++ -*-===//
+//===--- Marshallers.h - Generic matcher function marshallers -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-///
-/// \file
-/// \brief Functions templates and classes to wrap matcher construct functions.
-///
-/// A collection of template function and classes that provide a generic
-/// marshalling layer on top of matcher construct functions.
-/// These are used by the registry to export all marshaller constructors with
-/// the same generic interface.
-///
+//
+// Functions templates and classes to wrap matcher construct functions.
+//
+// A collection of template function and classes that provide a generic
+// marshalling layer on top of matcher construct functions.
+// These are used by the registry to export all marshaller constructors with
+// the same generic interface. This mechanism is inspired by clang-query.
+//
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_AST_MATCHERS_DYNAMIC_MARSHALLERS_H
-#define LLVM_CLANG_AST_MATCHERS_DYNAMIC_MARSHALLERS_H
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 
 #include <list>
 #include <string>
@@ -170,4 +168,4 @@ MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
 } // namespace query
 } // namespace mlir
 
-#endif // LLVM_CLANG_AST_MATCHERS_DYNAMIC_MARSHALLERS_H
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
