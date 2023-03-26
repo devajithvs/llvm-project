@@ -14,7 +14,6 @@
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
-#include "mlir/InitAllPasses.h"
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
 
 using namespace mlir;
@@ -26,8 +25,6 @@ void registerTestDialect(DialectRegistry &);
 } // namespace test
 
 int main(int argc, char **argv) {
-  // FIXME: Is this needed?
-  // registerAllPasses();
 
   DialectRegistry registry;
   registerAllDialects(registry);

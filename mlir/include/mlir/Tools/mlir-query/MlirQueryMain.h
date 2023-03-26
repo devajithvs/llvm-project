@@ -15,7 +15,6 @@
 #define MLIR_TOOLS_MLIRQUERY_MLIRQUERYMAIN_H
 
 #include "mlir/Support/LogicalResult.h"
-#include "llvm/ADT/StringRef.h"
 
 namespace mlir {
 
