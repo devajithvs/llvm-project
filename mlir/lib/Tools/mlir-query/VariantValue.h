@@ -96,6 +96,7 @@ struct ParserValue {
   VariantValue Value;
 };
 
+
 } // end namespace matcher
 } // end namespace query
 } // end namespace mlir
