@@ -112,7 +112,11 @@ Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName, ArrayRef<
   if (Args.size() != 0) {                                                  
     return NULL;                                                               
   }
-  return Matcher(new SingleMatcher<ReturnType>(Func())).clone();
+  auto matcherFn = Func();
+  auto singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
+  return new Matcher(singleMatcher);
+  //return new Matcher(new SingleMatcher<mlir::detail::name_op_matcher>(m_Name("dialect.op1")));
+  //return Matcher(new SingleMatcher<ReturnType>(Func())).clone();
   //return Func().clone();
 }
 
@@ -128,7 +132,12 @@ Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
     return NULL;
   }
-  return Matcher(new SingleMatcher<ReturnType>(Func(ArgTypeTraits<ArgType1>::get(Args[0].Value)))).clone();
+  //return Matcher(new SingleMatcher<ReturnType>(Func(ArgTypeTraits<ArgType1>::get(Args[0].Value)))).clone();
+  auto matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value));
+  auto singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
+  return new Matcher(singleMatcher);
+
+  //return new Matcher(new SingleMatcher<mlir::detail::name_op_matcher>(m_Name("dialect.op1")));
   // TODO
   //.clone();
 }

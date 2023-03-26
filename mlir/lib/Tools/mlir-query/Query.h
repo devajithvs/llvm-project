@@ -16,8 +16,7 @@
 #include <string>
 
 #include "mlir/IR/Matchers.h"
-#include "MatchersInternal.h"
-//#include "Parser.h"
+#include "Parser.h"
 
 namespace mlir {
 namespace query {
