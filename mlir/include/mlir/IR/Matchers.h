@@ -264,6 +264,11 @@ inline detail::constant_op_matcher m_Constant() {
   return detail::constant_op_matcher();
 }
 
+/// Matches a named attribute operation.
+inline detail::attr_op_matcher m_AttrName(StringRef attrN) {
+  return detail::attr_op_matcher(attrN);
+}
+
 /// Matches a named operation.
 inline detail::name_op_matcher m_Name(StringRef opN) {
   return detail::name_op_matcher(opN);

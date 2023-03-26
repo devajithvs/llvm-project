@@ -58,7 +58,22 @@ RegistryMaps::RegistryMaps() {
   // which are the simplest to add to the system. Overloaded matchers require
   // more supporting code that was omitted from the first revision for
   // simplicitly of code review.
+  // FIXME: m_Constant will not work due to templated m_Constant function
+  // registerMatcher("m_Constant", internal::makeMatcherAutoMarshall(m_Constant, "m_Constant"));
+  registerMatcher("m_AttrName", internal::makeMatcherAutoMarshall(m_AttrName, "m_AttrName"));
   registerMatcher("m_Name", internal::makeMatcherAutoMarshall(m_Name, "m_Name"));
+  registerMatcher("m_AnyZeroFloat", internal::makeMatcherAutoMarshall(m_AnyZeroFloat, "m_AnyZeroFloat"));
+  registerMatcher("m_PosZeroFloat", internal::makeMatcherAutoMarshall(m_PosZeroFloat, "m_PosZeroFloat"));
+  registerMatcher("m_NegZeroFloat", internal::makeMatcherAutoMarshall(m_NegZeroFloat, "m_NegZeroFloat"));
+  registerMatcher("m_OneFloat", internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_PosInfFloat", internal::makeMatcherAutoMarshall(m_PosInfFloat, "m_PosInfFloat"));
+  registerMatcher("m_NegInfFloat", internal::makeMatcherAutoMarshall(m_NegInfFloat, "m_NegInfFloat"));
+  registerMatcher("m_Zero", internal::makeMatcherAutoMarshall(m_Zero, "m_Zero"));
+  registerMatcher("m_NonZero", internal::makeMatcherAutoMarshall(m_NonZero, "m_NonZero"));
+  registerMatcher("m_One", internal::makeMatcherAutoMarshall(m_One, "m_One"));
+  registerMatcher("m_OneFloat", internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_OneFloat", internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_OneFloat", internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
 }
 
 RegistryMaps::~RegistryMaps() {
