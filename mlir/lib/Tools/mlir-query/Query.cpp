@@ -67,15 +67,6 @@ enum MatcherKind {
 } // namespace
 
 // This could be done better but is not worth the variadic template trouble.
-template <typename T>
-std::vector<Operation *> findMatches(Operation *rootOp, T &matcherFn) {
-  auto matcher = new matcher::SingleMatcher<T>(matcherFn);
-  //auto matchFinder = matcher::MatchFinder();
-  //return matchFinder.getMatches(rootOp, matcher);
-  return {};
-}
-
-// This could be done better but is not worth the variadic template trouble.
 std::vector<Operation *> getMatches(Operation *rootOp, matcher::Matcher *matcher) {
   auto matchFinder = matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
@@ -83,7 +74,6 @@ std::vector<Operation *> getMatches(Operation *rootOp, matcher::Matcher *matcher
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
  LLVM_DEBUG(DBGS() << "Running run4" << "\n");
-  MatcherKind MKind = M_OpName;
   if (MatchExpr.empty())
     return false;
   
@@ -94,37 +84,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   std::vector<Operation *>  matches;
   Operation *rootOp = QS.Op;
 
-  switch (MKind) {
-  case M_OpName: {
-    // TODO: implement parser
-    auto matcherFn = m_Name(MatchExpr);
-    matches = findMatches(rootOp, matcherFn);
-    break;
-  }
-  case M_OpAttr: {
-    auto matcherFn = mlir::detail::attr_op_matcher(MatchExpr);
-    matches = findMatches(rootOp, matcherFn);
-    break;
-  }
-  case M_OpConst: {
-    auto matcherFn = m_Constant();
-    matches = findMatches(rootOp, matcherFn);
-    break;
-  }
-  }
-
- LLVM_DEBUG(DBGS() << "Running run6" << "\n");
   unsigned MatchCount = 0;
-  for (auto op : matches) {
-    OS << "\nMatch #" << ++MatchCount << ":\n\n";
-    // TODO: Get source location and filename
-    OS << "testing: note: 'root' binds here\n" << *op << "\n\n";
-  }
-  OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
-  //return true;
-
-  MatchCount = 0;
-  matcher::MatchFinder Finder;
   LLVM_DEBUG(DBGS() << "Running run7" << "\n");
   matcher::Matcher *matcher = matcher::Parser::parseMatcherExpression(MatchExpr)->clone();
   std::vector<Operation *> Matches = getMatches(rootOp, matcher);

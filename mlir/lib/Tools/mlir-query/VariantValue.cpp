@@ -22,7 +22,7 @@ VariantValue::VariantValue(const VariantValue &Other) : Type(VT_Nothing) {
   *this = Other;
 }
 
-VariantValue::VariantValue(const DynTypedMatcher &Matcher) : Type(VT_Nothing) {
+VariantValue::VariantValue(const Matcher &Matcher) : Type(VT_Nothing) {
   setMatcher(Matcher);
 }
 

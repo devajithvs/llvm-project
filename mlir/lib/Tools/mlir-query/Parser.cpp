@@ -248,7 +248,7 @@ Parser::Parser(CodeTokenizer *Tokenizer, Sema *S)
 
 class RegistrySema : public Parser::Sema {
 public:
-  ~RegistrySema() override;
+  virtual ~RegistrySema() {};
   Matcher *actOnMatcherExpression(StringRef MatcherName, ArrayRef<ParserValue> Args) override {
     return Registry::constructMatcher(MatcherName, Args);
   }
