@@ -84,13 +84,6 @@ private:
   AllValues Value;
 };
 
-/// A VariantValue instance annotated with its parser context.
-struct ParserValue {
-  ParserValue() {}
-  StringRef Text;
-  VariantValue Value;
-};
-
 } // end namespace matcher
 } // end namespace query
 } // end namespace mlir

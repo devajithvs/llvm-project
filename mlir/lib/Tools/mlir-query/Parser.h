@@ -26,6 +26,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_PARSER_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_PARSER_H
 
+#include "Diagnostics.h"
 #include "VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
@@ -64,7 +65,9 @@ public:
     ///   description of the error.
     ///   The caller takes ownership of the Matcher object returned.
     virtual Matcher *actOnMatcherExpression(StringRef MatcherName,
-                                            ArrayRef<ParserValue> Args) = 0;
+                                            const SourceRange &NameRange,
+                                            ArrayRef<ParserValue> Args,
+                                            Diagnostics *Error) = 0;
   };
 
   /// \brief Parse a matcher expression, creating matchers from the registry.
@@ -78,7 +81,8 @@ public:
   /// \return The matcher object constructed, or NULL if an error occurred.
   //    In that case, \c Error will contain a description of the error.
   ///   The caller takes ownership of the Matcher object returned.
-  static Matcher *parseMatcherExpression(StringRef MatcherCode);
+  static Matcher *parseMatcherExpression(StringRef MatcherCode,
+                                         Diagnostics *Error);
 
   /// \brief Parse a matcher expression.
   ///
@@ -90,33 +94,37 @@ public:
   ///   if an error occurred. In that case, \c Error will contain a
   ///   description of the error.
   ///   The caller takes ownership of the Matcher object returned.
-  static Matcher *parseMatcherExpression(StringRef MatcherCode, Sema *S);
+  static Matcher *parseMatcherExpression(StringRef MatcherCode, Sema *S,
+                                         Diagnostics *Error);
 
   /// \brief Parse an expression, creating matchers from the registry.
   ///
   /// Parses any expression supported by this parser. In general, the
   /// \c parseMatcherExpression function is a better approach to get a matcher
   /// object.
-  static bool parseExpression(StringRef Code, VariantValue *Value);
+  static bool parseExpression(StringRef Code, VariantValue *Value,
+                              Diagnostics *Error);
 
   /// \brief Parse an expression.
   ///
   /// Parses any expression supported by this parser. In general, the
   /// \c parseMatcherExpression function is a better approach to get a matcher
   /// object.
-  static bool parseExpression(StringRef Code, Sema *S, VariantValue *Value);
+  static bool parseExpression(StringRef Code, Sema *S, VariantValue *Value,
+                              Diagnostics *Error);
 
 private:
   class CodeTokenizer;
   struct TokenInfo;
 
-  Parser(CodeTokenizer *Tokenizer, Sema *S);
+  Parser(CodeTokenizer *Tokenizer, Sema *S, Diagnostics *Error);
 
   bool parseExpressionImpl(VariantValue *Value);
   bool parseMatcherExpressionImpl(VariantValue *Value);
 
   CodeTokenizer *const Tokenizer;
   Sema *const S;
+  Diagnostics *Error;
 };
 
 } // namespace matcher

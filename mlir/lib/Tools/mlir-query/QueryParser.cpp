@@ -135,6 +135,13 @@ enum ParsedQueryKind {
   PQK_Help,
   PQK_Match,
 };
+
+QueryRef makeInvalidQueryFromDiagnostics(const matcher::Diagnostics &Diag) {
+  std::string ErrStr;
+  llvm::raw_string_ostream OS(ErrStr);
+  Diag.printToStreamFull(OS);
+  return new InvalidQuery(OS.str());
+}
 } // namespace
 
 QueryRef QueryParser::doParse() {
@@ -159,7 +166,17 @@ QueryRef QueryParser::doParse() {
     return endQuery(new HelpQuery);
 
   case PQK_Match: {
-    return new MatchQuery(Line.ltrim());
+    matcher::Diagnostics Diag;
+    auto MatchExpr = Line.ltrim();
+
+    const matcher::Matcher *matcher =
+        matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
+
+    if (!matcher) {
+      return makeInvalidQueryFromDiagnostics(Diag);
+    }
+
+    return new MatchQuery(matcher);
   }
 
   case PQK_Invalid:

@@ -76,10 +76,11 @@ struct HelpQuery : Query {
 
 /// Query for "match MATCHER".
 struct MatchQuery : Query {
-  MatchQuery(StringRef MatchExpr) : Query(QK_Match), MatchExpr(MatchExpr) {}
+  MatchQuery(const matcher::Matcher *Matcher)
+      : Query(QK_Match), matcher(Matcher) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  StringRef MatchExpr;
+  const matcher::Matcher *matcher;
 
   static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
 };

@@ -61,7 +61,8 @@ struct ArgTypeTraits<Matcher> {
 class MatcherCreateCallback {
 public:
   virtual ~MatcherCreateCallback() {}
-  virtual Matcher *run(ArrayRef<ParserValue> Args) const = 0;
+  virtual Matcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+                       Diagnostics *Error) const = 0;
 };
 
 /// \brief Simple callback implementation. Marshaller and function are provided.
@@ -76,8 +77,9 @@ public:
                                      StringRef MatcherName)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
-  Matcher *run(ArrayRef<ParserValue> Args) const override {
-    return Marshaller(Func, MatcherName, Args);
+  Matcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+               Diagnostics *Error) const override {
+    return Marshaller(Func, MatcherName, NameRange, Args, Error);
   }
 
 private:
@@ -106,8 +108,11 @@ struct remove_const_ref
 /// \brief 0-arg marshaller function.
 template <typename ReturnType>
 Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
-                          ArrayRef<ParserValue> Args) {
+                          const SourceRange &NameRange,
+                          ArrayRef<ParserValue> Args, Diagnostics *Error) {
   if (Args.size() != 0) {
+    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
+        << 0 << Args.size();
     return NULL;
   }
   ReturnType matcherFn = Func();
@@ -118,12 +123,18 @@ Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
 /// \brief 1-arg marshaller function.
 template <typename ReturnType, typename InArgType1>
 Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
-                          ArrayRef<ParserValue> Args) {
+                          const SourceRange &NameRange,
+                          ArrayRef<ParserValue> Args, Diagnostics *Error) {
   typedef typename remove_const_ref<InArgType1>::type ArgType1;
+  // TODO: Extract this into a separate function.
   if (Args.size() != 1) {
+    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
+        << 1 << Args.size();
     return NULL;
   }
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
+    Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
+        << MatcherName << 1;
     return NULL;
   }
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value));

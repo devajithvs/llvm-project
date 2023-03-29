@@ -15,6 +15,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_REGISTRY_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_REGISTRY_H
 
+#include "Diagnostics.h"
 #include "Marshallers.h"
 #include "VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -42,7 +43,9 @@ public:
   ///   match the signature. In that case \c Error will contain the description
   ///   of the error.
   static Matcher *constructMatcher(StringRef MatcherName,
-                                   ArrayRef<ParserValue> Args);
+                                   const SourceRange &NameRange,
+                                   ArrayRef<ParserValue> Args,
+                                   Diagnostics *Error);
 };
 
 } // namespace matcher
