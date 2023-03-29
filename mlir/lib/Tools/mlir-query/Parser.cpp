@@ -162,7 +162,7 @@ LLVM_DEBUG(DBGS() << "get Next token -  empty"
     SourceRange Range;
     Range.Start = Result->Range.Start;
     Range.End = currentLocation();
-    Error->pushErrorFrame(Range, Error->ET_ParserStringError) << ErrorText;
+    Error->addError(Range, Error->ET_ParserStringError) << ErrorText;
     Result->Kind = TokenInfo::TK_Error;
   }
 
@@ -208,7 +208,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   const TokenInfo OpenToken = Tokenizer->consumeNextToken();
 
   if (OpenToken.Kind != TokenInfo::TK_OpenParen) {
-    Error->pushErrorFrame(OpenToken.Range, Error->ET_ParserNoOpenParen)
+    Error->addError(OpenToken.Range, Error->ET_ParserNoOpenParen)
         << OpenToken.Text;
     return false;
   }
@@ -225,7 +225,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
       // We must find a , token to continue.
       const TokenInfo CommaToken = Tokenizer->consumeNextToken();
       if (CommaToken.Kind != TokenInfo::TK_Comma) {
-        Error->pushErrorFrame(CommaToken.Range, Error->ET_ParserNoComma)
+        Error->addError(CommaToken.Range, Error->ET_ParserNoComma)
             << CommaToken.Text;
         return false;
       }
@@ -235,8 +235,9 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     ArgValue.Text = Tokenizer->peekNextToken().Text;
     ArgValue.Range = Tokenizer->peekNextToken().Range;
     if (!parseExpressionImpl(&ArgValue.Value)) {
-      Error->pushErrorFrame(NameToken.Range, Error->ET_ParserMatcherArgFailure)
-          << (Args.size() + 1) << NameToken.Text;
+      // TODO
+      // Error->addError(NameToken.Range, Error->ET_ParserMatcherArgFailure)
+      //    << (Args.size() + 1) << NameToken.Text;
       return false;
     }
 
@@ -246,7 +247,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   if (EndToken.Kind == TokenInfo::TK_Eof) {
   LLVM_DEBUG(DBGS() << "Pushing error No closing parenthesis"
                       << "\n");
-    Error->pushErrorFrame(OpenToken.Range, Error->ET_ParserNoCloseParen);
+    Error->addError(OpenToken.Range, Error->ET_ParserNoCloseParen);
  LLVM_DEBUG(DBGS() << "Pushing end here error No closing parenthesis"
                       << "\n");
     return false;
@@ -259,8 +260,9 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
       S->actOnMatcherExpression(NameToken.Text, MatcherRange, Args, Error);
 
   if (Result == NULL) {
-    Error->pushErrorFrame(NameToken.Range, Error->ET_ParserMatcherFailure)
-        << NameToken.Text;
+    // TODO
+    // Error->addError(NameToken.Range, Error->ET_ParserMatcherFailure)
+    //    << NameToken.Text;
     return false;
   }
 
@@ -284,7 +286,7 @@ bool Parser::parseExpressionImpl(VariantValue *Value) {
     return parseMatcherExpressionImpl(Value);
 
   case TokenInfo::TK_Eof:
-    Error->pushErrorFrame(Tokenizer->consumeNextToken().Range,
+    Error->addError(Tokenizer->consumeNextToken().Range,
                           Error->ET_ParserNoCode);
     LLVM_DEBUG(DBGS() << "Tokenizer TK_EOF"
                       << "\n");
@@ -301,7 +303,7 @@ bool Parser::parseExpressionImpl(VariantValue *Value) {
   case TokenInfo::TK_Comma:
   case TokenInfo::TK_InvalidChar:
     const TokenInfo Token = Tokenizer->consumeNextToken();
-    Error->pushErrorFrame(Token.Range, Error->ET_ParserInvalidToken)
+    Error->addError(Token.Range, Error->ET_ParserInvalidToken)
         << Token.Text;
     return false;
   }
@@ -347,7 +349,7 @@ Matcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
     return NULL;
   }
   if (!Value.isMatcher()) {
-    Error->pushErrorFrame(SourceRange(), Error->ET_ParserNotAMatcher);
+    Error->addError(SourceRange(), Error->ET_ParserNotAMatcher);
     return NULL;
   }
   // FIXME: clone?

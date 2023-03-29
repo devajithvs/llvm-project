@@ -111,7 +111,7 @@ Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
                           const SourceRange &NameRange,
                           ArrayRef<ParserValue> Args, Diagnostics *Error) {
   if (Args.size() != 0) {
-    Error->pushErrorFrame(NameRange, Error->ET_RegistryWrongArgCount)
+    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
         << 0 << Args.size();
     return NULL;
   }
@@ -128,12 +128,12 @@ Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
   typedef typename remove_const_ref<InArgType1>::type ArgType1;
   // TODO: Extract this into a separate function.
   if (Args.size() != 1) {
-    Error->pushErrorFrame(NameRange, Error->ET_RegistryWrongArgCount)
+    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
         << 1 << Args.size();
     return NULL;
   }
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
-    Error->pushErrorFrame(Args[0].Range, Error->ET_RegistryWrongArgType)
+    Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
         << MatcherName << 1;
     return NULL;
   }

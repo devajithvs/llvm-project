@@ -110,7 +110,7 @@ Matcher *Registry::constructMatcher(StringRef MatcherName,
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
   if (it == RegistryData->constructors().end()) {
-    Error->pushErrorFrame(NameRange, Error->ET_RegistryNotFound) << MatcherName;
+    Error->addError(NameRange, Error->ET_RegistryMatcherNotFound) << MatcherName;
     return NULL;
   }
 
