@@ -22,7 +22,7 @@ namespace query {
 class QuerySession {
 public:
   QuerySession(Operation *Op, const std::shared_ptr<llvm::SourceMgr> &SourceMgr)
-      : Op(Op), SourceMgr(SourceMgr), OutKind(OK_Diag), BindRoot(true) {}
+      : Op(Op), SourceMgr(SourceMgr), OutKind(OK_Diag), BindRoot(true), Terminate(false) {}
 
   const std::shared_ptr<llvm::SourceMgr> &getSourceManager() {
     return SourceMgr;

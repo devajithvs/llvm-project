@@ -92,7 +92,9 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context) {
   while (llvm::Optional<std::string> Line = LE.readLine()) {
     QueryRef Q = QueryParser::parse(*Line, QS);
     Q->run(llvm::outs(), QS);
+LLVM_DEBUG(DBGS() << "unningtoken" <<  "\n");
     llvm::outs().flush();
+LLVM_DEBUG(DBGS() << "Flush it and terminate?" <<  "\n");
     if (QS.Terminate)
       break;
   }
