@@ -64,8 +64,9 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   Operation *rootOp = QS.Op;
 
   unsigned MatchCount = 0;
+  matcher::Diagnostics Diag;
   matcher::Matcher *matcher =
-      matcher::Parser::parseMatcherExpression(MatchExpr);
+      matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
   if (!matcher) {
     return false;
   }

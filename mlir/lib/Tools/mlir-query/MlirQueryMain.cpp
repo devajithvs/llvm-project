@@ -38,23 +38,6 @@ using namespace llvm;
 // Query Parser
 //===----------------------------------------------------------------------===//
 
-// Parse and verify the input MLIR file. Returns null on error.
-OwningOpRef<Operation *> loadModule(MLIRContext &context,
-                                    StringRef inputFilename,
-                                    bool insertImplictModule) {
-  // Set up the input file.
-  std::string errorMessage;
-  auto file = openInputFile(inputFilename, &errorMessage);
-  if (!file) {
-    llvm::errs() << errorMessage << "\n";
-    return nullptr;
-  }
-
-  auto sourceMgr = std::make_shared<llvm::SourceMgr>();
-  sourceMgr->AddNewSourceBuffer(std::move(file), SMLoc());
-  return parseSourceFileForTool(sourceMgr, &context, insertImplictModule);
-}
-
 LogicalResult mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context) {
   // Override the default '-h' and use the default PrintHelpMessage() which
   // won't print options in categories.
@@ -92,12 +75,16 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context) {
     return failure();
   }
 
+  auto sourceMgr = std::make_shared<llvm::SourceMgr>();
+  sourceMgr->AddNewSourceBuffer(std::move(file), SMLoc());
+
+  // Parse the input MLIR file.
   OwningOpRef<Operation *> opRef =
-      loadModule(context, inputFilename, !noImplicitModule);
+      parseSourceFileForTool(sourceMgr, &context, !noImplicitModule);
   if (!opRef)
     return failure();
 
-  QuerySession QS(opRef.get());
+  QuerySession QS(opRef.get(), sourceMgr);
   LineEditor LE("mlir-query");
   LE.setListCompleter([&QS](StringRef Line, size_t Pos) {
     return QueryParser::complete(Line, Pos, QS);

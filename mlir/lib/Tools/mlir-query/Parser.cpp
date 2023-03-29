@@ -40,18 +40,19 @@ struct Parser::TokenInfo {
     TK_Error
   };
 
-  TokenInfo() : Text(), Kind(TK_Eof), Value() {}
+  TokenInfo() : Text(), Kind(TK_Eof), Range(), Value() {}
 
   StringRef Text;
   TokenKind Kind;
+  SourceRange Range;
   VariantValue Value;
 };
 
 /// \brief Simple tokenizer for the parser.
 class Parser::CodeTokenizer {
 public:
-  explicit CodeTokenizer(StringRef MatcherCode)
-      : Code(MatcherCode), StartOfLine(MatcherCode) {
+  explicit CodeTokenizer(StringRef MatcherCode, Diagnostics *Error)
+      : Code(MatcherCode), StartOfLine(MatcherCode), Line(1), Error(Error) {
     NextToken = getNextToken();
   }
 
@@ -71,6 +72,7 @@ private:
   TokenInfo getNextToken() {
     consumeWhitespace();
     TokenInfo Result;
+    Result.Range.Start = currentLocation();
 
     LLVM_DEBUG(DBGS() << "get Next token" << Code << "\n");
     if (Code.empty()) {
@@ -124,6 +126,7 @@ private:
       break;
     }
 
+    Result.Range.End = currentLocation();
     return Result;
   }
 
@@ -152,20 +155,38 @@ private:
       }
     }
 
+    StringRef ErrorText = Code;
     Code = Code.drop_front(Code.size());
+    SourceRange Range;
+    Range.Start = Result->Range.Start;
+    Range.End = currentLocation();
+    Error->pushErrorFrame(Range, Error->ET_ParserStringError) << ErrorText;
     Result->Kind = TokenInfo::TK_Error;
   }
 
-  /// Consume all leading whitespace from \c Code.
+  /// TODO: Improve this;
+  // Consume all leading whitespace from \c Code.
   void consumeWhitespace() {
-    Code = Code.drop_while([](char c) {
-      // Don't trim newlines.
-      return StringRef(" \t\v\f\r").contains(c);
-    });
+    while (!Code.empty() && StringRef(" \t\v\f\r").contains(Code[0])) {
+      if (Code[0] == '\n') {
+        ++Line;
+        StartOfLine = Code.drop_front();
+      }
+      Code = Code.drop_front();
+    }
+  }
+
+  SourceLocation currentLocation() {
+    SourceLocation Location;
+    Location.Line = Line;
+    Location.Column = Code.data() - StartOfLine.data() + 1;
+    return Location;
   }
 
   StringRef Code;
   StringRef StartOfLine;
+  unsigned Line;
+  Diagnostics *Error;
   TokenInfo NextToken;
 };
 
@@ -185,6 +206,8 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   const TokenInfo OpenToken = Tokenizer->consumeNextToken();
 
   if (OpenToken.Kind != TokenInfo::TK_OpenParen) {
+    Error->pushErrorFrame(OpenToken.Range, Error->ET_ParserNoOpenParen)
+        << OpenToken.Text;
     return false;
   }
 
@@ -200,13 +223,18 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
       // We must find a , token to continue.
       const TokenInfo CommaToken = Tokenizer->consumeNextToken();
       if (CommaToken.Kind != TokenInfo::TK_Comma) {
+        Error->pushErrorFrame(CommaToken.Range, Error->ET_ParserNoComma)
+            << CommaToken.Text;
         return false;
       }
     }
 
     ParserValue ArgValue;
     ArgValue.Text = Tokenizer->peekNextToken().Text;
+    ArgValue.Range = Tokenizer->peekNextToken().Range;
     if (!parseExpressionImpl(&ArgValue.Value)) {
+      Error->pushErrorFrame(NameToken.Range, Error->ET_ParserMatcherArgFailure)
+          << (Args.size() + 1) << NameToken.Text;
       return false;
     }
 
@@ -214,13 +242,19 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   }
 
   if (EndToken.Kind == TokenInfo::TK_Eof) {
+    Error->pushErrorFrame(OpenToken.Range, Error->ET_ParserNoCloseParen);
     return false;
   }
 
   // Merge the start and end infos.
-  Matcher *Result = S->actOnMatcherExpression(NameToken.Text, Args);
+  SourceRange MatcherRange = NameToken.Range;
+  MatcherRange.End = EndToken.Range.End;
+  Matcher *Result =
+      S->actOnMatcherExpression(NameToken.Text, MatcherRange, Args, Error);
 
   if (Result == NULL) {
+    Error->pushErrorFrame(NameToken.Range, Error->ET_ParserMatcherFailure)
+        << NameToken.Text;
     return false;
   }
 
@@ -244,6 +278,8 @@ bool Parser::parseExpressionImpl(VariantValue *Value) {
     return parseMatcherExpressionImpl(Value);
 
   case TokenInfo::TK_Eof:
+    Error->pushErrorFrame(Tokenizer->consumeNextToken().Range,
+                          Error->ET_ParserNoCode);
     LLVM_DEBUG(DBGS() << "Tokenizer TK_EOF"
                       << "\n");
     return false;
@@ -259,46 +295,53 @@ bool Parser::parseExpressionImpl(VariantValue *Value) {
   case TokenInfo::TK_Comma:
   case TokenInfo::TK_InvalidChar:
     const TokenInfo Token = Tokenizer->consumeNextToken();
+    Error->pushErrorFrame(Token.Range, Error->ET_ParserInvalidToken)
+        << Token.Text;
     return false;
   }
 
   llvm_unreachable("Unknown token kind.");
 }
 
-Parser::Parser(CodeTokenizer *Tokenizer, Sema *S)
-    : Tokenizer(Tokenizer), S(S) {}
-
+Parser::Parser(CodeTokenizer *Tokenizer, Sema *S, Diagnostics *Error)
+    : Tokenizer(Tokenizer), S(S), Error(Error) {}
 class RegistrySema : public Parser::Sema {
 public:
   virtual ~RegistrySema(){};
   Matcher *actOnMatcherExpression(StringRef MatcherName,
-                                  ArrayRef<ParserValue> Args) override {
-    return Registry::constructMatcher(MatcherName, Args);
+                                  const SourceRange &NameRange,
+                                  ArrayRef<ParserValue> Args,
+                                  Diagnostics *Error) override {
+    return Registry::constructMatcher(MatcherName, NameRange, Args, Error);
   }
 };
 
-bool Parser::parseExpression(StringRef Code, VariantValue *Value) {
+bool Parser::parseExpression(StringRef Code, VariantValue *Value,
+                             Diagnostics *Error) {
   RegistrySema S;
-  return parseExpression(Code, &S, Value);
+  return parseExpression(Code, &S, Value, Error);
 }
 
-bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value) {
-  CodeTokenizer Tokenizer(Code);
-  return Parser(&Tokenizer, S).parseExpressionImpl(Value);
+bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value,
+                             Diagnostics *Error) {
+  CodeTokenizer Tokenizer(Code, Error);
+  return Parser(&Tokenizer, S, Error).parseExpressionImpl(Value);
 }
 
-Matcher *Parser::parseMatcherExpression(StringRef Code) {
+Matcher *Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {
   RegistrySema S;
-  return parseMatcherExpression(Code, &S);
+  return parseMatcherExpression(Code, &S, Error);
 }
 
-Matcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S) {
+Matcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
+                                        Diagnostics *Error) {
   VariantValue Value;
-  if (!parseExpression(Code, S, &Value)) {
+  if (!parseExpression(Code, S, &Value, Error)) {
 
     return NULL;
   }
   if (!Value.isMatcher()) {
+    Error->pushErrorFrame(SourceRange(), Error->ET_ParserNotAMatcher);
     return NULL;
   }
   // FIXME: clone?

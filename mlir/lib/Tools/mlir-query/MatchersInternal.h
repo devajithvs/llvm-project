@@ -69,6 +69,23 @@ public:
 
 class MatchFinder {
 public:
+  /// Contains all information for a given match.
+  ///
+  /// Every time a match is found, the MatchFinder will invoke the registered
+  /// MatchCallback with a MatchResult containing information about the match.
+  struct MatchResult {
+    MatchResult(Operation *op);
+
+    /// Contains the nodes bound on the current match.
+    ///
+    /// This allows user code to easily extract matched AST nodes.
+    Operation *op;
+
+    /// Utilities for interpreting the matched AST structures.
+    /// @{
+    const std::shared_ptr<llvm::SourceMgr> SourceMgr;
+    /// @}
+  };
   std::vector<Operation *> getMatches(Operation *f, Matcher *matcher) {
     std::vector<Operation *> matches;
     f->walk([&matches, &matcher](Operation *op) {

@@ -104,14 +104,17 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 
 // static
 Matcher *Registry::constructMatcher(StringRef MatcherName,
-                                    ArrayRef<ParserValue> Args) {
+                                    const SourceRange &NameRange,
+                                    ArrayRef<ParserValue> Args,
+                                    Diagnostics *Error) {
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
   if (it == RegistryData->constructors().end()) {
+    Error->pushErrorFrame(NameRange, Error->ET_RegistryNotFound) << MatcherName;
     return NULL;
   }
 
-  return it->second->run(Args);
+  return it->second->run(NameRange, Args, Error);
 }
 
 } // namespace matcher
