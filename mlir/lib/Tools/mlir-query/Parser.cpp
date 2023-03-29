@@ -248,8 +248,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   LLVM_DEBUG(DBGS() << "Pushing error No closing parenthesis"
                       << "\n");
     Error->addError(OpenToken.Range, Error->ET_ParserNoCloseParen);
- LLVM_DEBUG(DBGS() << "Pushing end here error No closing parenthesis"
-                      << "\n");
+ LLVM_DEBUG(DBGS() << Error->toString() << "\n");
     return false;
   }
 

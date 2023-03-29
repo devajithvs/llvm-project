@@ -67,6 +67,7 @@ void Diagnostics::OverloadContext::revertErrors() {
 }
 
 Diagnostics::ArgStream &Diagnostics::ArgStream::operator<<(const Twine &Arg) {
+LLVM_DEBUG(DBGS() << "diagnostics operator " << Arg.str()  << "\n");
   Out->push_back(Arg.str());
   return *this;
 }

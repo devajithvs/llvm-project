@@ -51,27 +51,22 @@ enum MatcherKind {
 
 // This could be done better but is not worth the variadic template trouble.
 std::vector<Operation *> getMatches(Operation *rootOp,
-                                    matcher::Matcher *matcher) {
+                                    const matcher::Matcher *matcher) {
   auto matchFinder = matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
 }
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  if (MatchExpr.empty())
-    return false;
 
   std::vector<Operation *> matches;
   Operation *rootOp = QS.Op;
 
-  unsigned MatchCount = 0;
-  matcher::Diagnostics Diag;
-  matcher::Matcher *matcher =
-      matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
   if (!matcher) {
     return false;
   }
   matches = getMatches(rootOp, matcher);
 
+  unsigned MatchCount = 0;
   for (auto op : matches) {
     OS << "\nMatch #" << ++MatchCount << ":\n\n";
     // TODO: Get source location and filename

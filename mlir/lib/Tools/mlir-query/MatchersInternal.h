@@ -86,7 +86,7 @@ public:
     const std::shared_ptr<llvm::SourceMgr> SourceMgr;
     /// @}
   };
-  std::vector<Operation *> getMatches(Operation *f, Matcher *matcher) {
+  std::vector<Operation *> getMatches(Operation *f, const Matcher *matcher) {
     std::vector<Operation *> matches;
     f->walk([&matches, &matcher](Operation *op) {
       if (matcher->matches(op)) {
