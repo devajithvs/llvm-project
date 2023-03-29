@@ -70,6 +70,7 @@ public:
 
   /// \brief Helper stream class.
   struct ArgStream {
+    ArgStream(std::vector<std::string> *Out) : Out(Out) {}
     template <class T>
     ArgStream &operator<<(const T &Arg) {
       return operator<<(Twine(Arg));

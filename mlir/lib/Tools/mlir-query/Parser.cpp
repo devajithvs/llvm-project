@@ -76,6 +76,8 @@ private:
 
     LLVM_DEBUG(DBGS() << "get Next token" << Code << "\n");
     if (Code.empty()) {
+LLVM_DEBUG(DBGS() << "get Next token -  empty"
+                      << "\n");
       Result.Kind = TokenInfo::TK_Eof;
       Result.Text = "";
       return Result;
@@ -242,7 +244,11 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   }
 
   if (EndToken.Kind == TokenInfo::TK_Eof) {
+  LLVM_DEBUG(DBGS() << "Pushing error No closing parenthesis"
+                      << "\n");
     Error->pushErrorFrame(OpenToken.Range, Error->ET_ParserNoCloseParen);
+ LLVM_DEBUG(DBGS() << "Pushing end here error No closing parenthesis"
+                      << "\n");
     return false;
   }
 

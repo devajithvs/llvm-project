@@ -10,23 +10,32 @@
 
 #include "Diagnostics.h"
 
+#include "llvm/Support/Debug.h"
+using llvm::dbgs;
+
+#define DEBUG_TYPE "mlir-query"
+#define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
+
 namespace mlir {
 namespace query {
 namespace matcher {
 
 Diagnostics::ArgStream &Diagnostics::ArgStream::operator<<(const Twine &Arg) {
+LLVM_DEBUG(DBGS() << "Arg.str() " << Arg.str() 
+                    << "\n");
   Out->push_back(Arg.str());
   return *this;
 }
 
 Diagnostics::ArgStream Diagnostics::pushErrorFrame(const SourceRange &Range,
                                                    ErrorType Error) {
+  LLVM_DEBUG(DBGS() << "pushing error on frame"
+                    << "\n");
   Frames.insert(Frames.begin(), ErrorFrame());
   ErrorFrame &Last = Frames.front();
   Last.Range = Range;
   Last.Type = Error;
-  ArgStream Out = {&Last.Args};
-  return Out;
+  return ArgStream(&Last.Args);
 }
 
 StringRef ErrorTypeToString(Diagnostics::ErrorType Type) {
