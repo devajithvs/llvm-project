@@ -35,81 +35,77 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-/// \brief Matcher expression parser.
+// Matcher expression parser.
 class Parser {
 public:
-  /// \brief Interface to connect the parser with the registry and more.
-  ///
-  /// The parser uses the Sema instance passed into
-  /// parseMatcherExpression() to handle all matcher tokens. The simplest
-  /// processor implementation would simply call into the registry to create
-  /// the matchers.
-  /// However, a more complex processor might decide to intercept the matcher
-  /// creation and do some extra work. For example, it could apply some
-  /// transformation to the matcher by adding some id() nodes, or could detect
-  /// specific matcher nodes for more efficient lookup.
+  // Interface to connect the parser with the registry and more.
+  //
+  // The parser uses the Sema instance passed into
+  // parseMatcherExpression() to handle all matcher tokens. The simplest
+  // processor implementation would simply call into the registry to create
+  // the matchers.
+  // However, a more complex processor might decide to intercept the matcher
+  // creation and do some extra work. For example, it could apply some
+  // transformation to the matcher by adding some id() nodes, or could detect
+  // specific matcher nodes for more efficient lookup.
   class Sema {
   public:
     virtual ~Sema();
 
-    /// \brief Process a matcher expression.
-    ///
-    /// All the arguments passed here have already been processed.
-    ///
-    /// \param MatcherName The matcher name found by the parser.
-    ///
-    /// \param Args The argument list for the matcher.
-    ///
-    /// \return The matcher object constructed by the processor, or NULL
-    ///   if an error occurred. In that case, \c Error will contain a
-    ///   description of the error.
-    ///   The caller takes ownership of the Matcher object returned.
-    virtual Matcher *actOnMatcherExpression(StringRef MatcherName,
-                                            const SourceRange &NameRange,
-                                            ArrayRef<ParserValue> Args,
-                                            Diagnostics *Error) = 0;
+    // Process a matcher expression.
+    // All the arguments passed here have already been processed.
+    // MatcherName is the matcher name found by the parser.
+    // Args is the argument list for the matcher.
+    // Returns the matcher object constructed by the processor, or NULL
+    // if an error occurred. In that case, Error will contain a
+    // description of the error.
+    // The caller takes ownership of the Matcher object returned.
+    virtual DynMatcher *actOnMatcherExpression(StringRef MatcherName,
+                                               const SourceRange &NameRange,
+                                               bool ExtractFunction,
+                                               ArrayRef<ParserValue> Args,
+                                               Diagnostics *Error) = 0;
   };
 
-  /// \brief Parse a matcher expression, creating matchers from the registry.
-  ///
-  /// This overload creates matchers calling directly into the registry. If the
-  /// caller needs more control over how the matchers are created, then it can
-  /// use the overload below that takes a Sema.
-  ///
-  /// \param MatcherCode The matcher expression to parse.
-  ///
-  /// \return The matcher object constructed, or NULL if an error occurred.
-  //    In that case, \c Error will contain a description of the error.
-  ///   The caller takes ownership of the Matcher object returned.
-  static Matcher *parseMatcherExpression(StringRef MatcherCode,
-                                         Diagnostics *Error);
+  // Parse a matcher expression, creating matchers from the registry.
 
-  /// \brief Parse a matcher expression.
-  ///
-  /// \param MatcherCode The matcher expression to parse.
-  ///
-  /// \param S The Sema instance that will help the parser
-  ///   construct the matchers.
-  /// \return The matcher object constructed by the processor, or NULL
-  ///   if an error occurred. In that case, \c Error will contain a
-  ///   description of the error.
-  ///   The caller takes ownership of the Matcher object returned.
-  static Matcher *parseMatcherExpression(StringRef MatcherCode, Sema *S,
-                                         Diagnostics *Error);
+  // This overload creates matchers calling directly into the registry. If the
+  // caller needs more control over how the matchers are created, then it can
+  // use the overload below that takes a Sema.
 
-  /// \brief Parse an expression, creating matchers from the registry.
-  ///
-  /// Parses any expression supported by this parser. In general, the
-  /// \c parseMatcherExpression function is a better approach to get a matcher
-  /// object.
+  // MatcherCode is the matcher expression to parse.
+  // Returns the matcher object constructed, or NULL if an error occurred.
+  // In that case, Error will contain a description of the error.
+  // The caller takes ownership of the DynMatcher object returned.
+  static DynMatcher *parseMatcherExpression(StringRef MatcherCode,
+                                            Diagnostics *Error);
+
+  // Parse a matcher expression.
+
+  // MatcherCode The matcher expression to parse.
+
+  // S is the Sema instance that will help the parser
+  // construct the matchers.
+  // Returns the matcher object constructed by the processor, or NULL
+  // if an error occurred. In that case, Error will contain a
+  // description of the error.
+  // The caller takes ownership of the DynMatcher object returned.
+  static DynMatcher *parseMatcherExpression(StringRef MatcherCode, Sema *S,
+                                            Diagnostics *Error);
+
+  // Parse an expression, creating matchers from the registry.
+
+  // Parses any expression supported by this parser. In general, the
+  // parseMatcherExpression function is a better approach to get a matcher
+  // object.
   static bool parseExpression(StringRef Code, VariantValue *Value,
                               Diagnostics *Error);
 
-  /// \brief Parse an expression.
-  ///
-  /// Parses any expression supported by this parser. In general, the
-  /// \c parseMatcherExpression function is a better approach to get a matcher
-  /// object.
+  // Parse an expression.
+
+  // Parses any expression supported by this parser. In general, the
+  // parseMatcherExpression function is a better approach to get a matcher
+  // object.
   static bool parseExpression(StringRef Code, Sema *S, VariantValue *Value,
                               Diagnostics *Error);
 

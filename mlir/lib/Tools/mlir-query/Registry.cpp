@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Registry.h"
+#include "ExtraMatchers.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
@@ -29,8 +30,12 @@ namespace matcher {
 namespace {
 
 using internal::MatcherCreateCallback;
+using ConstructorMap = llvm::StringMap<const MatcherCreateCallback *>;
 
-typedef llvm::StringMap<const MatcherCreateCallback *> ConstructorMap;
+using constantFnType = detail::constant_op_matcher();
+using attrFnType = detail::AttrOpMatcher(StringRef);
+using opFnType = detail::NameOpMatcher(StringRef);
+
 class RegistryMaps {
 public:
   RegistryMaps();
@@ -48,46 +53,41 @@ void RegistryMaps::registerMatcher(StringRef MatcherName,
   Constructors[MatcherName] = Callback;
 }
 
-/// \brief Generate a registry map with all the known matchers.
+// Generate a registry map with all the known matchers.
 RegistryMaps::RegistryMaps() {
 
   // TODO: This list is not complete. It only has non-templated matchers,
   // which are the simplest to add to the system. Templated matchers require
   // more supporting code that was omitted from the first revision for
   // simplicitly of code review.
+  using internal::makeMatcherAutoMarshall;
 
-  // FIXME: m_Constant will not work due to templated m_Constant function
-  // registerMatcher("m_Constant",
-  //                  internal::makeMatcherAutoMarshall(m_Constant,
-  //                  "m_Constant"));
+  // Define a template function to register operation matchers
+  auto registerOpMatcher = [&](const std::string &name, auto matcher) {
+    registerMatcher(name, makeMatcherAutoMarshall<Operation *>(matcher, name));
+  };
 
-  registerMatcher("m_AttrName",
-                  internal::makeMatcherAutoMarshall(m_AttrName, "m_AttrName"));
-  registerMatcher("m_Name",
-                  internal::makeMatcherAutoMarshall(m_Name, "m_Name"));
-  registerMatcher("m_AnyZeroFloat", internal::makeMatcherAutoMarshall(
-                                        m_AnyZeroFloat, "m_AnyZeroFloat"));
-  registerMatcher("m_PosZeroFloat", internal::makeMatcherAutoMarshall(
-                                        m_PosZeroFloat, "m_PosZeroFloat"));
-  registerMatcher("m_NegZeroFloat", internal::makeMatcherAutoMarshall(
-                                        m_NegZeroFloat, "m_NegZeroFloat"));
-  registerMatcher("m_OneFloat",
-                  internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_PosInfFloat", internal::makeMatcherAutoMarshall(
-                                       m_PosInfFloat, "m_PosInfFloat"));
-  registerMatcher("m_NegInfFloat", internal::makeMatcherAutoMarshall(
-                                       m_NegInfFloat, "m_NegInfFloat"));
-  registerMatcher("m_Zero",
-                  internal::makeMatcherAutoMarshall(m_Zero, "m_Zero"));
-  registerMatcher("m_NonZero",
-                  internal::makeMatcherAutoMarshall(m_NonZero, "m_NonZero"));
-  registerMatcher("m_One", internal::makeMatcherAutoMarshall(m_One, "m_One"));
-  registerMatcher("m_OneFloat",
-                  internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_OneFloat",
-                  internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_OneFloat",
-                  internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  // Register matchers using the template function
+  registerOpMatcher("operation", extramatcher::operation);
+  registerOpMatcher("hasArgument", extramatcher::hasArgument);
+  registerOpMatcher("definedBy", extramatcher::definedBy);
+  registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
+  registerOpMatcher("getAllDefinitions", extramatcher::getAllDefinitions);
+  registerOpMatcher("usedBy", extramatcher::usedBy);
+  registerOpMatcher("getUses", extramatcher::getUses);
+  registerOpMatcher("getAllUses", extramatcher::getAllUses);
+  registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
+  registerOpMatcher("hasOpAttr", static_cast<attrFnType *>(m_Attr));
+  registerOpMatcher("hasOpName", static_cast<opFnType *>(m_Op));
+  registerOpMatcher("m_PosZeroFloat", m_PosZeroFloat);
+  registerOpMatcher("m_NegZeroFloat", m_NegZeroFloat);
+  registerOpMatcher("m_AnyZeroFloat", m_AnyZeroFloat);
+  registerOpMatcher("m_OneFloat", m_OneFloat);
+  registerOpMatcher("m_PosInfFloat", m_PosInfFloat);
+  registerOpMatcher("m_NegInfFloat", m_NegInfFloat);
+  registerOpMatcher("m_Zero", m_Zero);
+  registerOpMatcher("m_NonZero", m_NonZero);
+  registerOpMatcher("m_One", m_One);
 }
 
 RegistryMaps::~RegistryMaps() {
@@ -103,10 +103,10 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 } // anonymous namespace
 
 // static
-Matcher *Registry::constructMatcher(StringRef MatcherName,
-                                    const SourceRange &NameRange,
-                                    ArrayRef<ParserValue> Args,
-                                    Diagnostics *Error) {
+DynMatcher *Registry::constructMatcher(StringRef MatcherName,
+                                       const SourceRange &NameRange,
+                                       ArrayRef<ParserValue> Args,
+                                       Diagnostics *Error) {
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
   if (it == RegistryData->constructors().end()) {
@@ -116,6 +116,20 @@ Matcher *Registry::constructMatcher(StringRef MatcherName,
   }
 
   return it->second->run(NameRange, Args, Error);
+}
+
+// static
+DynMatcher *Registry::constructMatcherWrapper(StringRef MatcherName,
+                                              const SourceRange &NameRange,
+                                              bool ExtractFunction,
+                                              ArrayRef<ParserValue> Args,
+                                              Diagnostics *Error) {
+
+  DynMatcher *Out = constructMatcher(MatcherName, NameRange, Args, Error);
+  if (!Out)
+    return Out;
+  Out->setExtract(ExtractFunction);
+  return Out;
 }
 
 } // namespace matcher

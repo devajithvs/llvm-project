@@ -22,9 +22,16 @@
 #include <string>
 #include <vector>
 
+#include "MatchersInternal.h"
 #include "VariantValue.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
+
+#include "llvm/Support/Debug.h"
+using llvm::dbgs;
+
+#define DEBUG_TYPE "mlir-query"
+#define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 
 namespace mlir {
 namespace query {
@@ -32,9 +39,9 @@ namespace matcher {
 
 namespace internal {
 
-/// \brief Helper template class to just from argument type to the right is/get
-///   functions in VariantValue.
-/// Used to verify and extract the matcher arguments below.
+// Helper template class to just from argument type to the right is/get
+// functions in VariantValue.
+// Used to verify and extract the matcher arguments below.
 template <class T>
 struct ArgTypeTraits;
 template <class T>
@@ -49,27 +56,47 @@ struct ArgTypeTraits<StringRef> {
 };
 
 template <>
-struct ArgTypeTraits<Matcher> {
+struct ArgTypeTraits<DynMatcher> {
   static bool is(const VariantValue &Value) { return Value.isMatcher(); }
-  static Matcher get(const VariantValue &Value) { return Value.getMatcher(); }
+  static DynMatcher get(const VariantValue &Value) {
+    return Value.getMatcher();
+  }
 };
 
-/// \brief Generic MatcherCreate interface.
-///
-/// Provides a \c run() method that constructs the matcher from the provided
-/// arguments.
+template <>
+struct ArgTypeTraits<bool> {
+  static bool is(const VariantValue &Value) { return Value.isBoolean(); }
+  static bool get(const VariantValue &Value) { return Value.getBoolean(); }
+};
+
+template <>
+struct ArgTypeTraits<double> {
+  static bool is(const VariantValue &Value) { return Value.isDouble(); }
+  static double get(const VariantValue &Value) { return Value.getDouble(); }
+};
+
+template <>
+struct ArgTypeTraits<unsigned> {
+  static bool is(const VariantValue &Value) { return Value.isUnsigned(); }
+  static unsigned get(const VariantValue &Value) { return Value.getUnsigned(); }
+};
+
+// Generic MatcherCreate interface.
+// Provides a run() method that constructs the matcher from the provided
+// arguments.
 class MatcherCreateCallback {
 public:
-  virtual ~MatcherCreateCallback() {}
-  virtual Matcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
-                       Diagnostics *Error) const = 0;
+  virtual ~MatcherCreateCallback() = default;
+  virtual DynMatcher *run(const SourceRange &NameRange,
+                          ArrayRef<ParserValue> Args,
+                          Diagnostics *Error) const = 0;
 };
 
-/// \brief Simple callback implementation. Marshaller and function are provided.
-///
-/// \param Marshaller Function to unpack the arguments and call \c Func
-/// \param Func Matcher construct function. This is the function that
-///   compile-time matcher expressions would use to create the matcher.
+// Simple callback implementation. Marshaller and function are provided.
+//
+// Marshaller: Function to unpack the arguments and call Func.
+// Func: Matcher construct function. This is the function that
+// compile-time matcher expressions would use to create the matcher.
 template <typename MarshallerType, typename FuncType>
 class FixedArgCountMatcherCreateCallback : public MatcherCreateCallback {
 public:
@@ -77,8 +104,8 @@ public:
                                      StringRef MatcherName)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
-  Matcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
-               Diagnostics *Error) const override {
+  DynMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+                  Diagnostics *Error) const override {
     return Marshaller(Func, MatcherName, NameRange, Args, Error);
   }
 
@@ -88,7 +115,38 @@ private:
   const StringRef MatcherName;
 };
 
-/// \brief Helper function to do template argument deduction.
+// Variadic marshaller function.
+template <typename T>
+class VariadicMatcherCreateCallback : public MatcherCreateCallback {
+public:
+  explicit VariadicMatcherCreateCallback(StringRef MatcherName)
+      : MatcherName(MatcherName.str()) {}
+
+  typedef DynMatcher DerivedMatcherType;
+
+  DynMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+                  Diagnostics *Error) const override {
+    std::vector<DerivedMatcherType> References;
+    std::vector<const DerivedMatcherType *> InnerArgs(Args.size());
+    for (size_t i = 0, e = Args.size(); i != e; ++i) {
+
+      if (!ArgTypeTraits<DerivedMatcherType>::is(Args[i].Value)) {
+        Error->addError(Args[i].Range, Error->ET_RegistryWrongArgType)
+            << MatcherName << i + 1;
+        return NULL;
+      }
+      References.push_back(
+          ArgTypeTraits<DerivedMatcherType>::get(Args[i].Value));
+      InnerArgs[i] = &References.back();
+    }
+    return new DynMatcher(new VariadicMatcher<T>(References));
+  }
+
+private:
+  const std::string MatcherName;
+};
+
+// Helper function to perform template argument deduction.
 template <typename MarshallerType, typename FuncType>
 MatcherCreateCallback *createMarshallerCallback(MarshallerType Marshaller,
                                                 FuncType Func,
@@ -97,34 +155,35 @@ MatcherCreateCallback *createMarshallerCallback(MarshallerType Marshaller,
       Marshaller, Func, MatcherName);
 }
 
-/// \brief Metafunction to normalize argument types.
-///
-/// We need to remove the const& out of the function parameters to be able to
-/// find values on VariantValue.
+// Metafunction to normalize argument types.
+// We need to remove the const& out of the function parameters to be able to
+// find values on VariantValue.
 template <typename T>
 struct remove_const_ref
     : public std::remove_const<typename std::remove_reference<T>::type> {};
 
-/// \brief 0-arg marshaller function.
-template <typename ReturnType>
-Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
-                          const SourceRange &NameRange,
-                          ArrayRef<ParserValue> Args, Diagnostics *Error) {
+// 0-arg marshaller function.
+template <typename T, typename ReturnType>
+DynMatcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
+                             const SourceRange &NameRange,
+                             ArrayRef<ParserValue> Args, Diagnostics *Error) {
   if (Args.size() != 0) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
         << 0 << Args.size();
     return NULL;
   }
   ReturnType matcherFn = Func();
-  MatcherInterface *singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
-  return new Matcher(singleMatcher);
+  MatcherInterface<T> *singleMatcher =
+      new SingleMatcher<T, ReturnType>(matcherFn);
+  return new DynMatcher(singleMatcher);
 }
 
-/// \brief 1-arg marshaller function.
-template <typename ReturnType, typename InArgType1>
-Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
-                          const SourceRange &NameRange,
-                          ArrayRef<ParserValue> Args, Diagnostics *Error) {
+// 1-arg marshaller function.
+template <typename T, typename ReturnType, typename InArgType1>
+DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
+                             StringRef MatcherName,
+                             const SourceRange &NameRange,
+                             ArrayRef<ParserValue> Args, Diagnostics *Error) {
   typedef typename remove_const_ref<InArgType1>::type ArgType1;
   // TODO: Extract this into a separate function.
   if (Args.size() != 1) {
@@ -138,29 +197,76 @@ Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
     return NULL;
   }
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value));
-  MatcherInterface *singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
-  return new Matcher(singleMatcher);
+  MatcherInterface<T> *singleMatcher =
+      new SingleMatcher<T, ReturnType>(matcherFn);
+  return new DynMatcher(singleMatcher);
 }
 
-/// \brief TODO Variadic marshaller function.
+// 2-arg marshaller function.
+template <typename T, typename ReturnType, typename InArgType1,
+          typename InArgType2>
+DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1, InArgType2),
+                             StringRef MatcherName,
+                             const SourceRange &NameRange,
+                             ArrayRef<ParserValue> Args, Diagnostics *Error) {
+  typedef typename remove_const_ref<InArgType1>::type ArgType1;
+  typedef typename remove_const_ref<InArgType2>::type ArgType2;
+  // TODO: Extract this into a separate function.
+  if (Args.size() != 2) {
+    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
+        << 1 << Args.size();
+    return NULL;
+  }
+  if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
+    Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
+        << MatcherName << 1;
+    return NULL;
+  }
+  if (!ArgTypeTraits<ArgType2>::is(Args[1].Value)) {
+    Error->addError(Args[1].Range, Error->ET_RegistryWrongArgType)
+        << MatcherName << 1;
+    return NULL;
+  }
+  ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value),
+                              ArgTypeTraits<ArgType2>::get(Args[1].Value));
+  MatcherInterface<T> *singleMatcher =
+      new SingleMatcher<T, ReturnType>(matcherFn);
+  return new DynMatcher(singleMatcher);
+}
 
-/// Helper functions to select the appropriate marshaller functions.
-/// They detects the number of arguments, arguments types and return type.
+// Helper functions to select the appropriate marshaller functions.
+// They detects the number of arguments, arguments types and return type.
 
-/// \brief 0-arg overload
-template <typename ReturnType>
+// 0-arg overload
+template <typename T, typename ReturnType>
 MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(),
                                                StringRef MatcherName) {
-  return createMarshallerCallback(matcherMarshall0<ReturnType>, Func,
+  return createMarshallerCallback(matcherMarshall0<T, ReturnType>, Func,
                                   MatcherName);
 }
 
-/// \brief 1-arg overload
-template <typename ReturnType, typename ArgType1>
+// 1-arg overload
+template <typename T, typename ReturnType, typename ArgType1>
 MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                                                StringRef MatcherName) {
-  return createMarshallerCallback(matcherMarshall1<ReturnType, ArgType1>, Func,
-                                  MatcherName);
+  return createMarshallerCallback(matcherMarshall1<T, ReturnType, ArgType1>,
+                                  Func, MatcherName);
+}
+
+// 2-arg overload
+template <typename T, typename ReturnType, typename ArgType1, typename ArgType2>
+MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1,
+                                                                  ArgType2),
+                                               StringRef MatcherName) {
+  return createMarshallerCallback(
+      matcherMarshall1<T, ReturnType, ArgType1, ArgType2>, Func, MatcherName);
+}
+
+// Variadic overload.
+template <typename T, typename MatcherType>
+MatcherCreateCallback *makeMatcherAutoMarshall(MatcherType Func,
+                                               StringRef MatcherName) {
+  return new VariadicMatcherCreateCallback<T>(MatcherName);
 }
 
 } // namespace internal

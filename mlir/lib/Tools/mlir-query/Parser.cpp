@@ -26,19 +26,23 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-/// \brief Simple structure to hold information for one token from the parser.
+// Simple structure to hold information for one token from the parser.
 struct Parser::TokenInfo {
-  /// \brief Different possible tokens.
+  // Different possible tokens.
   enum TokenKind {
     TK_Eof,
     TK_OpenParen,
     TK_CloseParen,
     TK_Comma,
+    TK_Period,
     TK_Literal,
     TK_Ident,
     TK_InvalidChar,
     TK_Error
   };
+
+  // Some known identifiers.
+  static const char *const ID_Extract;
 
   TokenInfo() : Text(), Kind(TK_Eof), Range(), Value() {}
 
@@ -48,7 +52,9 @@ struct Parser::TokenInfo {
   VariantValue Value;
 };
 
-/// \brief Simple tokenizer for the parser.
+const char *const Parser::TokenInfo::ID_Extract = "extract";
+
+// Simple tokenizer for the parser.
 class Parser::CodeTokenizer {
 public:
   explicit CodeTokenizer(StringRef MatcherCode, Diagnostics *Error)
@@ -56,10 +62,10 @@ public:
     NextToken = getNextToken();
   }
 
-  /// \brief Returns but doesn't consume the next token.
+  // Returns but doesn't consume the next token.
   const TokenInfo &peekNextToken() const { return NextToken; }
 
-  /// \brief Consumes and returns the next token.
+  // Consumes and returns the next token.
   TokenInfo consumeNextToken() {
     TokenInfo ThisToken = NextToken;
     NextToken = getNextToken();
@@ -87,6 +93,11 @@ private:
       Result.Text = Code.substr(0, 1);
       Code = Code.drop_front();
       break;
+    case '.':
+      Result.Kind = TokenInfo::TK_Period;
+      Result.Text = Code.substr(0, 1);
+      Code = Code.drop_front();
+      break;
     case '(':
       Result.Kind = TokenInfo::TK_OpenParen;
       Result.Text = Code.substr(0, 1);
@@ -102,6 +113,20 @@ private:
     case '\'':
       // Parse a string literal.
       consumeStringLiteral(&Result);
+      break;
+
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+      // Parse an unsigned and float literal.
+      consumeNumberLiteral(&Result);
       break;
 
     default:
@@ -126,10 +151,66 @@ private:
     return Result;
   }
 
-  /// \brief Consume a string literal.
-  ///
-  /// \c Code must be positioned at the start of the literal (the opening
-  /// quote). Consumed until it finds the same closing quote character.
+  // Consume an unsigned and float literal.
+  void consumeNumberLiteral(TokenInfo *Result) {
+    bool isFloatingLiteral = false;
+    unsigned Length = 1;
+    if (Code.size() > 1) {
+      // Consume the 'x' or 'b' radix modifier, if present.
+      switch (tolower(Code[1])) {
+      case 'x':
+      case 'b':
+        Length = 2;
+      }
+    }
+    while (Length < Code.size() && isdigit(Code[Length]))
+      ++Length;
+
+    // Try to recognize a floating point literal.
+    while (Length < Code.size()) {
+      char c = Code[Length];
+      if (c == '-' || c == '+' || c == '.' || isdigit(c)) {
+        isFloatingLiteral = true;
+        Length++;
+      } else {
+        break;
+      }
+    }
+
+    Result->Text = Code.substr(0, Length);
+    Code = Code.drop_front(Length);
+
+    if (isFloatingLiteral) {
+      char *end;
+      errno = 0;
+      std::string Text = Result->Text.str();
+      double doubleValue = strtod(Text.c_str(), &end);
+      if (*end == 0 && errno == 0) {
+        Result->Kind = TokenInfo::TK_Literal;
+        Result->Value = doubleValue;
+        return;
+      }
+    } else {
+      unsigned Value;
+      if (!Result->Text.getAsInteger(0, Value)) {
+        Result->Kind = TokenInfo::TK_Literal;
+        Result->Value = Value;
+        LLVM_DEBUG(dbgs() << "\nThis is the unsigned value from parser: "
+                          << Value);
+        return;
+      }
+    }
+
+    SourceRange Range;
+    Range.Start = Result->Range.Start;
+    Range.End = currentLocation();
+    Error->addError(Range, Error->ET_ParserNumberError) << Result->Text;
+    Result->Kind = TokenInfo::TK_Error;
+  }
+
+  // Consume a string literal.
+  // Code must be positioned at the start of the literal (the opening
+  // quote). Consumed until it finds the same closing quote character.
   void consumeStringLiteral(TokenInfo *Result) {
     bool InEscape = false;
     const char Marker = Code[0];
@@ -160,8 +241,7 @@ private:
     Result->Kind = TokenInfo::TK_Error;
   }
 
-  /// TODO: Improve this;
-  // Consume all leading whitespace from \c Code.
+  // Consume all leading whitespace from Code.
   void consumeWhitespace() {
     while (!Code.empty() && StringRef(" \t\v\f\r").contains(Code[0])) {
       if (Code[0] == '\n') {
@@ -188,10 +268,10 @@ private:
 
 Parser::Sema::~Sema() {}
 
-/// \brief Parse and validate a matcher expression.
-/// \return \c true on success, in which case \c Value has the matcher parsed.
-///   If the input is malformed, or some argument has an error, it
-///   returns \c false.
+// Parse and validate a matcher expression.
+// return true on success, in which case Value has the matcher parsed.
+// If the input is malformed, or some argument has an error, it
+// returns false.
 bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
 
   LLVM_DEBUG(DBGS() << "parseMatcherExpressionImpl"
@@ -229,7 +309,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     ArgValue.Text = Tokenizer->peekNextToken().Text;
     ArgValue.Range = Tokenizer->peekNextToken().Range;
     if (!parseExpressionImpl(&ArgValue.Value)) {
-      // TODO
+      // TODO: Add appropriate error.
       // Error->addError(NameToken.Range, Error->ET_ParserMatcherArgFailure)
       //    << (Args.size() + 1) << NameToken.Text;
       return false;
@@ -243,14 +323,40 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     return false;
   }
 
+  bool extractFunction = false;
+  if (Tokenizer->peekNextToken().Kind == TokenInfo::TK_Period) {
+    // Parse ".extract()"
+    Tokenizer->consumeNextToken(); // consume the period.
+    const TokenInfo ExtractToken = Tokenizer->consumeNextToken();
+    const TokenInfo OpenToken = Tokenizer->consumeNextToken();
+    const TokenInfo CloseToken = Tokenizer->consumeNextToken();
+
+    // TODO: We could use different error codes for each/some to be more
+    //       explicit about the syntax error.
+    if (ExtractToken.Kind != TokenInfo::TK_Ident ||
+        ExtractToken.Text != TokenInfo::ID_Extract) {
+      Error->addError(ExtractToken.Range, Error->ET_ParserMalformedBindExpr);
+      return false;
+    }
+    if (OpenToken.Kind != TokenInfo::TK_OpenParen) {
+      Error->addError(OpenToken.Range, Error->ET_ParserMalformedBindExpr);
+      return false;
+    }
+    if (CloseToken.Kind != TokenInfo::TK_CloseParen) {
+      Error->addError(CloseToken.Range, Error->ET_ParserMalformedBindExpr);
+      return false;
+    }
+    extractFunction = true;
+  }
+
   // Merge the start and end infos.
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
-  Matcher *Result =
-      S->actOnMatcherExpression(NameToken.Text, MatcherRange, Args, Error);
+  DynMatcher *Result = S->actOnMatcherExpression(NameToken.Text, MatcherRange,
+                                                 extractFunction, Args, Error);
 
   if (Result == NULL) {
-    // TODO
+    // TODO: Add appropriate error.
     // Error->addError(NameToken.Range, Error->ET_ParserMatcherFailure)
     //    << NameToken.Text;
     return false;
@@ -260,7 +366,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   return true;
 }
 
-/// \brief Parse an <Expresssion>
+// Parse an <Expresssion>
 bool Parser::parseExpressionImpl(VariantValue *Value) {
   switch (Tokenizer->nextTokenKind()) {
   case TokenInfo::TK_Literal:
@@ -291,6 +397,7 @@ bool Parser::parseExpressionImpl(VariantValue *Value) {
   case TokenInfo::TK_OpenParen:
   case TokenInfo::TK_CloseParen:
   case TokenInfo::TK_Comma:
+  case TokenInfo::TK_Period:
   case TokenInfo::TK_InvalidChar:
     const TokenInfo Token = Tokenizer->consumeNextToken();
     Error->addError(Token.Range, Error->ET_ParserInvalidToken) << Token.Text;
@@ -305,11 +412,13 @@ Parser::Parser(CodeTokenizer *Tokenizer, Sema *S, Diagnostics *Error)
 class RegistrySema : public Parser::Sema {
 public:
   virtual ~RegistrySema(){};
-  Matcher *actOnMatcherExpression(StringRef MatcherName,
-                                  const SourceRange &NameRange,
-                                  ArrayRef<ParserValue> Args,
-                                  Diagnostics *Error) override {
-    return Registry::constructMatcher(MatcherName, NameRange, Args, Error);
+  DynMatcher *actOnMatcherExpression(StringRef MatcherName,
+                                     const SourceRange &NameRange,
+                                     bool ExtractFunction,
+                                     ArrayRef<ParserValue> Args,
+                                     Diagnostics *Error) override {
+    return Registry::constructMatcherWrapper(MatcherName, NameRange,
+                                             ExtractFunction, Args, Error);
   }
 };
 
@@ -322,16 +431,23 @@ bool Parser::parseExpression(StringRef Code, VariantValue *Value,
 bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value,
                              Diagnostics *Error) {
   CodeTokenizer Tokenizer(Code, Error);
-  return Parser(&Tokenizer, S, Error).parseExpressionImpl(Value);
+  if (!Parser(&Tokenizer, S, Error).parseExpressionImpl(Value))
+    return false;
+  if (Tokenizer.peekNextToken().Kind != TokenInfo::TK_Eof) {
+    Error->addError(Tokenizer.peekNextToken().Range,
+                    Error->ET_ParserTrailingCode);
+    return false;
+  }
+  return true;
 }
 
-Matcher *Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {
+DynMatcher *Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {
   RegistrySema S;
   return parseMatcherExpression(Code, &S, Error);
 }
 
-Matcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
-                                        Diagnostics *Error) {
+DynMatcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
+                                           Diagnostics *Error) {
   VariantValue Value;
   if (!parseExpression(Code, S, &Value, Error)) {
 
@@ -341,7 +457,7 @@ Matcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
     Error->addError(SourceRange(), Error->ET_ParserNotAMatcher);
     return NULL;
   }
-  // FIXME: clone?
+  // FIXME: remove clone
   return Value.getMatcher().clone();
 }
 

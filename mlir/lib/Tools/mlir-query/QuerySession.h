@@ -18,7 +18,7 @@ using namespace mlir;
 namespace mlir {
 namespace query {
 
-/// Represents the state for a particular clang-query session.
+// Represents the state for a particular clang-query session.
 class QuerySession {
 public:
   QuerySession(Operation *Op, const std::shared_ptr<llvm::SourceMgr> &SourceMgr)

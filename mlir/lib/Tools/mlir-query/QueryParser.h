@@ -24,16 +24,13 @@ class QuerySession;
 
 class QueryParser {
 public:
-  /// Parse \a Line as a query.
-  ///
-  /// \return A QueryRef representing the query, which may be an InvalidQuery.
+  // Parse Line as a query and return a QueryRef representing the query, which
+  // may be an InvalidQuery.
   static QueryRef parse(StringRef Line, const QuerySession &QS);
 
-  /// Compute a list of completions for \a Line assuming a cursor at
-  /// \param Pos characters past the start of \a Line, ordered from most
-  /// likely to least likely.
-  ///
-  /// \return A vector of completions for \a Line.
+  // Compute a list of completions for Line assuming a cursor at
+  // Pos is the characters past the start of Line, ordered from most
+  // likely to least likely and returns a vector of completions for Line.
   static std::vector<llvm::LineEditor::Completion>
   complete(StringRef Line, size_t Pos, const QuerySession &QS);
 
@@ -53,10 +50,8 @@ private:
 
   QueryRef endQuery(QueryRef Q);
 
-  /// Parse [\p Begin,\p End).
-  ///
-  /// \return A reference to the parsed query object, which may be an
-  /// \c InvalidQuery if a parse error occurs.
+  // Parse [Begin, End) and returns a reference to the parsed query object,
+  // which may be an InvalidQuery if a parse error occurs.
   QueryRef doParse();
 
   StringRef Line;

@@ -36,9 +36,8 @@ struct Query : llvm::RefCountedBase<Query> {
   Query(QueryKind Kind) : Kind(Kind) {}
   virtual ~Query();
 
-  /// Perform the query on \p QS and print output to \p OS.
-  ///
-  /// \return false if an error occurs, otherwise return true.
+  // Perform the query on QS and print output to OS.
+  // Return false if an error occurs, otherwise return true.
   virtual bool run(llvm::raw_ostream &OS, QuerySession &QS) const = 0;
 
   llvm::StringRef RemainingContent;
@@ -47,7 +46,7 @@ struct Query : llvm::RefCountedBase<Query> {
 
 typedef llvm::IntrusiveRefCntPtr<Query> QueryRef;
 
-/// Any query which resulted in a parse error.  The error message is in ErrStr.
+// Any query which resulted in a parse error. The error message is in ErrStr.
 struct InvalidQuery : Query {
   InvalidQuery(const llvm::Twine &ErrStr)
       : Query(QK_Invalid), ErrStr(ErrStr.str()) {}
@@ -58,7 +57,7 @@ struct InvalidQuery : Query {
   static bool classof(const Query *Q) { return Q->Kind == QK_Invalid; }
 };
 
-/// No-op query (i.e. a blank line).
+// No-op query (i.e. a blank line).
 struct NoOpQuery : Query {
   NoOpQuery() : Query(QK_NoOp) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
@@ -66,7 +65,7 @@ struct NoOpQuery : Query {
   static bool classof(const Query *Q) { return Q->Kind == QK_NoOp; }
 };
 
-/// Query for "help".
+// Query for "help".
 struct HelpQuery : Query {
   HelpQuery() : Query(QK_Help) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
@@ -74,13 +73,13 @@ struct HelpQuery : Query {
   static bool classof(const Query *Q) { return Q->Kind == QK_Help; }
 };
 
-/// Query for "match MATCHER".
+// Query for "match MATCHER".
 struct MatchQuery : Query {
-  MatchQuery(const matcher::Matcher *Matcher)
+  MatchQuery(const matcher::DynMatcher *Matcher)
       : Query(QK_Match), matcher(Matcher) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  const matcher::Matcher *matcher;
+  const matcher::DynMatcher *matcher;
 
   static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
 };
@@ -98,7 +97,7 @@ struct SetQueryKind<OutputKind> {
   static const QueryKind value = QK_SetOutputKind;
 };
 
-/// Query for "set VAR VALUE".
+// Query for "set VAR VALUE".
 template <typename T>
 struct SetQuery : Query {
   SetQuery(T QuerySession::*Var, T Value)
