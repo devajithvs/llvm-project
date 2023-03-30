@@ -148,6 +148,18 @@ void test2(FunctionOpInterface f) {
     llvm::outs() << "Pattern add(add(a, constant), a) matched\n";
 }
 
+void test3(FunctionOpInterface f) {
+  auto p = m_Op<arith::MulFOp>(
+      m_Any(), m_Op<arith::AddFOp>(m_Any(), m_Name("test.name")));
+  auto p1 = m_AttrName("fastmath");
+  // Last operation that is not the terminator.
+  Operation *lastOp = f.getFunctionBody().front().back().getPrevNode();
+  if (p.match(lastOp))
+    llvm::outs() << "Pattern mul(*, add(*, m_Name(\"test.name\"))) matched\n";
+  if (p1.match(lastOp))
+    llvm::outs() << "Pattern m_AttrName(\"fastmath\") matched\n";
+}
+
 void TestMatchers::runOnOperation() {
   auto f = getOperation();
   llvm::outs() << f.getName() << "\n";
@@ -155,6 +167,8 @@ void TestMatchers::runOnOperation() {
     test1(f);
   if (f.getName() == "test2")
     test2(f);
+  if (f.getName() == "test3")
+    test3(f);
 }
 
 namespace mlir {
