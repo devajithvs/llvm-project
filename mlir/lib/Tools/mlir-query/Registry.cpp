@@ -31,6 +31,11 @@ namespace {
 using internal::MatcherCreateCallback;
 
 typedef llvm::StringMap<const MatcherCreateCallback *> ConstructorMap;
+
+typedef detail::constant_op_matcher constant_fn_type();
+typedef detail::attr_op_matcher attr_fn_type(StringRef);
+typedef detail::name_op_matcher name_fn_type(StringRef);
+
 class RegistryMaps {
 public:
   RegistryMaps();
@@ -56,15 +61,13 @@ RegistryMaps::RegistryMaps() {
   // more supporting code that was omitted from the first revision for
   // simplicitly of code review.
 
-  // FIXME: m_Constant will not work due to templated m_Constant function
-  // registerMatcher("m_Constant",
-  //                  internal::makeMatcherAutoMarshall(m_Constant,
-  //                  "m_Constant"));
-
+  registerMatcher("m_Constant",
+                  internal::makeMatcherAutoMarshall((constant_fn_type*)m_Constant,
+                  "m_Constant"));
   registerMatcher("m_AttrName",
-                  internal::makeMatcherAutoMarshall(m_AttrName, "m_AttrName"));
+                  internal::makeMatcherAutoMarshall((attr_fn_type*)m_Attr, "m_AttrName"));
   registerMatcher("m_Name",
-                  internal::makeMatcherAutoMarshall(m_Name, "m_Name"));
+                  internal::makeMatcherAutoMarshall((name_fn_type*)m_Op, "m_Name"));
   registerMatcher("m_AnyZeroFloat", internal::makeMatcherAutoMarshall(
                                         m_AnyZeroFloat, "m_AnyZeroFloat"));
   registerMatcher("m_PosZeroFloat", internal::makeMatcherAutoMarshall(
@@ -117,6 +120,7 @@ Matcher *Registry::constructMatcher(StringRef MatcherName,
 
   return it->second->run(NameRange, Args, Error);
 }
+
 
 } // namespace matcher
 } // namespace query
