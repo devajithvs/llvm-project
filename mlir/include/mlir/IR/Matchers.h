@@ -52,21 +52,6 @@ struct constant_op_matcher {
   bool match(Operation *op) { return op->hasTrait<OpTrait::ConstantLike>(); }
 };
 
-/// The matcher that matches operations that have the specified op name.
-struct name_op_matcher  {
-  StringRef opName;
-  name_op_matcher(StringRef opN) : opName(opN) {}
-
-  bool match(Operation *op) { return op->getName().getStringRef() == opName; }
-};
-
-struct attr_op_matcher  {
-  StringRef opAttr;
-  attr_op_matcher(StringRef opN) : opAttr(opN) {}
-
-  bool match(Operation *op) { return op->hasAttr(opAttr); }
-};
-
 /// The matcher that matches operations that have the `ConstantLike` trait, and
 /// binds the folded attribute value.
 template <typename AttrT>
@@ -262,16 +247,6 @@ struct RecursivePatternMatcher {
 /// Matches a constant foldable operation.
 inline detail::constant_op_matcher m_Constant() {
   return detail::constant_op_matcher();
-}
-
-/// Matches a named attribute operation.
-inline detail::attr_op_matcher m_AttrName(StringRef attrN) {
-  return detail::attr_op_matcher(attrN);
-}
-
-/// Matches a named operation.
-inline detail::name_op_matcher m_Name(StringRef opN) {
-  return detail::name_op_matcher(opN);
 }
 
 /// Matches a value from a constant foldable operation and writes the value to
