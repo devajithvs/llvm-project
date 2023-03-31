@@ -32,9 +32,9 @@ using internal::MatcherCreateCallback;
 
 typedef llvm::StringMap<const MatcherCreateCallback *> ConstructorMap;
 
-typedef detail::constant_op_matcher constant_fn_type();
-typedef detail::attr_op_matcher attr_fn_type(StringRef);
-typedef detail::name_op_matcher name_fn_type(StringRef);
+typedef detail::constant_op_matcher constantFnType();
+typedef detail::AttrOpMatcher attrFnType(StringRef);
+typedef detail::NameOpMatcher opFnType(StringRef);
 
 class RegistryMaps {
 public:
@@ -62,12 +62,12 @@ RegistryMaps::RegistryMaps() {
   // simplicitly of code review.
 
   registerMatcher("m_Constant",
-                  internal::makeMatcherAutoMarshall((constant_fn_type*)m_Constant,
+                  internal::makeMatcherAutoMarshall((constantFnType*)m_Constant,
                   "m_Constant"));
-  registerMatcher("m_AttrName",
-                  internal::makeMatcherAutoMarshall((attr_fn_type*)m_Attr, "m_AttrName"));
-  registerMatcher("m_Name",
-                  internal::makeMatcherAutoMarshall((name_fn_type*)m_Op, "m_Name"));
+  registerMatcher("m_Attr",
+                  internal::makeMatcherAutoMarshall((attrFnType*)m_Attr, "m_Attr"));
+  registerMatcher("m_Op",
+                  internal::makeMatcherAutoMarshall((opFnType*)m_Op, "m_Op"));
   registerMatcher("m_AnyZeroFloat", internal::makeMatcherAutoMarshall(
                                         m_AnyZeroFloat, "m_AnyZeroFloat"));
   registerMatcher("m_PosZeroFloat", internal::makeMatcherAutoMarshall(
