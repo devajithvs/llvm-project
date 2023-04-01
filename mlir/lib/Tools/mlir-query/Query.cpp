@@ -68,9 +68,21 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 
   unsigned MatchCount = 0;
   for (auto op : matches) {
+    auto opLoc = op->getLoc().cast<FileLineColLoc>();
     OS << "\nMatch #" << ++MatchCount << ":\n\n";
-    // TODO: Get source location and filename
-    OS << "testing: note: 'root' binds here\n" << *op << "\n\n";
+    OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
+       << opLoc.getColumn() << ": note: \"root\" binds here\n"
+       << *op << "\n\n";
+    // auto smloc = convertLocToSMLoc(opLoc);
+    // printFullOpWithIndentAndLoc(op);
+    // AsmState state(op->getContext());
+    // AsmPrinter::Impl(OS, state.getImpl())
+    // if (auto printFn = op->getDialect()->getOperationPrinter(op)) {
+    // printOpName(op, p, defaultDialect);
+    // printFn(op, p);
+    //} else {
+    // p->printGenericOp(op);
+    //}
   }
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;
