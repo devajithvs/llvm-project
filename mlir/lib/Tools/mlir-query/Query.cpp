@@ -41,14 +41,6 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
-namespace {
-enum MatcherKind {
-  M_OpName,
-  M_OpAttr,
-  M_OpConst,
-};
-} // namespace
-
 // This could be done better but is not worth the variadic template trouble.
 std::vector<Operation *> getMatches(Operation *rootOp,
                                     const matcher::Matcher *matcher) {
@@ -73,16 +65,6 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
     OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
        << opLoc.getColumn() << ": note: \"root\" binds here\n"
        << *op << "\n\n";
-    // auto smloc = convertLocToSMLoc(opLoc);
-    // printFullOpWithIndentAndLoc(op);
-    // AsmState state(op->getContext());
-    // AsmPrinter::Impl(OS, state.getImpl())
-    // if (auto printFn = op->getDialect()->getOperationPrinter(op)) {
-    // printOpName(op, p, defaultDialect);
-    // printFn(op, p);
-    //} else {
-    // p->printGenericOp(op);
-    //}
   }
   OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
   return true;
