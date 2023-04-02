@@ -42,13 +42,13 @@ public:
   virtual bool matches(Operation *op) = 0;
 };
 
-/// It is constructed from a \c MatcherImplementation and redirects calls to
+/// It is constructed from a MatcherImplementation and redirects calls to
 /// underlying implementation.
 class Matcher {
 public:
   Matcher(MatcherInterface *Implementation) : Implementation(Implementation) {}
 
-  /// Returns true if the matcher matches the given \c op.
+  /// Returns true if the matcher matches the given op.
   bool matches(Operation *op) const { return Implementation->matches(op); }
 
   Matcher *clone() const { return new Matcher(*this); }
@@ -57,35 +57,47 @@ private:
   llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
 };
 
-/// \brief Single matcher that takes the matcher as a template argument.
+/// Single matcher that takes the matcher as a template argument.
 template <typename T>
 class SingleMatcher : public MatcherInterface {
 public:
-  SingleMatcher(T &matcher) : Matcher(matcher) {}
-  bool matches(Operation *op) override { return Matcher.match(op); }
+  SingleMatcher(T &MatcherFn) : MatcherFn(MatcherFn) {}
+  bool matches(Operation *op) override { return MatcherFn.match(op); }
 
-  T Matcher;
+  T MatcherFn;
+};
+
+// static bool allofvariadicoperator(Operation *op,
+                                  // std::vector<Matcher> InnerMatchers) {
+  // return llvm::all_of(InnerMatchers, [&](const Matcher &InnerMatcher) {
+    // return InnerMatcher.matches(op);
+  // });
+// }
+
+template <typename... Ts>
+class VariadicMatcher : public MatcherInterface {
+public:
+  VariadicMatcher(Ts &&...MatcherFns)
+      : MatcherFns(std::forward<Ts>(MatcherFns)...) {}
+
+  bool matches(Operation *op) override {
+    return llvm::all_of(
+        getMatchers(std::index_sequence_for<Ts...>()),
+        [&](const Matcher &InnerMatcher) { return InnerMatcher.matches(op); });
+  }
+
+private:
+  template <std::size_t... Is>
+  std::vector<Matcher> getMatchers(std::index_sequence<Is...>) && {
+    return {Matcher(SingleMatcher(std::get<Is>(std::move(MatcherFns))))...};
+  }
+
+  std::tuple<Ts...> MatcherFns;
 };
 
 class MatchFinder {
 public:
-  /// Contains all information for a given match.
-  ///
-  /// Every time a match is found, the MatchFinder will invoke the registered
-  /// MatchCallback with a MatchResult containing information about the match.
-  struct MatchResult {
-    MatchResult(Operation *op);
-
-    /// Contains the nodes bound on the current match.
-    ///
-    /// This allows user code to easily extract matched AST nodes.
-    Operation *op;
-
-    /// Utilities for interpreting the matched AST structures.
-    /// @{
-    const std::shared_ptr<llvm::SourceMgr> SourceMgr;
-    /// @}
-  };
+  /// Returns all the operations that matches.
   std::vector<Operation *> getMatches(Operation *f, const Matcher *matcher) {
     std::vector<Operation *> matches;
     f->walk([&matches, &matcher](Operation *op) {
