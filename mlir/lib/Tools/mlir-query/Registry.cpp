@@ -29,12 +29,11 @@ namespace matcher {
 namespace {
 
 using internal::MatcherCreateCallback;
+using ConstructorMap = llvm::StringMap<const MatcherCreateCallback *>;
 
-typedef llvm::StringMap<const MatcherCreateCallback *> ConstructorMap;
-
-typedef detail::constant_op_matcher constantFnType();
-typedef detail::AttrOpMatcher attrFnType(StringRef);
-typedef detail::NameOpMatcher opFnType(StringRef);
+using constantFnType = detail::constant_op_matcher();
+using attrFnType = detail::AttrOpMatcher(StringRef);
+using opFnType = detail::NameOpMatcher(StringRef);
 
 class RegistryMaps {
 public:
@@ -53,7 +52,7 @@ void RegistryMaps::registerMatcher(StringRef MatcherName,
   Constructors[MatcherName] = Callback;
 }
 
-/// \brief Generate a registry map with all the known matchers.
+/// Generate a registry map with all the known matchers.
 RegistryMaps::RegistryMaps() {
 
   // TODO: This list is not complete. It only has non-templated matchers,
@@ -62,12 +61,12 @@ RegistryMaps::RegistryMaps() {
   // simplicitly of code review.
 
   registerMatcher("isConstant",
-                  internal::makeMatcherAutoMarshall((constantFnType*)m_Constant,
-                  "m_Constant"));
-  registerMatcher("hasAttr",
-                  internal::makeMatcherAutoMarshall((attrFnType*)m_Attr, "m_Attr"));
+                  internal::makeMatcherAutoMarshall(
+                      (constantFnType *)m_Constant, "m_Constant"));
+  registerMatcher("hasAttr", internal::makeMatcherAutoMarshall(
+                                 (attrFnType *)m_Attr, "m_Attr"));
   registerMatcher("hasName",
-                  internal::makeMatcherAutoMarshall((opFnType*)m_Op, "m_Op"));
+                  internal::makeMatcherAutoMarshall((opFnType *)m_Op, "m_Op"));
   registerMatcher("m_AnyZeroFloat", internal::makeMatcherAutoMarshall(
                                         m_AnyZeroFloat, "m_AnyZeroFloat"));
   registerMatcher("m_PosZeroFloat", internal::makeMatcherAutoMarshall(
@@ -120,7 +119,6 @@ Matcher *Registry::constructMatcher(StringRef MatcherName,
 
   return it->second->run(NameRange, Args, Error);
 }
-
 
 } // namespace matcher
 } // namespace query

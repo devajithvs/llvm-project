@@ -6,19 +6,19 @@
 //
 //===----------------------------------------------------------------------===//
 //
-//  Implements the base layer of the matcher framework.
+// Implements the base layer of the matcher framework.
 //
-//  Matchers are methods that return a Matcher which provides a method
-//  matches(Operation *op)
+// Matchers are methods that return a Matcher which provides a method
+// matches(Operation *op)
 //
-//  In general, matchers have two parts:
-//  1. A function Matcher MatcherName(<arguments>) which returns a Matcher
-//     based on the arguments.
-//  2. An implementation of a class derived from MatcherInterface.
+// In general, matchers have two parts:
+// 1. A function Matcher MatcherName(<arguments>) which returns a Matcher
+// based on the arguments.
+// 2. An implementation of a class derived from MatcherInterface.
 //
-//  The matcher functions are defined in include/mlir/IR/Matchers.h.
-//  This file contains the wrapper classes needed to construct matchers for
-//  mlir-query.
+// The matcher functions are defined in include/mlir/IR/Matchers.h.
+// This file contains the wrapper classes needed to construct matchers for
+// mlir-query.
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,18 +32,18 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-class MatcherInterface;
-typedef llvm::IntrusiveRefCntPtr<MatcherInterface> MatcherImplementation;
 class MatcherInterface : public llvm::RefCountedBase<MatcherInterface> {
 public:
   virtual ~MatcherInterface() = default;
 
-  /// \brief Returns true if 'op' can be matched.
+  /// Returns true if 'op' can be matched.
   virtual bool matches(Operation *op) = 0;
 };
 
-/// It is constructed from a MatcherImplementation and redirects calls to
-/// underlying implementation.
+typedef llvm::IntrusiveRefCntPtr<MatcherInterface> MatcherImplementation;
+
+/// Matcher wraps a MatcherInterface implementation and provides a matches()
+/// method that redirects calls to the underlying implementation.
 class Matcher {
 public:
   Matcher(MatcherInterface *Implementation) : Implementation(Implementation) {}
@@ -54,50 +54,52 @@ public:
   Matcher *clone() const { return new Matcher(*this); }
 
 private:
-  llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
+  MatcherImplementation Implementation;
 };
 
-/// Single matcher that takes the matcher as a template argument.
+/// SingleMatcher takes a matcher function object and implements
+/// MatcherInterface.
 template <typename T>
 class SingleMatcher : public MatcherInterface {
 public:
-  SingleMatcher(T &MatcherFn) : MatcherFn(MatcherFn) {}
-  bool matches(Operation *op) override { return MatcherFn.match(op); }
+  SingleMatcher(T &matcherFn) : matcherFn(matcherFn) {}
+  bool matches(Operation *op) override { return matcherFn.match(op); }
 
-  T MatcherFn;
+private:
+  T matcherFn;
 };
 
 // static bool allofvariadicoperator(Operation *op,
-                                  // std::vector<Matcher> InnerMatchers) {
-  // return llvm::all_of(InnerMatchers, [&](const Matcher &InnerMatcher) {
-    // return InnerMatcher.matches(op);
-  // });
+// std::vector<Matcher> InnerMatchers) {
+// return llvm::all_of(InnerMatchers, [&](const Matcher &InnerMatcher) {
+// return InnerMatcher.matches(op);
+// });
 // }
 
+/// VariadicMatcher takes a vector of Matchers and returns true if all Matchers
+/// match the given operation.
 class VariadicMatcher : public MatcherInterface {
 public:
-  VariadicMatcher(std::vector<Matcher> InnerMatchers)
-      : InnerMatchers(InnerMatchers) {}
+  VariadicMatcher(std::vector<Matcher> matchers) : matchers(matchers) {}
 
   bool matches(Operation *op) override {
     return llvm::all_of(
-        InnerMatchers,
-        [&](const Matcher &InnerMatcher) { return InnerMatcher.matches(op); });
+        matchers, [&](const Matcher &matcher) { return matcher.matches(op); });
   }
 
 private:
-  std::vector<Matcher> InnerMatchers;
+  std::vector<Matcher> matchers;
 };
 
+/// MatchFinder is used to find all operations that match a given matcher.
 class MatchFinder {
 public:
-  /// Returns all the operations that matches.
-  std::vector<Operation *> getMatches(Operation *f, const Matcher *matcher) {
+  /// Returns all operations that match the given matcher.
+  std::vector<Operation *> getMatches(Operation *op, const Matcher *matcher) {
     std::vector<Operation *> matches;
-    f->walk([&matches, &matcher](Operation *op) {
-      if (matcher->matches(op)) {
-        matches.push_back(op);
-      }
+    op->walk([&](Operation *subOp) {
+      if (matcher->matches(subOp))
+        matches.push_back(subOp);
     });
     return matches;
   }
