@@ -74,25 +74,19 @@ public:
   // });
 // }
 
-template <typename... Ts>
 class VariadicMatcher : public MatcherInterface {
 public:
-  VariadicMatcher(Ts &&...MatcherFns)
-      : MatcherFns(std::forward<Ts>(MatcherFns)...) {}
+  VariadicMatcher(std::vector<Matcher> InnerMatchers)
+      : InnerMatchers(InnerMatchers) {}
 
   bool matches(Operation *op) override {
     return llvm::all_of(
-        getMatchers(std::index_sequence_for<Ts...>()),
+        InnerMatchers,
         [&](const Matcher &InnerMatcher) { return InnerMatcher.matches(op); });
   }
 
 private:
-  template <std::size_t... Is>
-  std::vector<Matcher> getMatchers(std::index_sequence<Is...>) && {
-    return {Matcher(SingleMatcher(std::get<Is>(std::move(MatcherFns))))...};
-  }
-
-  std::tuple<Ts...> MatcherFns;
+  std::vector<Matcher> InnerMatchers;
 };
 
 class MatchFinder {
