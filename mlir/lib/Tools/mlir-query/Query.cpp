@@ -64,9 +64,9 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
     OS << "\nMatch #" << ++MatchCount << ":\n\n";
     OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
        << opLoc.getColumn() << ": note: \"root\" binds here\n"
-       << *op << "\n\n";
+       << *op << "\n";
   }
-  OS << MatchCount << (MatchCount == 1 ? " match.\n" : " matches.\n");
+  OS << MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");
   return true;
 }
 
