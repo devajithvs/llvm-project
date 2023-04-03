@@ -61,12 +61,12 @@ RegistryMaps::RegistryMaps() {
   // more supporting code that was omitted from the first revision for
   // simplicitly of code review.
 
-  registerMatcher("m_Constant",
+  registerMatcher("isConstant",
                   internal::makeMatcherAutoMarshall((constantFnType*)m_Constant,
                   "m_Constant"));
-  registerMatcher("m_Attr",
+  registerMatcher("hasAttr",
                   internal::makeMatcherAutoMarshall((attrFnType*)m_Attr, "m_Attr"));
-  registerMatcher("m_Op",
+  registerMatcher("hasName",
                   internal::makeMatcherAutoMarshall((opFnType*)m_Op, "m_Op"));
   registerMatcher("m_AnyZeroFloat", internal::makeMatcherAutoMarshall(
                                         m_AnyZeroFloat, "m_AnyZeroFloat"));
