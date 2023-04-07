@@ -65,6 +65,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
     OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
        << opLoc.getColumn() << ": note: \"root\" binds here\n"
        << *op << "\n";
+    //auto diag = mlir::emitError(opLoc, "Test message");
   }
   OS << "\n" <<MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");
   return true;
