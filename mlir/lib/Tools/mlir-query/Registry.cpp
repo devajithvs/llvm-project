@@ -59,37 +59,24 @@ RegistryMaps::RegistryMaps() {
   // which are the simplest to add to the system. Templated matchers require
   // more supporting code that was omitted from the first revision for
   // simplicitly of code review.
-
-  registerMatcher("isConstant",
-                  internal::makeMatcherAutoMarshall(
-                      (constantFnType *)m_Constant, "m_Constant"));
-  registerMatcher("hasAttr", internal::makeMatcherAutoMarshall(
-                                 (attrFnType *)m_Attr, "m_Attr"));
-  registerMatcher("hasName",
-                  internal::makeMatcherAutoMarshall((opFnType *)m_Op, "m_Op"));
-  registerMatcher("m_AnyZeroFloat", internal::makeMatcherAutoMarshall(
-                                        m_AnyZeroFloat, "m_AnyZeroFloat"));
-  registerMatcher("m_PosZeroFloat", internal::makeMatcherAutoMarshall(
-                                        m_PosZeroFloat, "m_PosZeroFloat"));
-  registerMatcher("m_NegZeroFloat", internal::makeMatcherAutoMarshall(
-                                        m_NegZeroFloat, "m_NegZeroFloat"));
-  registerMatcher("m_OneFloat",
-                  internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_PosInfFloat", internal::makeMatcherAutoMarshall(
-                                       m_PosInfFloat, "m_PosInfFloat"));
-  registerMatcher("m_NegInfFloat", internal::makeMatcherAutoMarshall(
-                                       m_NegInfFloat, "m_NegInfFloat"));
-  registerMatcher("m_Zero",
-                  internal::makeMatcherAutoMarshall(m_Zero, "m_Zero"));
-  registerMatcher("m_NonZero",
-                  internal::makeMatcherAutoMarshall(m_NonZero, "m_NonZero"));
-  registerMatcher("m_One", internal::makeMatcherAutoMarshall(m_One, "m_One"));
-  registerMatcher("m_OneFloat",
-                  internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_OneFloat",
-                  internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_OneFloat",
-                  internal::makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  using internal::makeMatcherAutoMarshall;
+  // clang-format off
+  registerMatcher("isConstant", makeMatcherAutoMarshall((constantFnType *)m_Constant, "m_Constant"));
+  registerMatcher("hasAttr", makeMatcherAutoMarshall((attrFnType *)m_Attr, "m_Attr"));
+  registerMatcher("hasName", makeMatcherAutoMarshall((opFnType *)m_Op, "m_Op"));
+  registerMatcher("m_AnyZeroFloat", makeMatcherAutoMarshall(m_AnyZeroFloat, "m_AnyZeroFloat"));
+  registerMatcher("m_PosZeroFloat", makeMatcherAutoMarshall(m_PosZeroFloat, "m_PosZeroFloat"));
+  registerMatcher("m_NegZeroFloat", makeMatcherAutoMarshall(m_NegZeroFloat, "m_NegZeroFloat"));
+  registerMatcher("m_OneFloat", makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_PosInfFloat", makeMatcherAutoMarshall(m_PosInfFloat, "m_PosInfFloat"));
+  registerMatcher("m_NegInfFloat", makeMatcherAutoMarshall(m_NegInfFloat, "m_NegInfFloat"));
+  registerMatcher("m_Zero", makeMatcherAutoMarshall(m_Zero, "m_Zero"));
+  registerMatcher("m_NonZero", makeMatcherAutoMarshall(m_NonZero, "m_NonZero"));
+  registerMatcher("m_One", makeMatcherAutoMarshall(m_One, "m_One"));
+  registerMatcher("m_OneFloat", makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_OneFloat", makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_OneFloat", makeMatcherAutoMarshall(m_OneFloat, "m_OneFloat"));
+  // clang-format on
 }
 
 RegistryMaps::~RegistryMaps() {
