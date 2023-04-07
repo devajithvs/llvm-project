@@ -66,7 +66,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
        << opLoc.getColumn() << ": note: \"root\" binds here\n"
        << *op << "\n";
   }
-  OS << MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");
+  OS << "\n" <<MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");
   return true;
 }
 
