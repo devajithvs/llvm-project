@@ -40,8 +40,6 @@ struct Parser::TokenInfo {
     TK_Error
   };
 
-  static const char *const ID_Op;
-
   TokenInfo() : Text(), Kind(TK_Eof), Range(), Value() {}
 
   StringRef Text;
@@ -49,8 +47,6 @@ struct Parser::TokenInfo {
   SourceRange Range;
   VariantValue Value;
 };
-
-const char *const Parser::TokenInfo::ID_Op = "op";
 
 /// \brief Simple tokenizer for the parser.
 class Parser::CodeTokenizer {
@@ -78,7 +74,7 @@ private:
     TokenInfo Result;
     Result.Range.Start = currentLocation();
 
-    LLVM_DEBUG(DBGS() << "get Next token: " << Code << "\n");
+    LLVM_DEBUG(DBGS() << "get Next token" << Code << "\n");
     if (Code.empty()) {
       Result.Kind = TokenInfo::TK_Eof;
       Result.Text = "";
@@ -250,18 +246,9 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   // Merge the start and end infos.
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
-  Matcher *Result = nullptr;
-  if (NameToken.Text != TokenInfo::ID_Op) {
-    Result =
-        S->actOnMatcherExpression(NameToken.Text, MatcherRange, Args, Error);
-  } else {
-    std::vector<Matcher> matchers;
-    std::transform(Args.begin(), Args.end(), std::back_inserter(matchers),
-                   [](ParserValue const &ArgValue) -> Matcher {
-                     return ArgValue.Value.getMatcher();
-                   });
-    Result = new Matcher(new VariadicMatcher(matchers));
-  }
+  Matcher *Result =
+      S->actOnMatcherExpression(NameToken.Text, MatcherRange, Args, Error);
+
   if (Result == NULL) {
     // TODO
     // Error->addError(NameToken.Range, Error->ET_ParserMatcherFailure)
