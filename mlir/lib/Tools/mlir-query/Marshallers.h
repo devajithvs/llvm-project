@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "MatchersInternal.h"
 #include "VariantValue.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
@@ -87,6 +88,35 @@ private:
   const StringRef MatcherName;
 };
 
+/// Variadic marshaller function.
+class VariadicMatcherCreateCallback : public MatcherCreateCallback {
+public:
+  explicit VariadicMatcherCreateCallback(StringRef MatcherName)
+      : MatcherName(MatcherName.str()) {}
+
+  typedef Matcher DerivedMatcherType;
+
+  Matcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+               Diagnostics *Error) const override {
+    std::vector<DerivedMatcherType> References;
+    std::vector<const DerivedMatcherType *> InnerArgs(Args.size());
+    for (size_t i = 0, e = Args.size(); i != e; ++i) {
+
+      if (!ArgTypeTraits<DerivedMatcherType>::is(Args[i].Value)) {
+        Error->addError(Args[i].Range, Error->ET_RegistryWrongArgType)
+            << MatcherName << i + 1;
+        return NULL;
+      }
+      References.push_back(
+          ArgTypeTraits<DerivedMatcherType>::get(Args[i].Value));
+      InnerArgs[i] = &References.back();
+    }
+    return new Matcher(new VariadicMatcher(References));
+  }
+
+private:
+  const std::string MatcherName;
+};
 // Helper function to perform template argument deduction.
 template <typename MarshallerType, typename FuncType>
 MatcherCreateCallback *createMarshallerCallback(MarshallerType Marshaller,
@@ -159,6 +189,13 @@ MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                                                StringRef MatcherName) {
   return createMarshallerCallback(matcherMarshall1<ReturnType, ArgType1>, Func,
                                   MatcherName);
+}
+
+/// Variadic overload.
+template <typename MatcherType>
+MatcherCreateCallback *makeMatcherAutoMarshall(MatcherType Func,
+                                               StringRef MatcherName) {
+  return new VariadicMatcherCreateCallback(MatcherName);
 }
 
 } // namespace internal

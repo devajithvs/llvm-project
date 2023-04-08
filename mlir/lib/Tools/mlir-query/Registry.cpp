@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Registry.h"
+#include "ExtraMatchers.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
@@ -61,6 +62,7 @@ RegistryMaps::RegistryMaps() {
   // simplicitly of code review.
   using internal::makeMatcherAutoMarshall;
   // clang-format off
+  registerMatcher("operation", makeMatcherAutoMarshall(extramatcher::operation, "operation"));
   registerMatcher("isConstant", makeMatcherAutoMarshall((constantFnType *)m_Constant, "m_Constant"));
   registerMatcher("hasAttr", makeMatcherAutoMarshall((attrFnType *)m_Attr, "m_Attr"));
   registerMatcher("hasName", makeMatcherAutoMarshall((opFnType *)m_Op, "m_Op"));
