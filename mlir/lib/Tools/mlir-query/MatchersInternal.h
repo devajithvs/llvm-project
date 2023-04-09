@@ -32,38 +32,45 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-class MatcherInterface : public llvm::RefCountedBase<MatcherInterface> {
+template <typename NodeType>
+class MatcherInterface : public llvm::RefCountedBase<MatcherInterface<NodeType>> {
 public:
   virtual ~MatcherInterface() = default;
 
-  /// Returns true if 'op' can be matched.
-  virtual bool matches(Operation *op) = 0;
+  /// Returns true if 'node' can be matched.
+  virtual bool matches(NodeType node) = 0;
 };
-
-typedef llvm::IntrusiveRefCntPtr<MatcherInterface> MatcherImplementation;
 
 /// Matcher wraps a MatcherInterface implementation and provides a matches()
 /// method that redirects calls to the underlying implementation.
+template <typename NodeType>
 class Matcher {
 public:
-  Matcher(MatcherInterface *Implementation) : Implementation(Implementation) {}
+  Matcher(MatcherInterface<NodeType> *Implementation) : Implementation(Implementation) {}
 
   /// Returns true if the matcher matches the given op.
-  bool matches(Operation *op) const { return Implementation->matches(op); }
+  bool matches(NodeType node) const { return Implementation->matches(node); }
 
-  Matcher *clone() const { return new Matcher(*this); }
+  Matcher *clone() const { return new Matcher<NodeType>(*this); }
 
 private:
-  MatcherImplementation Implementation;
+  llvm::IntrusiveRefCntPtr<MatcherInterface<NodeType>> Implementation;
 };
+
+/// A convenient helper for creating a Matcher<T> without specifying
+/// the template type argument.
+template <typename T>
+inline Matcher<T> makeMatcher(MatcherInterface<T> *Implementation) {
+  return Matcher<T>(Implementation);
+}
 
 /// SingleMatcher takes a matcher function object and implements
 /// MatcherInterface.
-template <typename T>
-class SingleMatcher : public MatcherInterface {
+template <typename T, typename NodeType>
+class SingleMatcher : public MatcherInterface<NodeType> {
 public:
   SingleMatcher(T &matcherFn) : matcherFn(matcherFn) {}
-  bool matches(Operation *op) override { return matcherFn.match(op); }
+  bool matches(NodeType node) override { return matcherFn.match(node); }
 
 private:
   T matcherFn;
@@ -78,29 +85,42 @@ private:
 
 /// VariadicMatcher takes a vector of Matchers and returns true if all Matchers
 /// match the given operation.
-class VariadicMatcher : public MatcherInterface {
+template <typename NodeType>
+class VariadicMatcher : public MatcherInterface<NodeType> {
 public:
-  VariadicMatcher(std::vector<Matcher> matchers) : matchers(matchers) {}
+  VariadicMatcher(std::vector<Matcher<NodeType>> matchers) : matchers(matchers) {}
 
-  bool matches(Operation *op) override {
+  bool matches(NodeType node) override {
     return llvm::all_of(
-        matchers, [&](const Matcher &matcher) { return matcher.matches(op); });
+        matchers, [&](const Matcher<NodeType> &matcher) { return matcher.matches(node); });
   }
 
 private:
-  std::vector<Matcher> matchers;
+  std::vector<Matcher<NodeType>> matchers;
 };
 
 /// MatchFinder is used to find all operations that match a given matcher.
 class MatchFinder {
 public:
   /// Returns all operations that match the given matcher.
-  std::vector<Operation *> getMatches(Operation *op, const Matcher *matcher) {
+  std::vector<Operation *> getMatches(Operation *rootOp, const Matcher<Operation*> *matcher) {
     std::vector<Operation *> matches;
-    op->walk([&](Operation *subOp) {
+    rootOp->walk([&](Operation *subOp) {
       if (matcher->matches(subOp))
         matches.push_back(subOp);
     });
+    return matches;
+  }
+
+  /// Returns all values that match the given matcher.
+  std::vector<Value> getMatches(Operation *rootOp, const Matcher<Value> *matcher) {
+    std::vector<Value> matches;
+    rootOp->walk([&](Operation *subOp) {
+      for (Value value : subOp->getResults()) {
+        if (matcher->matches(value))
+          matches.push_back(value);
+      }
+      });
     return matches;
   }
 };
