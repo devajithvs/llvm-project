@@ -246,7 +246,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   // Merge the start and end infos.
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
-  Matcher *Result =
+  DynTypedMatcher *Result =
       S->actOnMatcherExpression(NameToken.Text, MatcherRange, Args, Error);
 
   if (Result == NULL) {
@@ -305,7 +305,7 @@ Parser::Parser(CodeTokenizer *Tokenizer, Sema *S, Diagnostics *Error)
 class RegistrySema : public Parser::Sema {
 public:
   virtual ~RegistrySema(){};
-  Matcher *actOnMatcherExpression(StringRef MatcherName,
+  DynTypedMatcher *actOnMatcherExpression(StringRef MatcherName,
                                   const SourceRange &NameRange,
                                   ArrayRef<ParserValue> Args,
                                   Diagnostics *Error) override {
@@ -325,12 +325,12 @@ bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value,
   return Parser(&Tokenizer, S, Error).parseExpressionImpl(Value);
 }
 
-Matcher *Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {
+DynTypedMatcher *Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {
   RegistrySema S;
   return parseMatcherExpression(Code, &S, Error);
 }
 
-Matcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
+DynTypedMatcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
                                         Diagnostics *Error) {
   VariantValue Value;
   if (!parseExpression(Code, S, &Value, Error)) {

@@ -20,7 +20,7 @@ VariantValue::VariantValue(const VariantValue &Other) : Type(VT_Nothing) {
   *this = Other;
 }
 
-VariantValue::VariantValue(const Matcher &Matcher) : Type(VT_Nothing) {
+VariantValue::VariantValue(const DynTypedMatcher &Matcher) : Type(VT_Nothing) {
   setMatcher(Matcher);
 }
 
@@ -78,7 +78,7 @@ void VariantValue::setString(const StringRef &NewValue) {
 
 bool VariantValue::isMatcher() const { return Type == VT_Matcher; }
 
-const Matcher &VariantValue::getMatcher() const {
+const DynTypedMatcher &VariantValue::getMatcher() const {
   assert(isMatcher());
   return *Value.Matcher;
 }
@@ -90,7 +90,7 @@ void VariantValue::setMatcher(const Matcher &NewValue) {
   Value.Matcher = NewValue.clone();
 }
 
-void VariantValue::takeMatcher(Matcher *NewValue) {
+void VariantValue::takeMatcher(DynTypedMatcher *NewValue) {
   reset();
   Type = VT_Matcher;
   Value.Matcher = NewValue;

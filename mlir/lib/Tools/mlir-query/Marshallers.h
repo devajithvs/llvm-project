@@ -50,9 +50,9 @@ struct ArgTypeTraits<StringRef> {
 };
 
 template <>
-struct ArgTypeTraits<Matcher> {
+struct ArgTypeTraits<DynTypedMatcher> {
   static bool is(const VariantValue &Value) { return Value.isMatcher(); }
-  static Matcher get(const VariantValue &Value) { return Value.getMatcher(); }
+  static DynTypedMatcher get(const VariantValue &Value) { return Value.getMatcher(); }
 };
 
 // Generic MatcherCreate interface.
@@ -61,14 +61,14 @@ struct ArgTypeTraits<Matcher> {
 class MatcherCreateCallback {
 public:
   virtual ~MatcherCreateCallback() = default;
-  virtual Matcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+  virtual DynTypedMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
                        Diagnostics *Error) const = 0;
 };
 
 // Simple callback implementation. Marshaller and function are provided.
 //
 // Marshaller: Function to unpack the arguments and call Func.
-// Func: Matcher construct function. This is the function that
+// Func: DynTypedMatcher construct function. This is the function that
 // compile-time matcher expressions would use to create the matcher.
 template <typename MarshallerType, typename FuncType>
 class FixedArgCountMatcherCreateCallback : public MatcherCreateCallback {
@@ -77,7 +77,7 @@ public:
                                      StringRef MatcherName)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
-  Matcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+  DynTypedMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
                Diagnostics *Error) const override {
     return Marshaller(Func, MatcherName, NameRange, Args, Error);
   }
@@ -94,9 +94,9 @@ public:
   explicit VariadicMatcherCreateCallback(StringRef MatcherName)
       : MatcherName(MatcherName.str()) {}
 
-  typedef Matcher DerivedMatcherType;
+  typedef DynTypedMatcher DerivedMatcherType;
 
-  Matcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+  DynTypedMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
                Diagnostics *Error) const override {
     std::vector<DerivedMatcherType> References;
     std::vector<const DerivedMatcherType *> InnerArgs(Args.size());
@@ -111,7 +111,7 @@ public:
           ArgTypeTraits<DerivedMatcherType>::get(Args[i].Value));
       InnerArgs[i] = &References.back();
     }
-    return new Matcher(new VariadicMatcher(References));
+    return new DynTypedMatcher(new VariadicMatcher(References));
   }
 
 private:
@@ -135,7 +135,7 @@ struct remove_const_ref
 
 // 0-arg marshaller function.
 template <typename ReturnType>
-Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
+DynTypedMatcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
                           const SourceRange &NameRange,
                           ArrayRef<ParserValue> Args, Diagnostics *Error) {
   if (Args.size() != 0) {
@@ -145,12 +145,12 @@ Matcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
   }
   ReturnType matcherFn = Func();
   MatcherInterface *singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
-  return new Matcher(singleMatcher);
+  return new DynTypedMatcher(singleMatcher);
 }
 
 // 1-arg marshaller function.
 template <typename ReturnType, typename InArgType1>
-Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
+DynTypedMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
                           const SourceRange &NameRange,
                           ArrayRef<ParserValue> Args, Diagnostics *Error) {
   typedef typename remove_const_ref<InArgType1>::type ArgType1;
@@ -167,7 +167,7 @@ Matcher *matcherMarshall1(ReturnType (*Func)(InArgType1), StringRef MatcherName,
   }
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value));
   MatcherInterface *singleMatcher = new SingleMatcher<ReturnType>(matcherFn);
-  return new Matcher(singleMatcher);
+  return new DynTypedMatcher(singleMatcher);
 }
 
 /// TODO Variadic marshaller function.

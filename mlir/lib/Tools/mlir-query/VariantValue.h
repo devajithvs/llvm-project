@@ -35,7 +35,7 @@ namespace matcher {
 ///
 /// Supported types:
 ///  - \c StringRef
-///  - \c Any \c Matcher
+///  - \c Any \c DynTypedMatcher
 class VariantValue {
 public:
   VariantValue() : Type(VT_Nothing) {}
@@ -46,7 +46,7 @@ public:
 
   /// \brief Specific constructors for each supported type.
   VariantValue(const StringRef &String);
-  VariantValue(const Matcher &Matcher);
+  VariantValue(const DynTypedMatcher &Matcher);
 
   /// \brief String value functions.
   bool isString() const;
@@ -55,10 +55,10 @@ public:
 
   /// \brief Matcher value functions.
   bool isMatcher() const;
-  const Matcher &getMatcher() const;
-  void setMatcher(const Matcher &Matcher);
+  const DynTypedMatcher &getMatcher() const;
+  void setMatcher(const DynTypedMatcher &Matcher);
   /// \brief Set the value to be \c Matcher by taking ownership of the object.
-  void takeMatcher(Matcher *Matcher);
+  void takeMatcher(DynTypedMatcher *Matcher);
 
   /// \brief Specialized Matcher<T> is/get functions.
   template <class T>
@@ -77,7 +77,7 @@ private:
   /// \brief All supported value types.
   union AllValues {
     StringRef *String;
-    Matcher *Matcher;
+    DynTypedMatcher *Matcher;
   };
 
   ValueType Type;

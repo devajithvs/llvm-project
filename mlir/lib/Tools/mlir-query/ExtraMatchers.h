@@ -25,19 +25,19 @@ namespace detail {
 /// VariadicMatcher takes a vector of Matchers and returns true if all Matchers
 /// match the given operation.
 struct OperationMatcher {
-  OperationMatcher(std::vector<matcher::Matcher> matchers)
+  OperationMatcher(std::vector<matcher::DynTypedMatcher> matchers)
       : matchers(matchers) {}
   bool matches(Operation *op) {
-    return llvm::all_of(matchers, [&](const matcher::Matcher &matcher) {
+    return llvm::all_of(matchers, [&](const matcher::DynTypedMatcher &matcher) {
       return matcher.matches(op);
     });
   }
-  std::vector<matcher::Matcher> matchers;
+  std::vector<matcher::DynTypedMatcher> matchers;
 };
 } // namespace detail
 
-inline detail::OperationMatcher operation(matcher::Matcher args...) {
-  std::vector<matcher::Matcher> matchers({args});
+inline detail::OperationMatcher operation(matcher::DynTypedMatcher args...) {
+  std::vector<matcher::DynTypedMatcher> matchers({args});
   return detail::OperationMatcher(matchers);
 }
 
