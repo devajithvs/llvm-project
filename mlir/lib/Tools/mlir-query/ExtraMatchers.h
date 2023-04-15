@@ -28,8 +28,9 @@ struct OperationMatcher {
   OperationMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}
   bool matches(Operation *op) {
+    const matcher::DynTypedNode node = matcher::DynTypedNode::create(op);
     return llvm::all_of(matchers, [&](const matcher::DynMatcher &matcher) {
-      return matcher.matches(op);
+      return matcher.matches(node);
     });
   }
   std::vector<matcher::DynMatcher> matchers;
