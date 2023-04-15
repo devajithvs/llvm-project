@@ -116,6 +116,22 @@ public:
 
   /// Retrieve the stored node as type \c T.
   ///
+  /// Returns NULL if the stored node does not have a type that is
+  /// convertible to \c T.
+  ///
+  /// For types that have identity via their pointer in the AST
+  /// (like \c Stmt, \c Decl, \c Type and \c NestedNameSpecifier) the returned
+  /// pointer points to the referenced AST node.
+  /// For other types (like \c QualType) the value is stored directly
+  /// in the \c DynTypedNode, and the returned pointer points at
+  /// the storage inside DynTypedNode. For those nodes, do not
+  /// use the pointer outside the scope of the DynTypedNode.
+  template <typename T> T *get() {
+    return BaseConverter<T>::get(NodeKind, &Storage);
+  }
+
+  /// Retrieve the stored node as type \c T.
+  ///
   /// Similar to \c get(), but asserts that the type is what we are expecting.
   template <typename T>
   T *getUnchecked() const {
@@ -254,13 +270,14 @@ private:
 class MatchFinder {
 public:
   /// Returns all operations that match the given matcher.
-  std::vector<Operation *> getMatches(Operation *op, const DynMatcher *matcher) {
-    std::vector<Operation *> matches;
+  std::vector<DynTypedNode> getMatches(Operation *op, const DynMatcher *matcher) {
+    std::vector<DynTypedNode> matches;
     op->walk([&](Operation *subOp) {
+
       //const MLIRNodeKind node = MLIRNodeKind::getFromNode(*subOp);
       DynTypedNode node = DynTypedNode::create(*subOp);
       if (matcher->matches(node))
-        matches.push_back(subOp);
+        matches.push_back(node);
     });
     return matches;
   }
