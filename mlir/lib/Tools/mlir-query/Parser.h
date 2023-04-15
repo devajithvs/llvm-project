@@ -64,7 +64,7 @@ public:
     ///   if an error occurred. In that case, \c Error will contain a
     ///   description of the error.
     ///   The caller takes ownership of the Matcher object returned.
-    virtual Matcher *actOnMatcherExpression(StringRef MatcherName,
+    virtual DynMatcher *actOnMatcherExpression(StringRef MatcherName,
                                             const SourceRange &NameRange,
                                             ArrayRef<ParserValue> Args,
                                             Diagnostics *Error) = 0;
@@ -80,8 +80,8 @@ public:
   ///
   /// \return The matcher object constructed, or NULL if an error occurred.
   //    In that case, \c Error will contain a description of the error.
-  ///   The caller takes ownership of the Matcher object returned.
-  static Matcher *parseMatcherExpression(StringRef MatcherCode,
+  ///   The caller takes ownership of the DynMatcher object returned.
+  static DynMatcher *parseMatcherExpression(StringRef MatcherCode,
                                          Diagnostics *Error);
 
   /// \brief Parse a matcher expression.
@@ -93,8 +93,8 @@ public:
   /// \return The matcher object constructed by the processor, or NULL
   ///   if an error occurred. In that case, \c Error will contain a
   ///   description of the error.
-  ///   The caller takes ownership of the Matcher object returned.
-  static Matcher *parseMatcherExpression(StringRef MatcherCode, Sema *S,
+  ///   The caller takes ownership of the DynMatcher object returned.
+  static DynMatcher *parseMatcherExpression(StringRef MatcherCode, Sema *S,
                                          Diagnostics *Error);
 
   /// \brief Parse an expression, creating matchers from the registry.

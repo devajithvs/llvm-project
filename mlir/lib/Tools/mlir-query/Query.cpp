@@ -43,7 +43,7 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 
 // This could be done better but is not worth the variadic template trouble.
 std::vector<Operation *> getMatches(Operation *rootOp,
-                                    const matcher::Matcher *matcher) {
+                                    const matcher::DynMatcher *matcher) {
   auto matchFinder = matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
 }

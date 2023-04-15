@@ -20,7 +20,7 @@ VariantValue::VariantValue(const VariantValue &Other) : Type(VT_Nothing) {
   *this = Other;
 }
 
-VariantValue::VariantValue(const Matcher &Matcher) : Type(VT_Nothing) {
+VariantValue::VariantValue(const DynMatcher &Matcher) : Type(VT_Nothing) {
   setMatcher(Matcher);
 }
 
@@ -78,19 +78,19 @@ void VariantValue::setString(const StringRef &NewValue) {
 
 bool VariantValue::isMatcher() const { return Type == VT_Matcher; }
 
-const Matcher &VariantValue::getMatcher() const {
+const DynMatcher &VariantValue::getMatcher() const {
   assert(isMatcher());
   return *Value.Matcher;
 }
 
-void VariantValue::setMatcher(const Matcher &NewValue) {
+void VariantValue::setMatcher(const DynMatcher &NewValue) {
   reset();
   Type = VT_Matcher;
   // FIXME
   Value.Matcher = NewValue.clone();
 }
 
-void VariantValue::takeMatcher(Matcher *NewValue) {
+void VariantValue::takeMatcher(DynMatcher *NewValue) {
   reset();
   Type = VT_Matcher;
   Value.Matcher = NewValue;

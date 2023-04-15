@@ -46,7 +46,7 @@ public:
 
   /// \brief Specific constructors for each supported type.
   VariantValue(const StringRef &String);
-  VariantValue(const Matcher &Matcher);
+  VariantValue(const DynMatcher &Matcher);
 
   /// \brief String value functions.
   bool isString() const;
@@ -55,10 +55,10 @@ public:
 
   /// \brief Matcher value functions.
   bool isMatcher() const;
-  const Matcher &getMatcher() const;
-  void setMatcher(const Matcher &Matcher);
-  /// \brief Set the value to be \c Matcher by taking ownership of the object.
-  void takeMatcher(Matcher *Matcher);
+  const DynMatcher &getMatcher() const;
+  void setMatcher(const DynMatcher &Matcher);
+  /// \brief Set the value to be \c DynMatcher by taking ownership of the object.
+  void takeMatcher(DynMatcher *Matcher);
 
   /// \brief Specialized Matcher<T> is/get functions.
   template <class T>
@@ -77,7 +77,7 @@ private:
   /// \brief All supported value types.
   union AllValues {
     StringRef *String;
-    Matcher *Matcher;
+    DynMatcher *Matcher;
   };
 
   ValueType Type;

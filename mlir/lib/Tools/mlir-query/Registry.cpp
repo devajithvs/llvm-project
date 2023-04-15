@@ -94,7 +94,7 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 } // anonymous namespace
 
 // static
-Matcher *Registry::constructMatcher(StringRef MatcherName,
+DynMatcher *Registry::constructMatcher(StringRef MatcherName,
                                     const SourceRange &NameRange,
                                     ArrayRef<ParserValue> Args,
                                     Diagnostics *Error) {

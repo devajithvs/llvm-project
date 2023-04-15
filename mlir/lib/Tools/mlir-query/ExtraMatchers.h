@@ -22,22 +22,22 @@ namespace query {
 namespace extramatcher {
 
 namespace detail {
-/// VariadicMatcher takes a vector of Matchers and returns true if all Matchers
+/// VariadicMatcher takes a vector of DynMatchers and returns true if all DynMatchers
 /// match the given operation.
 struct OperationMatcher {
-  OperationMatcher(std::vector<matcher::Matcher> matchers)
+  OperationMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}
   bool matches(Operation *op) {
-    return llvm::all_of(matchers, [&](const matcher::Matcher &matcher) {
+    return llvm::all_of(matchers, [&](const matcher::DynMatcher &matcher) {
       return matcher.matches(op);
     });
   }
-  std::vector<matcher::Matcher> matchers;
+  std::vector<matcher::DynMatcher> matchers;
 };
 } // namespace detail
 
-inline detail::OperationMatcher operation(matcher::Matcher args...) {
-  std::vector<matcher::Matcher> matchers({args});
+inline detail::OperationMatcher operation(matcher::DynMatcher args...) {
+  std::vector<matcher::DynMatcher> matchers({args});
   return detail::OperationMatcher(matchers);
 }
 

@@ -169,7 +169,7 @@ QueryRef QueryParser::doParse() {
     matcher::Diagnostics Diag;
     auto MatchExpr = Line.ltrim();
 
-    const matcher::Matcher *matcher =
+    const matcher::DynMatcher *matcher =
         matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
 
     if (!matcher) {
