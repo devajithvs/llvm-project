@@ -90,6 +90,9 @@ private:
   NodeKindId KindId;
 };
 
+template <> struct MLIRNodeKind::KindToKindId<Operation> {
+  static const NodeKindId Id = NKI_Operation;
+};
 
 /// A dynamically typed MLIR node container.
 ///
@@ -107,24 +110,82 @@ class DynTypedNode {
 public:
   /// Creates a \c DynTypedNode from \c Node.
   template <typename T>
-  static DynTypedNode create(const T &Node) {
-    DynTypedNode Result;
-    Result.NodeKind = MLIRNodeKind::getFromNodeKind<T>();
-    new (&Result.Storage) const void *(&Node);
-    return Result;
+  static DynTypedNode create(T &Node) {
+    return BaseConverter<T>::create(Node);
   }
 
   /// Retrieve the stored node as type \c T.
   ///
   /// Similar to \c get(), but asserts that the type is what we are expecting.
   template <typename T>
-  const T &getUnchecked() const {
+  T *getUnchecked() const {
     return BaseConverter<T>::getUnchecked(NodeKind, &Storage);
   }
 
 private:
   /// Takes care of converting from and to \c T.
   template <typename T, typename EnablerT = void> struct BaseConverter;
+
+  /// Converter that stores T* (by pointer).
+  template <typename T> struct PtrConverter {
+    static T *get(MLIRNodeKind NodeKind, const void *Storage) {
+      if (MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind))
+        return getUnchecked(NodeKind, Storage);
+      return nullptr;
+    }
+    static T *getUnchecked(MLIRNodeKind NodeKind,  const void *Storage) {
+      assert(MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind));
+      return static_cast<T *>( *reinterpret_cast<void *const *>(Storage));
+    }
+    static DynTypedNode create(T &Node) {
+      DynTypedNode Result;
+      Result.NodeKind = MLIRNodeKind::getFromNodeKind<T>();
+      new (&Result.Storage) void *(&Node);
+      return Result;
+    }
+  };
+
+  /// Converter that stores T (by value).
+  template <typename T> struct ValueConverter {
+    static const T *get(MLIRNodeKind NodeKind, const void *Storage) {
+      if (MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind))
+        return reinterpret_cast<const T *>(Storage);
+      return nullptr;
+    }
+    static const T &getUnchecked(MLIRNodeKind NodeKind, const void *Storage) {
+      assert(MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind));
+      return *reinterpret_cast<const T *>(Storage);
+    }
+    static DynTypedNode create(const T &Node) {
+      DynTypedNode Result;
+      Result.NodeKind = MLIRNodeKind::getFromNodeKind<T>();
+      new (&Result.Storage) T(Node);
+      return Result;
+    }
+  };
+
+  /// Converter that stores nodes by value. It must be possible to dynamically
+  /// cast the stored node within a type hierarchy without breaking (especially
+  /// through slicing).
+  template <typename T, typename BaseT,
+            typename = std::enable_if_t<(sizeof(T) == sizeof(BaseT))>>
+  struct DynCastValueConverter {
+    static const T *get(MLIRNodeKind NodeKind, const void *Storage) {
+      if (MLIRNodeKind::getFromNodeKind<T>().isBaseOf(NodeKind))
+        return &getUnchecked(NodeKind, Storage);
+      return nullptr;
+    }
+    static const T &getUnchecked(MLIRNodeKind NodeKind, const void *Storage) {
+      assert(MLIRNodeKind::getFromNodeKind<T>().isBaseOf(NodeKind));
+      return *static_cast<const T *>(reinterpret_cast<const BaseT *>(Storage));
+    }
+    static DynTypedNode create(const T &Node) {
+      DynTypedNode Result;
+      Result.NodeKind = MLIRNodeKind::getFromNode(Node);
+      new (&Result.Storage) T(Node);
+      return Result;
+    }
+  };
   MLIRNodeKind NodeKind;
   /// Stores the data of the node.
   /// Note that we can store Operation and Value by pointer as they are
@@ -132,14 +193,16 @@ private:
   llvm::AlignedCharArrayUnion<const void *, Operation, Value> Storage;
 };
 
-
+template <>
+struct DynTypedNode::BaseConverter<
+    Operation, void> : public PtrConverter<Operation> {};
 
 class DynMatcherInterface : public llvm::RefCountedBase<DynMatcherInterface> {
 public:
   virtual ~DynMatcherInterface() = default;
 
   /// Returns true if 'op' can be matched.
-  virtual bool matches(const DynTypedNode &DynNode) = 0;
+  virtual bool matches(DynTypedNode &DynNode) = 0;
 };
 
 /// Matcher wraps a MatcherInterface implementation and provides a matches()
@@ -149,7 +212,7 @@ public:
   DynMatcher(DynMatcherInterface *Implementation) : Implementation(Implementation) {}
 
   /// Returns true if the matcher matches the given op.
-  bool matches(const DynTypedNode &DynNode) const { return Implementation->matches(DynNode); }
+  bool matches(DynTypedNode &DynNode) const { return Implementation->matches(DynNode); }
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
 
@@ -163,8 +226,9 @@ template <typename T>
 class SingleMatcher : public DynMatcherInterface {
 public:
   SingleMatcher(T &matcherFn) : matcherFn(matcherFn) {}
-  bool matches(const DynTypedNode &DynNode) override {
-    return matcherFn.match(DynNode.getUnchecked<Operation>());
+  bool matches(DynTypedNode &DynNode) override {
+    Operation* op = DynNode.getUnchecked<Operation>();
+    return matcherFn.match(op);
   }
 
 private:
@@ -177,7 +241,7 @@ class VariadicMatcher : public DynMatcherInterface {
 public:
   VariadicMatcher(std::vector<DynMatcher> matchers) : matchers(matchers) {}
 
-  bool matches(const DynTypedNode &DynNode) override {
+  bool matches(DynTypedNode &DynNode) override {
     return llvm::all_of(
         matchers, [&](const DynMatcher &matcher) { return matcher.matches(DynNode); });
   }
@@ -194,7 +258,7 @@ public:
     std::vector<Operation *> matches;
     op->walk([&](Operation *subOp) {
       //const MLIRNodeKind node = MLIRNodeKind::getFromNode(*subOp);
-      const DynTypedNode node = DynTypedNode::create(*subOp);
+      DynTypedNode node = DynTypedNode::create(*subOp);
       if (matcher->matches(node))
         matches.push_back(subOp);
     });
