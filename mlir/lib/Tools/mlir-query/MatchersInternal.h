@@ -55,9 +55,9 @@ public:
   ///
   /// May bind 'Node' to an ID via 'Builder', or recurse into
   /// the AST via 'Finder'.
-  virtual bool matches(T Node) = 0;
+  virtual bool matches(T *Node) = 0;
 
-  bool dynMatches(DynTypedNode &DynNode) const override {
+  bool dynMatches(DynTypedNode &DynNode) override {
     return matches(DynNode.getUnchecked<T>());
   }
 };
@@ -110,24 +110,28 @@ public:
       : Implementation(Implementation) {}
     
   /// Forwards the call to the underlying MatcherInterface<T> pointer.
-  bool matches(T Node) const {
+  bool matches(T Node) {
     return Implementation.matches(DynTypedNode::create(Node));
   }
-}
+private:
+  DynMatcher Implementation;
+};
 
 /// SingleMatcher takes a matcher function object and implements
 /// MatcherInterface.
-template <typename T>
-class SingleMatcher : public DynMatcherInterface {
+template <typename T, typename MatcherFn>
+class SingleMatcher : public MatcherInterface<T> {
 public:
-  SingleMatcher(T &matcherFn) : matcherFn(matcherFn) {}
-  bool matches(DynTypedNode &DynNode) override {
-    Operation* op = DynNode.getUnchecked<Operation>();
-    return matcherFn.match(op);
+  SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
+  bool matches(T *Node) override {
+    // TODO: Find a way to do this without manually checking the elementType
+    // auto DynNode = DynTypedNode::create(Node);
+    // return matcherFn.match(DynNode.template getUnchecked<T>());
+    return matcherFn.match(Node);
   }
 
 private:
-  T matcherFn;
+  MatcherFn matcherFn;
 };
 
 /// VariadicMatcher takes a vector of Matchers and returns true if all Matchers
@@ -136,7 +140,7 @@ class VariadicMatcher : public DynMatcherInterface {
 public:
   VariadicMatcher(std::vector<DynMatcher> matchers) : matchers(matchers) {}
 
-  bool matches(DynTypedNode &DynNode) override {
+  bool dynMatches(DynTypedNode &DynNode) override {
     return llvm::all_of(
         matchers, [&](const DynMatcher &matcher) { return matcher.matches(DynNode); });
   }

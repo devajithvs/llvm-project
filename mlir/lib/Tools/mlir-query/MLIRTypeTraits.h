@@ -128,6 +128,8 @@ public:
     return BaseConverter<T>::getUnchecked(NodeKind, &Storage);
   }
 
+   MLIRNodeKind getNodeKind() const { return NodeKind; }
+
 private:
   /// Takes care of converting from and to \c T.
   template <typename T, typename EnablerT = void> struct BaseConverter;
