@@ -59,7 +59,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 
   unsigned MatchCount = 0;
   for (auto node : matches) {
-    if (Operation* op =  node.get<Operation>()){
+    if (Operation* op =  *node.get<Operation*>()){
     auto opLoc = op->getLoc().cast<FileLineColLoc>();
     OS << "\nMatch #" << ++MatchCount << ":\n\n";
     OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"

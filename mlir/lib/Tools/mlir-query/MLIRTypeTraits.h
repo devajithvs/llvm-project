@@ -37,12 +37,6 @@ public:
     return MLIRNodeKind(KindToKindId<T>::Id);
   }
 
-  /// \{
-  /// Construct an identifier for the dynamic type of the node
-  static MLIRNodeKind getFromNode(const Operation &O);
-  static MLIRNodeKind getFromNode(const Value &V);
-  /// \}
-
   /// Returns \c true if \c this and \c Other represent the same kind.
   constexpr bool isSame(MLIRNodeKind Other) const {
     return KindId != NKI_None && KindId == Other.KindId;
@@ -50,9 +44,6 @@ public:
 
   /// Returns \c true only for the default \c MLIRNodeKind()
   constexpr bool isNone() const { return KindId == NKI_None; }
-
-  /// String representation of the kind.
-  StringRef asStringRef() const;
 
 private:
   /// Kind ids.
@@ -80,7 +71,7 @@ private:
   NodeKindId KindId;
 };
 
-template <> struct MLIRNodeKind::KindToKindId<Operation> {
+template <> struct MLIRNodeKind::KindToKindId<Operation*> {
   static const NodeKindId Id = NKI_Operation;
 };
 
@@ -108,14 +99,6 @@ public:
   ///
   /// Returns NULL if the stored node does not have a type that is
   /// convertible to \c T.
-  ///
-  /// For types that have identity via their pointer in the MLIR
-  /// (like \c Stmt, \c Decl, \c Type and \c NestedNameSpecifier) the returned
-  /// pointer points to the referenced MLIR node.
-  /// For other types (like \c QualType) the value is stored directly
-  /// in the \c DynTypedNode, and the returned pointer points at
-  /// the storage inside DynTypedNode. For those nodes, do not
-  /// use the pointer outside the scope of the DynTypedNode.
   template <typename T> T *get() {
     return BaseConverter<T>::get(NodeKind, &Storage);
   }
@@ -124,7 +107,7 @@ public:
   ///
   /// Similar to \c get(), but asserts that the type is what we are expecting.
   template <typename T>
-  T *getUnchecked() const {
+  T &getUnchecked() const {
     return BaseConverter<T>::getUnchecked(NodeKind, &Storage);
   }
 
@@ -134,76 +117,35 @@ private:
   /// Takes care of converting from and to \c T.
   template <typename T, typename EnablerT = void> struct BaseConverter;
 
-  /// Converter that stores T* (by pointer).
-  template <typename T> struct PtrConverter {
+  /// Converter that stores T (by value).
+  template <typename T> struct ValueConverter {
     static T *get(MLIRNodeKind NodeKind, const void *Storage) {
       if (MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind))
-        return getUnchecked(NodeKind, Storage);
+        return const_cast<T*>(reinterpret_cast<const T *>(Storage));
       return nullptr;
     }
-    static T *getUnchecked(MLIRNodeKind NodeKind,  const void *Storage) {
+    static T &getUnchecked(MLIRNodeKind NodeKind,  const void *Storage) {
       assert(MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind));
-      return static_cast<T *>( *reinterpret_cast<void *const *>(Storage));
+      return *const_cast<T*>(reinterpret_cast<const T *>(Storage));
     }
     static DynTypedNode create(T &Node) {
       DynTypedNode Result;
       Result.NodeKind = MLIRNodeKind::getFromNodeKind<T>();
-      new (&Result.Storage) void *(&Node);
-      return Result;
-    }
-  };
-
-  /// Converter that stores T (by value).
-  template <typename T> struct ValueConverter {
-    static const T *get(MLIRNodeKind NodeKind, const void *Storage) {
-      if (MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind))
-        return reinterpret_cast<const T *>(Storage);
-      return nullptr;
-    }
-    static const T &getUnchecked(MLIRNodeKind NodeKind, const void *Storage) {
-      assert(MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind));
-      return *reinterpret_cast<const T *>(Storage);
-    }
-    static DynTypedNode create(const T &Node) {
-      DynTypedNode Result;
-      Result.NodeKind = MLIRNodeKind::getFromNodeKind<T>();
       new (&Result.Storage) T(Node);
       return Result;
     }
   };
 
-  /// Converter that stores nodes by value. It must be possible to dynamically
-  /// cast the stored node within a type hierarchy without breaking (especially
-  /// through slicing).
-  template <typename T, typename BaseT,
-            typename = std::enable_if_t<(sizeof(T) == sizeof(BaseT))>>
-  struct DynCastValueConverter {
-    static const T *get(MLIRNodeKind NodeKind, const void *Storage) {
-      if (MLIRNodeKind::getFromNodeKind<T>().isBaseOf(NodeKind))
-        return &getUnchecked(NodeKind, Storage);
-      return nullptr;
-    }
-    static const T &getUnchecked(MLIRNodeKind NodeKind, const void *Storage) {
-      assert(MLIRNodeKind::getFromNodeKind<T>().isBaseOf(NodeKind));
-      return *static_cast<const T *>(reinterpret_cast<const BaseT *>(Storage));
-    }
-    static DynTypedNode create(const T &Node) {
-      DynTypedNode Result;
-      Result.NodeKind = MLIRNodeKind::getFromNode(Node);
-      new (&Result.Storage) T(Node);
-      return Result;
-    }
-  };
   MLIRNodeKind NodeKind;
   /// Stores the data of the node.
   /// Note that we can store Operation and Value by pointer as they are
   /// guaranteed to be unique pointers pointing to dedicated storage in the MLIR.
-  llvm::AlignedCharArrayUnion<const void *, Operation, Value> Storage;
+  llvm::AlignedCharArrayUnion<Operation*, Value> Storage;
 };
 
 template <>
 struct DynTypedNode::BaseConverter<
-    Operation, void> : public PtrConverter<Operation> {};
+    Operation*, void> : public ValueConverter<Operation*> {};
 
 } // namespace matcher
 } // namespace query

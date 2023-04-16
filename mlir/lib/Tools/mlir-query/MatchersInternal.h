@@ -29,6 +29,13 @@
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "MLIRTypeTraits.h"
 
+
+#include "llvm/Support/Debug.h"
+using llvm::dbgs;
+
+#define DEBUG_TYPE "mlir-query"
+#define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
+
 namespace mlir {
 namespace query {
 namespace matcher {
@@ -55,7 +62,7 @@ public:
   ///
   /// May bind 'Node' to an ID via 'Builder', or recurse into
   /// the AST via 'Finder'.
-  virtual bool matches(T *Node) = 0;
+  virtual bool matches(T Node) = 0;
 
   bool dynMatches(DynTypedNode &DynNode) override {
     return matches(DynNode.getUnchecked<T>());
@@ -75,10 +82,12 @@ public:
 
   /// Returns true if the matcher matches the given op.
   bool matches(DynTypedNode &DynNode) const { 
+    // assert(RestrictKind.isSame(DynNode.getNodeKind()));
     if (RestrictKind.isSame(DynNode.getNodeKind()) &&
         Implementation->dynMatches(DynNode)) {
       return true;
     }
+
     return false; }
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
@@ -123,7 +132,7 @@ template <typename T, typename MatcherFn>
 class SingleMatcher : public MatcherInterface<T> {
 public:
   SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
-  bool matches(T *Node) override {
+  bool matches(T Node) override {
     // TODO: Find a way to do this without manually checking the elementType
     // auto DynNode = DynTypedNode::create(Node);
     // return matcherFn.match(DynNode.template getUnchecked<T>());
@@ -158,7 +167,7 @@ public:
     op->walk([&](Operation *subOp) {
 
       //const MLIRNodeKind node = MLIRNodeKind::getFromNode(*subOp);
-      DynTypedNode node = DynTypedNode::create(*subOp);
+      DynTypedNode node = DynTypedNode::create(subOp);
       if (matcher->matches(node))
         matches.push_back(node);
     });

@@ -63,21 +63,21 @@ RegistryMaps::RegistryMaps() {
   using internal::makeMatcherAutoMarshall;
   // clang-format off
   //registerMatcher("operation", makeMatcherAutoMarshall<Operation>(extramatcher::operation, "operation"));
-  registerMatcher("isConstant",     makeMatcherAutoMarshall<Operation>((constantFnType *)m_Constant, "m_Constant"));
-  registerMatcher("hasAttr",        makeMatcherAutoMarshall<Operation>((attrFnType *)m_Attr, "m_Attr"));
-  registerMatcher("hasName",        makeMatcherAutoMarshall<Operation>((opFnType *)m_Op, "m_Op"));
-  registerMatcher("m_PosZeroFloat", makeMatcherAutoMarshall<Operation>(m_PosZeroFloat, "m_PosZeroFloat"));
-  registerMatcher("m_NegZeroFloat", makeMatcherAutoMarshall<Operation>(m_NegZeroFloat, "m_NegZeroFloat"));
-  registerMatcher("m_AnyZeroFloat", makeMatcherAutoMarshall<Operation>(m_AnyZeroFloat, "m_AnyZeroFloat"));
-  registerMatcher("m_OneFloat",     makeMatcherAutoMarshall<Operation>(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_PosInfFloat",  makeMatcherAutoMarshall<Operation>(m_PosInfFloat, "m_PosInfFloat"));
-  registerMatcher("m_NegInfFloat",  makeMatcherAutoMarshall<Operation>(m_NegInfFloat, "m_NegInfFloat"));
-  registerMatcher("m_Zero",         makeMatcherAutoMarshall<Operation>(m_Zero, "m_Zero"));
-  registerMatcher("m_NonZero",      makeMatcherAutoMarshall<Operation>(m_NonZero, "m_NonZero"));
-  registerMatcher("m_One",          makeMatcherAutoMarshall<Operation>(m_One, "m_One"));
-  registerMatcher("m_OneFloat",     makeMatcherAutoMarshall<Operation>(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_OneFloat",     makeMatcherAutoMarshall<Operation>(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_OneFloat",     makeMatcherAutoMarshall<Operation>(m_OneFloat, "m_OneFloat"));
+  registerMatcher("isConstant",     makeMatcherAutoMarshall<Operation*>((constantFnType *)m_Constant, "m_Constant"));
+  registerMatcher("hasAttr",        makeMatcherAutoMarshall<Operation*>((attrFnType *)m_Attr, "m_Attr"));
+  registerMatcher("hasName",        makeMatcherAutoMarshall<Operation*>((opFnType *)m_Op, "m_Op"));
+  registerMatcher("m_PosZeroFloat", makeMatcherAutoMarshall<Operation*>(m_PosZeroFloat, "m_PosZeroFloat"));
+  registerMatcher("m_NegZeroFloat", makeMatcherAutoMarshall<Operation*>(m_NegZeroFloat, "m_NegZeroFloat"));
+  registerMatcher("m_AnyZeroFloat", makeMatcherAutoMarshall<Operation*>(m_AnyZeroFloat, "m_AnyZeroFloat"));
+  registerMatcher("m_OneFloat",     makeMatcherAutoMarshall<Operation*>(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_PosInfFloat",  makeMatcherAutoMarshall<Operation*>(m_PosInfFloat, "m_PosInfFloat"));
+  registerMatcher("m_NegInfFloat",  makeMatcherAutoMarshall<Operation*>(m_NegInfFloat, "m_NegInfFloat"));
+  registerMatcher("m_Zero",         makeMatcherAutoMarshall<Operation*>(m_Zero, "m_Zero"));
+  registerMatcher("m_NonZero",      makeMatcherAutoMarshall<Operation*>(m_NonZero, "m_NonZero"));
+  registerMatcher("m_One",          makeMatcherAutoMarshall<Operation*>(m_One, "m_One"));
+  registerMatcher("m_OneFloat",     makeMatcherAutoMarshall<Operation*>(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_OneFloat",     makeMatcherAutoMarshall<Operation*>(m_OneFloat, "m_OneFloat"));
+  registerMatcher("m_OneFloat",     makeMatcherAutoMarshall<Operation*>(m_OneFloat, "m_OneFloat"));
   // clang-format on
 }
 
