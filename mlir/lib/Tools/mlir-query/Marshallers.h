@@ -91,35 +91,36 @@ private:
   const StringRef MatcherName;
 };
 
-// /// Variadic marshaller function.
-// class VariadicMatcherCreateCallback : public MatcherCreateCallback {
-// public:
-//   explicit VariadicMatcherCreateCallback(StringRef MatcherName)
-//       : MatcherName(MatcherName.str()) {}
+/// Variadic marshaller function.
+template <typename T>
+class VariadicMatcherCreateCallback : public MatcherCreateCallback {
+public:
+  explicit VariadicMatcherCreateCallback(StringRef MatcherName)
+      : MatcherName(MatcherName.str()) {}
 
-//   typedef DynMatcher DerivedMatcherType;
+  typedef DynMatcher DerivedMatcherType;
 
-//   DynMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
-//                Diagnostics *Error) const override {
-//     std::vector<DerivedMatcherType> References;
-//     std::vector<const DerivedMatcherType *> InnerArgs(Args.size());
-//     for (size_t i = 0, e = Args.size(); i != e; ++i) {
+  DynMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+               Diagnostics *Error) const override {
+    std::vector<DerivedMatcherType> References;
+    std::vector<const DerivedMatcherType *> InnerArgs(Args.size());
+    for (size_t i = 0, e = Args.size(); i != e; ++i) {
 
-//       if (!ArgTypeTraits<DerivedMatcherType>::is(Args[i].Value)) {
-//         Error->addError(Args[i].Range, Error->ET_RegistryWrongArgType)
-//             << MatcherName << i + 1;
-//         return NULL;
-//       }
-//       References.push_back(
-//           ArgTypeTraits<DerivedMatcherType>::get(Args[i].Value));
-//       InnerArgs[i] = &References.back();
-//     }
-//     return new DynMatcher(new VariadicMatcher(References));
-//   }
+      if (!ArgTypeTraits<DerivedMatcherType>::is(Args[i].Value)) {
+        Error->addError(Args[i].Range, Error->ET_RegistryWrongArgType)
+            << MatcherName << i + 1;
+        return NULL;
+      }
+      References.push_back(
+          ArgTypeTraits<DerivedMatcherType>::get(Args[i].Value));
+      InnerArgs[i] = &References.back();
+    }
+    return new DynMatcher(new VariadicMatcher<T>(References));
+  }
 
-// private:
-//   const std::string MatcherName;
-// };
+private:
+  const std::string MatcherName;
+};
 
 // Helper function to perform template argument deduction.
 template <typename MarshallerType, typename FuncType>
@@ -198,12 +199,12 @@ MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                                   Func, MatcherName);
 }
 
-// /// Variadic overload.
-// template <typename T, typename MatcherType>
-// MatcherCreateCallback *makeMatcherAutoMarshall(MatcherType Func,
-//                                                StringRef MatcherName) {
-//   return new VariadicMatcherCreateCallback(MatcherName);
-// }
+/// Variadic overload.
+template <typename T, typename MatcherType>
+MatcherCreateCallback *makeMatcherAutoMarshall(MatcherType Func,
+                                               StringRef MatcherName) {
+  return new VariadicMatcherCreateCallback<T>(MatcherName);
+}
 
 } // namespace internal
 } // namespace matcher

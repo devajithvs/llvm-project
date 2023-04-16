@@ -62,7 +62,7 @@ RegistryMaps::RegistryMaps() {
   // simplicitly of code review.
   using internal::makeMatcherAutoMarshall;
   // clang-format off
-  //registerMatcher("operation", makeMatcherAutoMarshall<Operation>(extramatcher::operation, "operation"));
+  registerMatcher("operation",      makeMatcherAutoMarshall<Operation*>(extramatcher::operation, "operation"));
   registerMatcher("isConstant",     makeMatcherAutoMarshall<Operation*>((constantFnType *)m_Constant, "m_Constant"));
   registerMatcher("hasAttr",        makeMatcherAutoMarshall<Operation*>((attrFnType *)m_Attr, "m_Attr"));
   registerMatcher("hasName",        makeMatcherAutoMarshall<Operation*>((opFnType *)m_Op, "m_Op"));

@@ -126,11 +126,13 @@ private:
 
 /// VariadicMatcher takes a vector of Matchers and returns true if all Matchers
 /// match the given operation.
-class VariadicMatcher : public DynMatcherInterface {
+template <typename T>
+class VariadicMatcher : public MatcherInterface<T> {
 public:
   VariadicMatcher(std::vector<DynMatcher> matchers) : matchers(matchers) {}
 
-  bool dynMatches(DynTypedNode &DynNode) override {
+  bool matches(T Node) override {
+    DynTypedNode DynNode = DynTypedNode::create(Node);
     return llvm::all_of(matchers, [&](const DynMatcher &matcher) {
       return matcher.matches(DynNode);
     });
