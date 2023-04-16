@@ -57,7 +57,8 @@ public:
   bool isMatcher() const;
   const DynMatcher &getMatcher() const;
   void setMatcher(const DynMatcher &Matcher);
-  /// \brief Set the value to be \c DynMatcher by taking ownership of the object.
+  /// \brief Set the value to be \c DynMatcher by taking ownership of the
+  /// object.
   void takeMatcher(DynMatcher *Matcher);
 
   /// \brief Specialized Matcher<T> is/get functions.

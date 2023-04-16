@@ -22,8 +22,8 @@ namespace query {
 namespace extramatcher {
 
 namespace detail {
-/// VariadicMatcher takes a vector of DynMatchers and returns true if all DynMatchers
-/// match the given operation.
+/// VariadicMatcher takes a vector of DynMatchers and returns true if all
+/// DynMatchers match the given operation.
 struct OperationMatcher {
   OperationMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}

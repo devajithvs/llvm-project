@@ -65,9 +65,9 @@ public:
     ///   description of the error.
     ///   The caller takes ownership of the Matcher object returned.
     virtual DynMatcher *actOnMatcherExpression(StringRef MatcherName,
-                                            const SourceRange &NameRange,
-                                            ArrayRef<ParserValue> Args,
-                                            Diagnostics *Error) = 0;
+                                               const SourceRange &NameRange,
+                                               ArrayRef<ParserValue> Args,
+                                               Diagnostics *Error) = 0;
   };
 
   /// \brief Parse a matcher expression, creating matchers from the registry.
@@ -82,7 +82,7 @@ public:
   //    In that case, \c Error will contain a description of the error.
   ///   The caller takes ownership of the DynMatcher object returned.
   static DynMatcher *parseMatcherExpression(StringRef MatcherCode,
-                                         Diagnostics *Error);
+                                            Diagnostics *Error);
 
   /// \brief Parse a matcher expression.
   ///
@@ -95,7 +95,7 @@ public:
   ///   description of the error.
   ///   The caller takes ownership of the DynMatcher object returned.
   static DynMatcher *parseMatcherExpression(StringRef MatcherCode, Sema *S,
-                                         Diagnostics *Error);
+                                            Diagnostics *Error);
 
   /// \brief Parse an expression, creating matchers from the registry.
   ///

@@ -1,5 +1,5 @@
 
-//===--- MLIRTypeTraits.h ----------------------------------------*- C++ -*-===//
+//===--- MLIRTypeTraits.h ------------------------------------*- C++-*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -8,8 +8,8 @@
 //===----------------------------------------------------------------------===//
 //
 //  Provides a dynamic type identifier and a dynamically typed node container
-//  that can be used to store an MLIR base node at runtime in the same storage in
-//  a type safe way.
+//  that can be used to store an MLIR base node at runtime in the same storage
+//  in a type safe way.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,36 +33,32 @@ public:
   constexpr MLIRNodeKind() : KindId(NKI_None) {}
 
   /// Construct an identifier for T.
-  template <class T> static constexpr MLIRNodeKind getFromNodeKind() {
+  template <class T>
+  static constexpr MLIRNodeKind getFromNodeKind() {
     return MLIRNodeKind(KindToKindId<T>::Id);
   }
 
-  /// Returns \c true if \c this and \c Other represent the same kind.
+  /// Returns true if this and Other represent the same kind.
   constexpr bool isSame(MLIRNodeKind Other) const {
     return KindId != NKI_None && KindId == Other.KindId;
   }
 
-  /// Returns \c true only for the default \c MLIRNodeKind()
+  /// Returns true only for the default MLIRNodeKind()
   constexpr bool isNone() const { return KindId == NKI_None; }
 
 private:
   /// Kind ids.
   ///
   /// Includes all possible base and derived kinds.
-  enum NodeKindId {
-    NKI_None,
-    NKI_Attr,
-    NKI_Value,
-    NKI_Operation
-  };
+  enum NodeKindId { NKI_None, NKI_Attr, NKI_Value, NKI_Operation };
 
   /// Use getFromNodeKind<T>() to construct the kind.
   constexpr MLIRNodeKind(NodeKindId KindId) : KindId(KindId) {}
 
   /// Helper meta-function to convert a kind T to its enum value.
-  ///
   /// This struct is specialized below for all known kinds.
-  template <class T> struct KindToKindId {
+  template <class T>
+  struct KindToKindId {
     static const NodeKindId Id = NKI_None;
   };
   template <class T>
@@ -71,7 +67,8 @@ private:
   NodeKindId KindId;
 };
 
-template <> struct MLIRNodeKind::KindToKindId<Operation*> {
+template <>
+struct MLIRNodeKind::KindToKindId<Operation *> {
   static const NodeKindId Id = NKI_Operation;
 };
 
@@ -81,10 +78,10 @@ template <> struct MLIRNodeKind::KindToKindId<Operation*> {
 /// works with different kinds of MLIR nodes, despite the fact that they don't
 /// have a common base class.
 ///
-/// Use \c create(Node) to create a \c DynTypedNode from an MLIR node,
-/// and \c get<T>() to retrieve the node as type T if the types match.
+/// Use create(Node) to create a DynTypedNode from an MLIR node,
+/// and get<T>() to retrieve the node as type T if the types match.
 ///
-/// See \c MLIRNodeKind for which node base types are currently supported;
+/// See MLIRNodeKind for which node base types are currently supported;
 /// You can create DynTypedNodes for all nodes in the inheritance hierarchy of
 /// the supported base types.
 class DynTypedNode {
@@ -95,38 +92,40 @@ public:
     return BaseConverter<T>::create(Node);
   }
 
-  /// Retrieve the stored node as type \c T.
-  ///
+  /// Retrieve the stored node as type T.
   /// Returns NULL if the stored node does not have a type that is
-  /// convertible to \c T.
-  template <typename T> T *get() {
+  /// convertible to T.
+  template <typename T>
+  T *get() {
     return BaseConverter<T>::get(NodeKind, &Storage);
   }
 
-  /// Retrieve the stored node as type \c T.
+  /// Retrieve the stored node as type T.
   ///
-  /// Similar to \c get(), but asserts that the type is what we are expecting.
+  /// Similar to get(), but asserts that the type is what we are expecting.
   template <typename T>
   T &getUnchecked() const {
     return BaseConverter<T>::getUnchecked(NodeKind, &Storage);
   }
 
-   MLIRNodeKind getNodeKind() const { return NodeKind; }
+  MLIRNodeKind getNodeKind() const { return NodeKind; }
 
 private:
-  /// Takes care of converting from and to \c T.
-  template <typename T, typename EnablerT = void> struct BaseConverter;
+  /// Takes care of converting from and to T.
+  template <typename T, typename EnablerT = void>
+  struct BaseConverter;
 
   /// Converter that stores T (by value).
-  template <typename T> struct ValueConverter {
+  template <typename T>
+  struct ValueConverter {
     static T *get(MLIRNodeKind NodeKind, const void *Storage) {
       if (MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind))
-        return const_cast<T*>(reinterpret_cast<const T *>(Storage));
+        return const_cast<T *>(reinterpret_cast<const T *>(Storage));
       return nullptr;
     }
-    static T &getUnchecked(MLIRNodeKind NodeKind,  const void *Storage) {
+    static T &getUnchecked(MLIRNodeKind NodeKind, const void *Storage) {
       assert(MLIRNodeKind::getFromNodeKind<T>().isSame(NodeKind));
-      return *const_cast<T*>(reinterpret_cast<const T *>(Storage));
+      return *const_cast<T *>(reinterpret_cast<const T *>(Storage));
     }
     static DynTypedNode create(T &Node) {
       DynTypedNode Result;
@@ -139,17 +138,21 @@ private:
   MLIRNodeKind NodeKind;
   /// Stores the data of the node.
   /// Note that we can store Operation and Value by pointer as they are
-  /// guaranteed to be unique pointers pointing to dedicated storage in the MLIR.
-  llvm::AlignedCharArrayUnion<Operation*, Value> Storage;
+  /// guaranteed to be unique pointers pointing to dedicated storage in the
+  /// MLIR.
+  llvm::AlignedCharArrayUnion<Operation *, Value> Storage;
 };
 
 template <>
-struct DynTypedNode::BaseConverter<
-    Operation*, void> : public ValueConverter<Operation*> {};
+struct DynTypedNode::BaseConverter<Operation *, void>
+    : public ValueConverter<Operation *> {};
+
+template <>
+struct DynTypedNode::BaseConverter<Value, void> : public ValueConverter<Value> {
+};
 
 } // namespace matcher
 } // namespace query
 } // namespace mlir
 
 #endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_MLIRTYPETRAITS_H
-

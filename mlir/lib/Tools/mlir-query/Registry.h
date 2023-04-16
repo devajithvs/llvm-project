@@ -43,9 +43,9 @@ public:
   ///   match the signature. In that case \c Error will contain the description
   ///   of the error.
   static DynMatcher *constructMatcher(StringRef MatcherName,
-                                   const SourceRange &NameRange,
-                                   ArrayRef<ParserValue> Args,
-                                   Diagnostics *Error);
+                                      const SourceRange &NameRange,
+                                      ArrayRef<ParserValue> Args,
+                                      Diagnostics *Error);
 };
 
 } // namespace matcher

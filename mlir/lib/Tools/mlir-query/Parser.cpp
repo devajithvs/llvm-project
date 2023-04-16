@@ -306,9 +306,9 @@ class RegistrySema : public Parser::Sema {
 public:
   virtual ~RegistrySema(){};
   DynMatcher *actOnMatcherExpression(StringRef MatcherName,
-                                  const SourceRange &NameRange,
-                                  ArrayRef<ParserValue> Args,
-                                  Diagnostics *Error) override {
+                                     const SourceRange &NameRange,
+                                     ArrayRef<ParserValue> Args,
+                                     Diagnostics *Error) override {
     return Registry::constructMatcher(MatcherName, NameRange, Args, Error);
   }
 };
@@ -331,7 +331,7 @@ DynMatcher *Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {
 }
 
 DynMatcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
-                                        Diagnostics *Error) {
+                                           Diagnostics *Error) {
   VariantValue Value;
   if (!parseExpression(Code, S, &Value, Error)) {
 

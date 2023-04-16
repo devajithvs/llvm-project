@@ -95,9 +95,9 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 
 // static
 DynMatcher *Registry::constructMatcher(StringRef MatcherName,
-                                    const SourceRange &NameRange,
-                                    ArrayRef<ParserValue> Args,
-                                    Diagnostics *Error) {
+                                       const SourceRange &NameRange,
+                                       ArrayRef<ParserValue> Args,
+                                       Diagnostics *Error) {
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
   if (it == RegistryData->constructors().end()) {

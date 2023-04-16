@@ -42,8 +42,8 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 }
 
 // This could be done better but is not worth the variadic template trouble.
-std::vector< matcher::DynTypedNode> getMatches(Operation *rootOp,
-                                    const matcher::DynMatcher *matcher) {
+std::vector<matcher::DynTypedNode>
+getMatches(Operation *rootOp, const matcher::DynMatcher *matcher) {
   auto matchFinder = matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
 }
@@ -59,16 +59,17 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 
   unsigned MatchCount = 0;
   for (auto node : matches) {
-    if (Operation* op =  *node.get<Operation*>()){
-    auto opLoc = op->getLoc().cast<FileLineColLoc>();
-    OS << "\nMatch #" << ++MatchCount << ":\n\n";
-    OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
-       << opLoc.getColumn() << ": note: \"root\" binds here\n"
-       << *op << "\n";
-    //auto diag = mlir::emitError(opLoc, "Test message");
+    if (Operation *op = *node.get<Operation *>()) {
+      auto opLoc = op->getLoc().cast<FileLineColLoc>();
+      OS << "\nMatch #" << ++MatchCount << ":\n\n";
+      OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
+         << opLoc.getColumn() << ": note: \"root\" binds here\n"
+         << *op << "\n";
+      // auto diag = mlir::emitError(opLoc, "Test message");
     }
   }
-  OS << "\n" <<MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");
+  OS << "\n"
+     << MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");
   return true;
 }
 
