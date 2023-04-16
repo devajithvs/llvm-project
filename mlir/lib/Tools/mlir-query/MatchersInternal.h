@@ -38,23 +38,82 @@ public:
   virtual ~DynMatcherInterface() = default;
 
   /// Returns true if 'op' can be matched.
-  virtual bool matches(DynTypedNode &DynNode) = 0;
+  virtual bool dynMatches(DynTypedNode &DynNode) = 0;
 };
+
+/// Generic interface for matchers on an AST node of type T.
+///
+/// Implement this if your matcher may need to inspect the children or
+/// descendants of the node or bind matched nodes to names. If you are
+/// writing a simple matcher that only inspects properties of the
+/// current node and doesn't care about its children or descendants,
+/// implement SingleNodeMatcherInterface instead.
+template <typename T>
+class MatcherInterface : public DynMatcherInterface {
+public:
+  /// Returns true if 'Node' can be matched.
+  ///
+  /// May bind 'Node' to an ID via 'Builder', or recurse into
+  /// the AST via 'Finder'.
+  virtual bool matches(T Node) = 0;
+
+  bool dynMatches(DynTypedNode &DynNode) const override {
+    return matches(DynNode.getUnchecked<T>());
+  }
+};
+
+template <typename> class Matcher;
 
 /// Matcher wraps a MatcherInterface implementation and provides a matches()
 /// method that redirects calls to the underlying implementation.
 class DynMatcher {
 public:
-  DynMatcher(DynMatcherInterface *Implementation) : Implementation(Implementation) {}
+  /// Takes ownership of the provided implementation pointer.
+  template <typename T>
+  DynMatcher(MatcherInterface<T> *Implementation) : SupportedKind(MLIRNodeKind::getFromNodeKind<T>()),
+        RestrictKind(SupportedKind),Implementation(Implementation) {}
 
   /// Returns true if the matcher matches the given op.
-  bool matches(DynTypedNode &DynNode) const { return Implementation->matches(DynNode); }
+  bool matches(DynTypedNode &DynNode) const { 
+    if (RestrictKind.isSame(DynNode.getNodeKind()) &&
+        Implementation->dynMatches(DynNode)) {
+      return true;
+    }
+    return false; }
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
 
 private:
+  MLIRNodeKind SupportedKind;
+
+  /// A potentially stricter node kind.
+  ///
+  /// It allows to perform implicit and dynamic cast of matchers without
+  /// needing to change \c Implementation.
+  MLIRNodeKind RestrictKind;
   llvm::IntrusiveRefCntPtr<DynMatcherInterface> Implementation;
 };
+
+/// Wrapper of a MatcherInterface<T> *that allows copying.
+///
+/// A Matcher<Base> can be used anywhere a Matcher<Derived> is
+/// required. This establishes an is-a relationship which is reverse
+/// to the AST hierarchy. In other words, Matcher<T> is contravariant
+/// with respect to T. The relationship is built via a type conversion
+/// operator rather than a type hierarchy to be able to templatize the
+/// type hierarchy instead of spelling it out.
+template <typename T>
+class Matcher {
+public:
+  /// Takes ownership of the provided implementation pointer.
+  explicit Matcher(MatcherInterface<T> *Implementation)
+      : Implementation(Implementation) {}
+    
+  /// Forwards the call to the underlying MatcherInterface<T> pointer.
+  bool matches(T Node) const {
+    return Implementation.matches(DynTypedNode::create(Node));
+  }
+}
 
 /// SingleMatcher takes a matcher function object and implements
 /// MatcherInterface.
