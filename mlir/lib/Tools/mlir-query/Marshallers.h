@@ -178,6 +178,36 @@ DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
   return new DynMatcher(singleMatcher);
 }
 
+// 2-arg marshaller function.
+template <typename T, typename ReturnType, typename InArgType1, typename InArgType2>
+DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1, InArgType2),
+                             StringRef MatcherName,
+                             const SourceRange &NameRange,
+                             ArrayRef<ParserValue> Args, Diagnostics *Error) {
+  typedef typename remove_const_ref<InArgType1>::type ArgType1;
+  typedef typename remove_const_ref<InArgType2>::type ArgType2;
+  // TODO: Extract this into a separate function.
+  if (Args.size() != 2) {
+    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
+        << 1 << Args.size();
+    return NULL;
+  }
+  if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
+    Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
+        << MatcherName << 1;
+    return NULL;
+  }
+  if (!ArgTypeTraits<ArgType2>::is(Args[1].Value)) {
+    Error->addError(Args[1].Range, Error->ET_RegistryWrongArgType)
+        << MatcherName << 1;
+    return NULL;
+  }
+  ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value), ArgTypeTraits<ArgType2>::get(Args[1].Value));
+  MatcherInterface<T> *singleMatcher =
+      new SingleMatcher<T, ReturnType>(matcherFn);
+  return new DynMatcher(singleMatcher);
+}
+
 /// TODO Variadic marshaller function.
 
 // Helper functions to select the appropriate marshaller functions.
@@ -196,6 +226,14 @@ template <typename T, typename ReturnType, typename ArgType1>
 MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                                                StringRef MatcherName) {
   return createMarshallerCallback(matcherMarshall1<T, ReturnType, ArgType1>,
+                                  Func, MatcherName);
+}
+
+// 2-arg overload
+template <typename T, typename ReturnType, typename ArgType1, typename ArgType2>
+MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
+                                               StringRef MatcherName) {
+  return createMarshallerCallback(matcherMarshall1<T, ReturnType, ArgType1, ArgType2>,
                                   Func, MatcherName);
 }
 

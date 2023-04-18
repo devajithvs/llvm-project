@@ -35,11 +35,52 @@ struct OperationMatcher {
   }
   std::vector<matcher::DynMatcher> matchers;
 };
+
+struct DefinedByMatcher {
+  DefinedByMatcher(matcher::DynMatcher innerMatcher)
+      : innerMatcher(innerMatcher) {}
+  bool match(Operation *op) {
+    LLVM_DEBUG(dbgs() << "\nTrying to match\n");
+    return llvm::any_of(op->getOperands(), [&](Value operand) {
+      if (Operation *operandOp = operand.getDefiningOp()) {
+        matcher::DynTypedNode node = matcher::DynTypedNode::create(operandOp);
+        return innerMatcher.matches(node);
+      }
+      return false;
+    });
+  }
+  matcher::DynMatcher innerMatcher;
+};
+
+struct UsedByMatcher {
+  UsedByMatcher(matcher::DynMatcher innerMatcher)
+      : innerMatcher(innerMatcher) {}
+  bool match(Operation *op) {
+    return llvm::any_of(op->getUsers(), [&](Operation *userOp) {
+      matcher::DynTypedNode node = matcher::DynTypedNode::create(userOp);
+      return innerMatcher.matches(node);
+    });
+  }
+  matcher::DynMatcher innerMatcher;
+};
+
 } // namespace detail
 
 inline detail::OperationMatcher operation(matcher::DynMatcher args...) {
   std::vector<matcher::DynMatcher> matchers({args});
   return detail::OperationMatcher(matchers);
+}
+
+inline detail::DefinedByMatcher definedBy(matcher::DynMatcher innerMatcher) {
+  return detail::DefinedByMatcher(innerMatcher);
+}
+
+inline detail::UsedByMatcher usedBy(matcher::DynMatcher innerMatcher) {
+  return detail::UsedByMatcher(innerMatcher);
+}
+
+inline detail::UsedByMatcher usedBy(matcher::DynMatcher innerMatcher, StringRef hops) {
+  return detail::UsedByMatcher(innerMatcher);
 }
 
 } // namespace extramatcher
