@@ -27,13 +27,32 @@ namespace detail {
 struct OperationMatcher {
   OperationMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}
-  bool matches(Operation *op) {
+  bool match(Operation *op) {
     matcher::DynTypedNode node = matcher::DynTypedNode::create(op);
     return llvm::all_of(matchers, [&](const matcher::DynMatcher &matcher) {
       return matcher.matches(node);
     });
   }
   std::vector<matcher::DynMatcher> matchers;
+};
+
+struct ArgumentMatcher {
+  ArgumentMatcher(matcher::DynMatcher innerMatcher, unsigned index)
+      : innerMatcher(innerMatcher), index(index) {}
+
+  bool match(Operation *op) {
+    if (op->getNumOperands() > index) {
+      auto operand = op->getOperand(index);
+      if (Operation *operandOp = operand.getDefiningOp()) {
+        matcher::DynTypedNode node = matcher::DynTypedNode::create(operandOp);
+        return innerMatcher.matches(node);
+      }
+    }
+    return false;
+  }
+
+  matcher::DynMatcher innerMatcher;
+  unsigned index;
 };
 
 struct DefinedByMatcher {
@@ -103,6 +122,11 @@ struct UsedByMatcher {
 inline detail::OperationMatcher operation(matcher::DynMatcher args...) {
   std::vector<matcher::DynMatcher> matchers({args});
   return detail::OperationMatcher(matchers);
+}
+
+inline detail::ArgumentMatcher hasArgument(matcher::DynMatcher innerMatcher,
+                                           unsigned argIndex) {
+  return detail::ArgumentMatcher(innerMatcher, argIndex);
 }
 
 inline detail::DefinedByMatcher definedBy(matcher::DynMatcher innerMatcher) {
