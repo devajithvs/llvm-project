@@ -37,44 +37,49 @@ struct OperationMatcher {
 };
 
 struct DefinedByMatcher {
-  DefinedByMatcher(matcher::DynMatcher innerMatcher)
-      : innerMatcher(innerMatcher) {}
-  bool match(Operation *op) {
-    LLVM_DEBUG(dbgs() << "\nTrying to match\n");
-    return llvm::any_of(op->getOperands(), [&](Value operand) {
-      if (Operation *operandOp = operand.getDefiningOp()) {
-        matcher::DynTypedNode node = matcher::DynTypedNode::create(operandOp);
-        return innerMatcher.matches(node);
-      }
-      return false;
-    });
-  }
-  matcher::DynMatcher innerMatcher;
-};
-
-struct UsedByMatcher {
-  UsedByMatcher(matcher::DynMatcher innerMatcher)
-      : innerMatcher(innerMatcher) {}
-  bool match(Operation *op) {
-    return llvm::any_of(op->getUsers(), [&](Operation *userOp) {
-      matcher::DynTypedNode node = matcher::DynTypedNode::create(userOp);
-      return innerMatcher.matches(node);
-    });
-  }
-  matcher::DynMatcher innerMatcher;
-};
-
-struct GetUsedByMatcher {
-  GetUsedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops,
+  DefinedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops,
                    bool inclusive)
       : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
+
   bool recursiveMatch(Operation *op, unsigned tempHops) {
     if (tempHops == 0) {
       auto currentNode = matcher::DynTypedNode::create(op);
       return innerMatcher.matches(currentNode);
     }
     if (inclusive) {
-      LLVM_DEBUG(dbgs() << "\nThis is inclusive match with hops: " << tempHops);
+      return llvm::any_of(op->getOperands(), [&](Value operand) {
+        if (Operation *operandOp = operand.getDefiningOp()) {
+          matcher::DynTypedNode node = matcher::DynTypedNode::create(operandOp);
+          return innerMatcher.matches(node) ||
+                 recursiveMatch(operandOp, tempHops - 1);
+        }
+        return false;
+      });
+    } else {
+      return llvm::any_of(op->getOperands(), [&](Value operand) {
+        if (Operation *operandOp = operand.getDefiningOp()) {
+          return recursiveMatch(operandOp, tempHops - 1);
+        }
+        return false;
+      });
+    }
+  }
+  bool match(Operation *op) { return recursiveMatch(op, hops); }
+  matcher::DynMatcher innerMatcher;
+  unsigned hops;
+  bool inclusive;
+};
+
+struct UsedByMatcher {
+  UsedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops, bool inclusive)
+      : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
+
+  bool recursiveMatch(Operation *op, unsigned tempHops) {
+    if (tempHops == 0) {
+      auto currentNode = matcher::DynTypedNode::create(op);
+      return innerMatcher.matches(currentNode);
+    }
+    if (inclusive) {
       return llvm::any_of(op->getUsers(), [&](Operation *userOp) {
         auto userNode = matcher::DynTypedNode::create(userOp);
         return innerMatcher.matches(userNode) ||
@@ -82,12 +87,11 @@ struct GetUsedByMatcher {
       });
     } else {
       return llvm::any_of(op->getUsers(), [&](Operation *userOp) {
-        LLVM_DEBUG(dbgs() << "\nThis is exclusive match with hops: "
-                          << tempHops);
         return recursiveMatch(userOp, tempHops - 1);
       });
     }
   }
+
   bool match(Operation *op) { return recursiveMatch(op, hops); }
   matcher::DynMatcher innerMatcher;
   unsigned hops;
@@ -102,22 +106,31 @@ inline detail::OperationMatcher operation(matcher::DynMatcher args...) {
 }
 
 inline detail::DefinedByMatcher definedBy(matcher::DynMatcher innerMatcher) {
-  return detail::DefinedByMatcher(innerMatcher);
+  return detail::DefinedByMatcher(innerMatcher, 1, false);
+}
+
+inline detail::DefinedByMatcher getDefinedBy(matcher::DynMatcher innerMatcher,
+                                             unsigned hops) {
+  return detail::DefinedByMatcher(innerMatcher, hops, false);
+}
+
+inline detail::DefinedByMatcher
+getAllDefinedBy(matcher::DynMatcher innerMatcher, unsigned hops) {
+  return detail::DefinedByMatcher(innerMatcher, hops, true);
 }
 
 inline detail::UsedByMatcher usedBy(matcher::DynMatcher innerMatcher) {
-  return detail::UsedByMatcher(innerMatcher);
+  return detail::UsedByMatcher(innerMatcher, 1, false);
 }
 
-inline detail::GetUsedByMatcher getAllUsedBy(matcher::DynMatcher innerMatcher,
-                                             unsigned hops) {
-  LLVM_DEBUG(dbgs() << "\nThis is initial match with hops: " << hops);
-  return detail::GetUsedByMatcher(innerMatcher, hops, true);
+inline detail::UsedByMatcher getUsedBy(matcher::DynMatcher innerMatcher,
+                                       unsigned hops) {
+  return detail::UsedByMatcher(innerMatcher, hops, false);
 }
 
-inline detail::GetUsedByMatcher getUsedBy(matcher::DynMatcher innerMatcher,
+inline detail::UsedByMatcher getAllUsedBy(matcher::DynMatcher innerMatcher,
                                           unsigned hops) {
-  return detail::GetUsedByMatcher(innerMatcher, hops, false);
+  return detail::UsedByMatcher(innerMatcher, hops, true);
 }
 
 } // namespace extramatcher

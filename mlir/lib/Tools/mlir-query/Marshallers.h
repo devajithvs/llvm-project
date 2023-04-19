@@ -27,6 +27,12 @@
 #include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
 
+#include "llvm/Support/Debug.h"
+using llvm::dbgs;
+
+#define DEBUG_TYPE "mlir-query"
+#define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
+
 namespace mlir {
 namespace query {
 namespace matcher {
@@ -67,14 +73,14 @@ struct ArgTypeTraits<bool> {
 
 template <> struct ArgTypeTraits<double> {
   static bool is(const VariantValue &Value) { return Value.isDouble(); }
-  static bool get(const VariantValue &Value) {
+  static double get(const VariantValue &Value) {
     return Value.getDouble();
   }
 };
 
 template <> struct ArgTypeTraits<unsigned> {
   static bool is(const VariantValue &Value) { return Value.isUnsigned(); }
-  static bool get(const VariantValue &Value) {
+  static unsigned get(const VariantValue &Value) {
     return Value.getUnsigned();
   }
 };

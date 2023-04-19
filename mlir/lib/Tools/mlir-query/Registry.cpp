@@ -64,9 +64,11 @@ RegistryMaps::RegistryMaps() {
   // clang-format off
   registerMatcher("operation",      makeMatcherAutoMarshall<Operation*>(extramatcher::operation, "operation"));
   registerMatcher("definedBy",      makeMatcherAutoMarshall<Operation*>(extramatcher::definedBy, "definedBy"));
-  registerMatcher("getAllUsedBy",   makeMatcherAutoMarshall<Operation*>(extramatcher::getAllUsedBy, "getAllUsedBy"));
-  registerMatcher("getUsedBy",      makeMatcherAutoMarshall<Operation*>(extramatcher::getUsedBy, "getUsedBy"));
+  registerMatcher("getDefinedBy",   makeMatcherAutoMarshall<Operation*>(extramatcher::getDefinedBy, "getDefinedBy"));
+  registerMatcher("getAllDefinedBy",makeMatcherAutoMarshall<Operation*>(extramatcher::getAllDefinedBy, "getAllDefinedBy"));
   registerMatcher("usedBy",         makeMatcherAutoMarshall<Operation*>(extramatcher::usedBy, "usedBy"));
+  registerMatcher("getUsedBy",      makeMatcherAutoMarshall<Operation*>(extramatcher::getUsedBy, "getUsedBy"));
+  registerMatcher("getAllUsedBy",   makeMatcherAutoMarshall<Operation*>(extramatcher::getAllUsedBy, "getAllUsedBy"));
   registerMatcher("isConstant",     makeMatcherAutoMarshall<Operation*>((constantFnType *)m_Constant, "m_Constant"));
   registerMatcher("hasAttr",        makeMatcherAutoMarshall<Operation*>((attrFnType *)m_Attr, "m_Attr"));
   registerMatcher("hasName",        makeMatcherAutoMarshall<Operation*>((opFnType *)m_Op, "m_Op"));
