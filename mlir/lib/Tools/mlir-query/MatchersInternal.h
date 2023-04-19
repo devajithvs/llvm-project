@@ -70,7 +70,7 @@ public:
   template <typename T>
   DynMatcher(MatcherInterface<T> *Implementation)
       : SupportedKind(MLIRNodeKind::getFromNodeKind<T>()),
-        RestrictKind(SupportedKind), Implementation(Implementation) {}
+        RestrictKind(SupportedKind), Implementation(Implementation), ExtractFunction(false) {}
 
   /// Returns true if the matcher matches the given op.
   bool matches(DynTypedNode &DynNode) const {
@@ -85,6 +85,14 @@ public:
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
 
+  void setExtract(bool extractFunction) {
+    ExtractFunction = extractFunction;
+  };
+
+  bool getExtract() const {
+    return ExtractFunction;
+  };
+
 private:
   MLIRNodeKind SupportedKind;
 
@@ -93,6 +101,7 @@ private:
   /// needing to change Implementation.
   MLIRNodeKind RestrictKind;
   llvm::IntrusiveRefCntPtr<DynMatcherInterface> Implementation;
+  bool ExtractFunction;
 };
 
 /// Wrapper of a MatcherInterface<T> *

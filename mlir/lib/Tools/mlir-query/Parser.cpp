@@ -34,11 +34,15 @@ struct Parser::TokenInfo {
     TK_OpenParen,
     TK_CloseParen,
     TK_Comma,
+    TK_Period,
     TK_Literal,
     TK_Ident,
     TK_InvalidChar,
     TK_Error
   };
+
+  /// Some known identifiers.
+  static const char* const ID_Extract;
 
   TokenInfo() : Text(), Kind(TK_Eof), Range(), Value() {}
 
@@ -47,6 +51,8 @@ struct Parser::TokenInfo {
   SourceRange Range;
   VariantValue Value;
 };
+
+const char* const Parser::TokenInfo::ID_Extract = "extract";
 
 /// \brief Simple tokenizer for the parser.
 class Parser::CodeTokenizer {
@@ -84,6 +90,11 @@ private:
     switch (Code[0]) {
     case ',':
       Result.Kind = TokenInfo::TK_Comma;
+      Result.Text = Code.substr(0, 1);
+      Code = Code.drop_front();
+      break;
+    case '.':
+      Result.Kind = TokenInfo::TK_Period;
       Result.Text = Code.substr(0, 1);
       Code = Code.drop_front();
       break;
@@ -303,11 +314,38 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     return false;
   }
 
+  bool extractFunction = false;
+  if (Tokenizer->peekNextToken().Kind == TokenInfo::TK_Period) {
+    // Parse .extract()
+    Tokenizer->consumeNextToken();  // consume the period.
+    const TokenInfo ExtractToken = Tokenizer->consumeNextToken();
+    const TokenInfo OpenToken = Tokenizer->consumeNextToken();
+    const TokenInfo CloseToken = Tokenizer->consumeNextToken();
+
+    // TODO: We could use different error codes for each/some to be more
+    //       explicit about the syntax error.
+    if (ExtractToken.Kind != TokenInfo::TK_Ident ||
+        ExtractToken.Text != TokenInfo::ID_Extract) {
+      Error->addError(ExtractToken.Range, Error->ET_ParserMalformedBindExpr);
+      return false;
+    }
+    if (OpenToken.Kind != TokenInfo::TK_OpenParen) {
+      Error->addError(OpenToken.Range, Error->ET_ParserMalformedBindExpr);
+      return false;
+    }
+    if (CloseToken.Kind != TokenInfo::TK_CloseParen) {
+      Error->addError(CloseToken.Range,
+                            Error->ET_ParserMalformedBindExpr);
+      return false;
+    }
+    extractFunction = true;
+  }
+
   // Merge the start and end infos.
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
   DynMatcher *Result =
-      S->actOnMatcherExpression(NameToken.Text, MatcherRange, Args, Error);
+      S->actOnMatcherExpression(NameToken.Text, MatcherRange, extractFunction, Args, Error);
 
   if (Result == NULL) {
     // TODO
@@ -351,6 +389,7 @@ bool Parser::parseExpressionImpl(VariantValue *Value) {
   case TokenInfo::TK_OpenParen:
   case TokenInfo::TK_CloseParen:
   case TokenInfo::TK_Comma:
+  case TokenInfo::TK_Period:
   case TokenInfo::TK_InvalidChar:
     const TokenInfo Token = Tokenizer->consumeNextToken();
     Error->addError(Token.Range, Error->ET_ParserInvalidToken) << Token.Text;
@@ -367,9 +406,10 @@ public:
   virtual ~RegistrySema(){};
   DynMatcher *actOnMatcherExpression(StringRef MatcherName,
                                      const SourceRange &NameRange,
+                                     bool ExtractFunction,
                                      ArrayRef<ParserValue> Args,
                                      Diagnostics *Error) override {
-    return Registry::constructMatcher(MatcherName, NameRange, Args, Error);
+    return Registry::constructMatcherWrapper(MatcherName, NameRange,ExtractFunction, Args, Error);
   }
 };
 
@@ -382,7 +422,13 @@ bool Parser::parseExpression(StringRef Code, VariantValue *Value,
 bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value,
                              Diagnostics *Error) {
   CodeTokenizer Tokenizer(Code, Error);
-  return Parser(&Tokenizer, S, Error).parseExpressionImpl(Value);
+  if (!Parser(&Tokenizer, S, Error).parseExpressionImpl(Value)) return false;
+  if (Tokenizer.peekNextToken().Kind != TokenInfo::TK_Eof) {
+    Error->addError(Tokenizer.peekNextToken().Range,
+                          Error->ET_ParserTrailingCode);
+    return false;
+  }
+  return true;
 }
 
 DynMatcher *Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {

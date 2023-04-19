@@ -116,6 +116,19 @@ DynMatcher *Registry::constructMatcher(StringRef MatcherName,
   return it->second->run(NameRange, Args, Error);
 }
 
+// static
+DynMatcher *Registry::constructMatcherWrapper(StringRef MatcherName,
+                                       const SourceRange &NameRange,
+                                       bool ExtractFunction,
+                                       ArrayRef<ParserValue> Args,
+                                       Diagnostics *Error) {
+
+  DynMatcher *Out = constructMatcher(MatcherName, NameRange, Args, Error);
+  if (!Out) return Out;
+  Out->setExtract(ExtractFunction);
+  return Out;
+}
+
 } // namespace matcher
 } // namespace query
 } // namespace mlir

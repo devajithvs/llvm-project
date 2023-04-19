@@ -66,6 +66,7 @@ public:
     ///   The caller takes ownership of the Matcher object returned.
     virtual DynMatcher *actOnMatcherExpression(StringRef MatcherName,
                                                const SourceRange &NameRange,
+                                               bool ExtractFunction,
                                                ArrayRef<ParserValue> Args,
                                                Diagnostics *Error) = 0;
   };

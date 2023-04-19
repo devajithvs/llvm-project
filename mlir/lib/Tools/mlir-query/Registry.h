@@ -27,25 +27,32 @@ namespace matcher {
 
 class Registry {
 public:
-  /// \brief Construct a matcher from the registry by name.
+  /// Construct a matcher from the registry by name.
   ///
   /// Consult the registry of known matchers and construct the appropriate
   /// matcher by name.
   ///
-  /// \param MatcherName The name of the matcher to instantiate.
+  /// MatcherName is the name of the matcher to instantiate.
   ///
-  /// \param Args The argument list for the matcher. The number and types of the
-  ///   values must be valid for the matcher requested. Otherwise, the function
-  ///   will return an error.
+  /// Args is the argument list for the matcher. The number and types of the
+  /// values must be valid for the matcher requested. Otherwise, the function
+  /// will return an error.
   ///
-  /// \return The matcher if no error was found. NULL if the matcher is not
-  //    found, or if the number of arguments or argument types do not
-  ///   match the signature. In that case \c Error will contain the description
-  ///   of the error.
+  /// Return the matcher if no error was found. NULL if the matcher is not
+  //  found, or if the number of arguments or argument types do not
+  /// match the signature. In that case Error will contain the description
+  /// of the error.
+  // TODO: Cleanup - Remove one of these
   static DynMatcher *constructMatcher(StringRef MatcherName,
                                       const SourceRange &NameRange,
                                       ArrayRef<ParserValue> Args,
                                       Diagnostics *Error);
+  // TODO: Cleanup
+  static DynMatcher *constructMatcherWrapper(StringRef MatcherName,
+                                       const SourceRange &NameRange,
+                                       bool ExtractFunction,
+                                       ArrayRef<ParserValue> Args,
+                                       Diagnostics *Error);
 };
 
 } // namespace matcher
