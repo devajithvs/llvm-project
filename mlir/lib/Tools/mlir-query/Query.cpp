@@ -9,10 +9,12 @@
 #include "Query.h"
 #include "QuerySession.h"
 #include "llvm/Support/raw_ostream.h"
+#include <bits/stdc++.h>
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Dialect.h"
+#include "mlir/IR/IRMapping.h"
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
@@ -55,35 +57,43 @@ getMatches(Operation *rootOp, const matcher::DynMatcher *matcher) {
 // TODO: Only supports operation node type.
 Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
                            OpBuilder builder) {
+  std::vector<Operation *> slice;
+  std::vector<Value> values;
 
-  // OwningOpRef<func::FuncOp> func(func::FuncOp::create(
-  //     builder.getUnknownLoc(), "",
-  //     builder.getFunctionType(std::nullopt, std::nullopt)));
-  // func::FuncOp func = builder.create<func::FuncOp>(
-  //     builder.getUnknownLoc(), "extracted",
-  //     builder.getFunctionType(std::nullopt, std::nullopt));
-  // return func;
+  for (matcher::DynTypedNode node : nodes) {
+    if (Operation *op = *node.get<Operation *>()) {
+      slice.push_back(op);
+      // Extract all values that might potentially be needed as func arguments.
+      for (Value value : op->getOperands()) {
+        values.push_back(value);
+      }
+    }
+  }
 
-  // Create a function and a module.
-  ModuleOp moduleOp = ModuleOp::create(builder.getUnknownLoc());
-  auto loc = moduleOp.getLoc();
-  func::FuncOp funcOp =
-      func::FuncOp::create(loc, "extracted",
-                           builder.getFunctionType(std::nullopt, std::nullopt));
-  // funcOp.setPrivate();
-  funcOp.addEntryBlock();
+  auto loc = builder.getUnknownLoc();
+  func::FuncOp funcOp = func::FuncOp::create(
+      loc, "extracted",
+      builder.getFunctionType(ValueRange(values), std::nullopt));
+
+  loc = funcOp.getLoc();
+  builder.setInsertionPointToEnd(funcOp.addEntryBlock());
   builder.setInsertionPointToEnd(&funcOp.getBody().front());
+
+  IRMapping mapper;
+  for (const auto &arg : llvm::enumerate(values))
+    mapper.map(arg.value(), funcOp.getArgument(arg.index()));
+  for (Operation *slicedOp : slice)
+    builder.clone(*slicedOp, mapper);
+
+  // Remove func arguments that are not used.
+  for (const auto &arg : llvm::enumerate(funcOp.getArguments())) {
+    if (arg.value().getUses().empty()) {
+      funcOp.eraseArgument(arg.index());
+    }
+  }
   builder.create<func::ReturnOp>(loc);
-  // auto funcBody = funcOp.getBody();
-  // for (matcher::DynTypedNode node: nodes) {
-  //   if (Operation *op = *node.get<Operation *>()) {
-  //     funcOp.push_back(op);
-  //   }
-  // }
-  moduleOp.push_back(funcOp);
 
-  return moduleOp;
-
+  return funcOp;
 }
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
