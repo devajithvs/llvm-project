@@ -64,6 +64,36 @@ struct UsedByMatcher {
   matcher::DynMatcher innerMatcher;
 };
 
+struct GetUsedByMatcher {
+  GetUsedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops,
+                   bool inclusive)
+      : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
+  bool recursiveMatch(Operation *op, unsigned tempHops) {
+    if (tempHops == 0) {
+      auto currentNode = matcher::DynTypedNode::create(op);
+      return innerMatcher.matches(currentNode);
+    }
+    if (inclusive) {
+      LLVM_DEBUG(dbgs() << "\nThis is inclusive match with hops: " << tempHops);
+      return llvm::any_of(op->getUsers(), [&](Operation *userOp) {
+        auto userNode = matcher::DynTypedNode::create(userOp);
+        return innerMatcher.matches(userNode) ||
+               recursiveMatch(userOp, tempHops - 1);
+      });
+    } else {
+      return llvm::any_of(op->getUsers(), [&](Operation *userOp) {
+        LLVM_DEBUG(dbgs() << "\nThis is exclusive match with hops: "
+                          << tempHops);
+        return recursiveMatch(userOp, tempHops - 1);
+      });
+    }
+  }
+  bool match(Operation *op) { return recursiveMatch(op, hops); }
+  matcher::DynMatcher innerMatcher;
+  unsigned hops;
+  bool inclusive;
+};
+
 } // namespace detail
 
 inline detail::OperationMatcher operation(matcher::DynMatcher args...) {
@@ -79,8 +109,15 @@ inline detail::UsedByMatcher usedBy(matcher::DynMatcher innerMatcher) {
   return detail::UsedByMatcher(innerMatcher);
 }
 
-inline detail::UsedByMatcher usedBy(matcher::DynMatcher innerMatcher, StringRef hops) {
-  return detail::UsedByMatcher(innerMatcher);
+inline detail::GetUsedByMatcher getAllUsedBy(matcher::DynMatcher innerMatcher,
+                                             unsigned hops) {
+  LLVM_DEBUG(dbgs() << "\nThis is initial match with hops: " << hops);
+  return detail::GetUsedByMatcher(innerMatcher, hops, true);
+}
+
+inline detail::GetUsedByMatcher getUsedBy(matcher::DynMatcher innerMatcher,
+                                          unsigned hops) {
+  return detail::GetUsedByMatcher(innerMatcher, hops, false);
 }
 
 } // namespace extramatcher

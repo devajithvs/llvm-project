@@ -25,7 +25,7 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-/// \brief Variant value class.
+/// Variant value class.
 ///
 /// Basically, a tagged union with value type semantics.
 /// It is used by the registry as the return value and argument type for the
@@ -34,8 +34,11 @@ namespace matcher {
 /// copy/assignment.
 ///
 /// Supported types:
-///  - \c StringRef
-///  - \c Any \c Matcher
+///  - bool
+//   - double
+///  - unsigned
+///  - StringRef
+///  - Any Matcher
 class VariantValue {
 public:
   VariantValue() : Type(VT_Nothing) {}
@@ -44,24 +47,43 @@ public:
   ~VariantValue();
   VariantValue &operator=(const VariantValue &Other);
 
-  /// \brief Specific constructors for each supported type.
+  /// Specific constructors for each supported type.
+  VariantValue(bool Boolean);
+  VariantValue(double Double);
+  VariantValue(unsigned Unsigned);
   VariantValue(const StringRef &String);
-  VariantValue(const DynMatcher &Matcher);
+  VariantValue(const DynMatcher &Matchers);
 
-  /// \brief String value functions.
+  /// Boolean value functions.
+  bool isBoolean() const;
+  bool getBoolean() const;
+  void setBoolean(bool Boolean);
+
+  /// Double value functions.
+  bool isDouble() const;
+  double getDouble() const;
+  void setDouble(double Double);
+
+  /// Unsigned value functions.
+  bool isUnsigned() const;
+  unsigned getUnsigned() const;
+  void setUnsigned(unsigned Unsigned);
+
+  /// String value functions.
   bool isString() const;
   const StringRef &getString() const;
   void setString(const StringRef &String);
 
-  /// \brief Matcher value functions.
+  /// Matcher value functions.
   bool isMatcher() const;
   const DynMatcher &getMatcher() const;
   void setMatcher(const DynMatcher &Matcher);
-  /// \brief Set the value to be \c DynMatcher by taking ownership of the
+
+  /// Set the value to be DynMatcher by taking ownership of the
   /// object.
   void takeMatcher(DynMatcher *Matcher);
 
-  /// \brief Specialized Matcher<T> is/get functions.
+  /// Specialized Matcher<T> is/get functions.
   template <class T>
   bool isTypedMatcher() const {
     // TODO: Add some logic to test if T is actually valid for the underlying
@@ -72,11 +94,21 @@ public:
 private:
   void reset();
 
-  /// \brief All supported value types.
-  enum ValueType { VT_Nothing, VT_String, VT_Matcher };
+  /// All supported value types.
+  enum ValueType {
+    VT_Nothing,
+    VT_Boolean,
+    VT_Double,
+    VT_Unsigned,
+    VT_String,
+    VT_Matcher,
+  };
 
-  /// \brief All supported value types.
+  /// All supported value types.
   union AllValues {
+    unsigned Unsigned;
+    double Double;
+    bool Boolean;
     StringRef *String;
     DynMatcher *Matcher;
   };

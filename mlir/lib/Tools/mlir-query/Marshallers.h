@@ -57,6 +57,28 @@ struct ArgTypeTraits<DynMatcher> {
   }
 };
 
+template <>
+struct ArgTypeTraits<bool> {
+  static bool is(const VariantValue &Value) { return Value.isBoolean(); }
+  static bool get(const VariantValue &Value) {
+    return Value.getBoolean();
+  }
+};
+
+template <> struct ArgTypeTraits<double> {
+  static bool is(const VariantValue &Value) { return Value.isDouble(); }
+  static bool get(const VariantValue &Value) {
+    return Value.getDouble();
+  }
+};
+
+template <> struct ArgTypeTraits<unsigned> {
+  static bool is(const VariantValue &Value) { return Value.isUnsigned(); }
+  static bool get(const VariantValue &Value) {
+    return Value.getUnsigned();
+  }
+};
+
 // Generic MatcherCreate interface.
 // Provides a run() method that constructs the matcher from the provided
 // arguments.
