@@ -10,8 +10,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_ASTMATCHERS_DYNAMIC_DIAGNOSTICS_H
-#define LLVM_CLANG_ASTMATCHERS_DYNAMIC_DIAGNOSTICS_H
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_DIAGNOSTICS_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERS_DIAGNOSTICS_H
 
 #include "VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -177,4 +177,4 @@ private:
 } // namespace query
 } // namespace mlir
 
-#endif // LLVM_CLANG_ASTMATCHERS_DYNAMIC_DIAGNOSTICS_H
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_DIAGNOSTICS_H

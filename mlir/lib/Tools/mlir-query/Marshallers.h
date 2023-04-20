@@ -18,10 +18,6 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 
-#include <list>
-#include <string>
-#include <vector>
-
 #include "MatchersInternal.h"
 #include "VariantValue.h"
 #include "mlir/IR/Matchers.h"
@@ -88,7 +84,7 @@ class MatcherCreateCallback {
 public:
   virtual ~MatcherCreateCallback() = default;
   virtual DynMatcher *run(const SourceRange &NameRange,
-                          ArrayRef<ParserValue> Args,
+                          const ArrayRef<ParserValue> &Args,
                           Diagnostics *Error) const = 0;
 };
 
@@ -104,7 +100,7 @@ public:
                                      StringRef MatcherName)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
-  DynMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+  DynMatcher *run(const SourceRange &NameRange, const ArrayRef<ParserValue> &Args,
                   Diagnostics *Error) const override {
     return Marshaller(Func, MatcherName, NameRange, Args, Error);
   }
@@ -124,16 +120,16 @@ public:
 
   typedef DynMatcher DerivedMatcherType;
 
-  DynMatcher *run(const SourceRange &NameRange, ArrayRef<ParserValue> Args,
+  DynMatcher *run(const SourceRange &NameRange, const ArrayRef<ParserValue> &Args,
                   Diagnostics *Error) const override {
     std::vector<DerivedMatcherType> References;
     std::vector<const DerivedMatcherType *> InnerArgs(Args.size());
-    for (size_t i = 0, e = Args.size(); i != e; ++i) {
+    for (std::size_t i = 0, e = Args.size(); i != e; ++i) {
 
       if (!ArgTypeTraits<DerivedMatcherType>::is(Args[i].Value)) {
         Error->addError(Args[i].Range, Error->ET_RegistryWrongArgType)
             << MatcherName << i + 1;
-        return NULL;
+        return nullptr;
       }
       References.push_back(
           ArgTypeTraits<DerivedMatcherType>::get(Args[i].Value));
@@ -170,7 +166,7 @@ DynMatcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
   if (Args.size() != 0) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
         << 0 << Args.size();
-    return NULL;
+    return nullptr;
   }
   ReturnType matcherFn = Func();
   MatcherInterface<T> *singleMatcher =
@@ -189,12 +185,12 @@ DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
   if (Args.size() != 1) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
         << 1 << Args.size();
-    return NULL;
+    return nullptr;
   }
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
     Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
         << MatcherName << 1;
-    return NULL;
+    return nullptr;
   }
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value));
   MatcherInterface<T> *singleMatcher =
@@ -215,17 +211,17 @@ DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1, InArgType2),
   if (Args.size() != 2) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
         << 1 << Args.size();
-    return NULL;
+    return nullptr;
   }
   if (!ArgTypeTraits<ArgType1>::is(Args[0].Value)) {
     Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
         << MatcherName << 1;
-    return NULL;
+    return nullptr;
   }
   if (!ArgTypeTraits<ArgType2>::is(Args[1].Value)) {
     Error->addError(Args[1].Range, Error->ET_RegistryWrongArgType)
         << MatcherName << 1;
-    return NULL;
+    return nullptr;
   }
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value),
                               ArgTypeTraits<ArgType2>::get(Args[1].Value));
