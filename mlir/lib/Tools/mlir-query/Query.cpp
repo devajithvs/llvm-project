@@ -60,12 +60,21 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
   std::vector<Operation *> slice;
   std::vector<Value> values;
 
+  bool hasReturn = false;
+  TypeRange resultType = std::nullopt;
+
   for (matcher::DynTypedNode node : nodes) {
     if (Operation *op = *node.get<Operation *>()) {
       slice.push_back(op);
-      // Extract all values that might potentially be needed as func arguments.
-      for (Value value : op->getOperands()) {
-        values.push_back(value);
+      if (auto returnOp = dyn_cast<func::ReturnOp>(op)) {
+        resultType = returnOp.getOperands().getTypes();
+        hasReturn = true;
+      } else {
+        // Extract all values that might potentially be needed as func
+        // arguments.
+        for (Value value : op->getOperands()) {
+          values.push_back(value);
+        }
       }
     }
   }
@@ -73,7 +82,7 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
   auto loc = builder.getUnknownLoc();
   func::FuncOp funcOp = func::FuncOp::create(
       loc, "extracted",
-      builder.getFunctionType(ValueRange(values), std::nullopt));
+      builder.getFunctionType(ValueRange(values), resultType));
 
   loc = funcOp.getLoc();
   builder.setInsertionPointToEnd(funcOp.addEntryBlock());
@@ -86,12 +95,16 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
     builder.clone(*slicedOp, mapper);
 
   // Remove func arguments that are not used.
-  for (const auto &arg : llvm::enumerate(funcOp.getArguments())) {
-    if (arg.value().getUses().empty()) {
-      funcOp.eraseArgument(arg.index());
+  int currentIndex = 0;
+  for (auto value : funcOp.getArguments()) {
+    if (value.getUses().empty()) {
+      funcOp.eraseArgument(currentIndex);
+    } else {
+      currentIndex++;
     }
   }
-  builder.create<func::ReturnOp>(loc);
+  if (!hasReturn)
+    builder.create<func::ReturnOp>(loc);
 
   return funcOp;
 }
@@ -110,7 +123,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
     context.loadDialect<func::FuncDialect>();
     OpBuilder builder(&context);
     Operation *function = extractFunction(matches, builder);
-    OS << "\nExtracted function:\n\n" << *function << "\n\n\n";
+    OS << "\n\n" << *function << "\n\n\n";
   } else {
     unsigned MatchCount = 0;
     for (auto node : matches) {

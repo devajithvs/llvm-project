@@ -55,8 +55,8 @@ struct ArgumentMatcher {
   unsigned index;
 };
 
-struct DefinedByMatcher {
-  DefinedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops,
+struct UsedByMatcher {
+  UsedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops,
                    bool inclusive)
       : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
 
@@ -89,8 +89,8 @@ struct DefinedByMatcher {
   bool inclusive;
 };
 
-struct UsedByMatcher {
-  UsedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops, bool inclusive)
+struct DefinedByMatcher {
+  DefinedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops, bool inclusive)
       : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
 
   bool recursiveMatch(Operation *op, unsigned tempHops) {
@@ -129,32 +129,32 @@ inline detail::ArgumentMatcher hasArgument(matcher::DynMatcher innerMatcher,
   return detail::ArgumentMatcher(innerMatcher, argIndex);
 }
 
-inline detail::DefinedByMatcher definedBy(matcher::DynMatcher innerMatcher) {
-  return detail::DefinedByMatcher(innerMatcher, 1, false);
-}
-
-inline detail::DefinedByMatcher getDefinedBy(matcher::DynMatcher innerMatcher,
-                                             unsigned hops) {
-  return detail::DefinedByMatcher(innerMatcher, hops, false);
-}
-
-inline detail::DefinedByMatcher
-getAllDefinedBy(matcher::DynMatcher innerMatcher, unsigned hops) {
-  return detail::DefinedByMatcher(innerMatcher, hops, true);
-}
-
 inline detail::UsedByMatcher usedBy(matcher::DynMatcher innerMatcher) {
   return detail::UsedByMatcher(innerMatcher, 1, false);
 }
 
-inline detail::UsedByMatcher getUsedBy(matcher::DynMatcher innerMatcher,
-                                       unsigned hops) {
+inline detail::UsedByMatcher getUses(matcher::DynMatcher innerMatcher,
+                                             unsigned hops) {
   return detail::UsedByMatcher(innerMatcher, hops, false);
 }
 
-inline detail::UsedByMatcher getAllUsedBy(matcher::DynMatcher innerMatcher,
-                                          unsigned hops) {
+inline detail::UsedByMatcher
+getAllUses(matcher::DynMatcher innerMatcher, unsigned hops) {
   return detail::UsedByMatcher(innerMatcher, hops, true);
+}
+
+inline detail::DefinedByMatcher definedBy(matcher::DynMatcher innerMatcher) {
+  return detail::DefinedByMatcher(innerMatcher, 1, false);
+}
+
+inline detail::DefinedByMatcher getDefinitions(matcher::DynMatcher innerMatcher,
+                                       unsigned hops) {
+  return detail::DefinedByMatcher(innerMatcher, hops, false);
+}
+
+inline detail::DefinedByMatcher getAllDefinitions(matcher::DynMatcher innerMatcher,
+                                          unsigned hops) {
+  return detail::DefinedByMatcher(innerMatcher, hops, true);
 }
 
 } // namespace extramatcher
