@@ -61,31 +61,36 @@ RegistryMaps::RegistryMaps() {
   // more supporting code that was omitted from the first revision for
   // simplicitly of code review.
   using internal::makeMatcherAutoMarshall;
-  // clang-format off
-  registerMatcher("operation",          makeMatcherAutoMarshall<Operation*>(extramatcher::operation, "operation"));
-  registerMatcher("hasArgument",        makeMatcherAutoMarshall<Operation*>(extramatcher::hasArgument, "hasArgument"));
-  registerMatcher("definedBy",          makeMatcherAutoMarshall<Operation*>(extramatcher::definedBy, "definedBy"));
-  registerMatcher("getDefinitions",     makeMatcherAutoMarshall<Operation*>(extramatcher::getDefinitions, "getDefinitions"));
-  registerMatcher("getAllDefinitions",  makeMatcherAutoMarshall<Operation*>(extramatcher::getAllDefinitions, "getAllDefinitions"));
-  registerMatcher("usedBy",             makeMatcherAutoMarshall<Operation*>(extramatcher::usedBy, "usedBy"));
-  registerMatcher("getUses",            makeMatcherAutoMarshall<Operation*>(extramatcher::getUses, "getUses"));
-  registerMatcher("getAllUses",         makeMatcherAutoMarshall<Operation*>(extramatcher::getAllUses, "getAllUses"));
-  registerMatcher("isConstantOp",       makeMatcherAutoMarshall<Operation*>((constantFnType *)m_Constant, "m_Constant"));
-  registerMatcher("hasOpAttr",          makeMatcherAutoMarshall<Operation*>((attrFnType *)m_Attr, "m_Attr"));
-  registerMatcher("hasOpName",          makeMatcherAutoMarshall<Operation*>((opFnType *)m_Op, "m_Op"));
-  registerMatcher("m_PosZeroFloat",     makeMatcherAutoMarshall<Operation*>(m_PosZeroFloat, "m_PosZeroFloat"));
-  registerMatcher("m_NegZeroFloat",     makeMatcherAutoMarshall<Operation*>(m_NegZeroFloat, "m_NegZeroFloat"));
-  registerMatcher("m_AnyZeroFloat",     makeMatcherAutoMarshall<Operation*>(m_AnyZeroFloat, "m_AnyZeroFloat"));
-  registerMatcher("m_OneFloat",         makeMatcherAutoMarshall<Operation*>(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_PosInfFloat",      makeMatcherAutoMarshall<Operation*>(m_PosInfFloat, "m_PosInfFloat"));
-  registerMatcher("m_NegInfFloat",      makeMatcherAutoMarshall<Operation*>(m_NegInfFloat, "m_NegInfFloat"));
-  registerMatcher("m_Zero",             makeMatcherAutoMarshall<Operation*>(m_Zero, "m_Zero"));
-  registerMatcher("m_NonZero",          makeMatcherAutoMarshall<Operation*>(m_NonZero, "m_NonZero"));
-  registerMatcher("m_One",              makeMatcherAutoMarshall<Operation*>(m_One, "m_One"));
-  registerMatcher("m_OneFloat",         makeMatcherAutoMarshall<Operation*>(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_OneFloat",         makeMatcherAutoMarshall<Operation*>(m_OneFloat, "m_OneFloat"));
-  registerMatcher("m_OneFloat",         makeMatcherAutoMarshall<Operation*>(m_OneFloat, "m_OneFloat"));
-  // clang-format on
+
+  // Define a template function to register operation matchers
+  auto registerOpMatcher = [&](const std::string &name, auto matcher) {
+    registerMatcher(name, makeMatcherAutoMarshall<Operation *>(matcher, name));
+  };
+
+  // Register matchers using the template function
+  registerOpMatcher("operation", extramatcher::operation);
+  registerOpMatcher("hasArgument", extramatcher::hasArgument);
+  registerOpMatcher("definedBy", extramatcher::definedBy);
+  registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
+  registerOpMatcher("getAllDefinitions", extramatcher::getAllDefinitions);
+  registerOpMatcher("usedBy", extramatcher::usedBy);
+  registerOpMatcher("getUses", extramatcher::getUses);
+  registerOpMatcher("getAllUses", extramatcher::getAllUses);
+  registerOpMatcher("isConstantOp", (constantFnType *)m_Constant);
+  registerOpMatcher("hasOpAttr", (attrFnType *)m_Attr);
+  registerOpMatcher("hasOpName", (opFnType *)m_Op);
+  registerOpMatcher("m_PosZeroFloat", m_PosZeroFloat);
+  registerOpMatcher("m_NegZeroFloat", m_NegZeroFloat);
+  registerOpMatcher("m_AnyZeroFloat", m_AnyZeroFloat);
+  registerOpMatcher("m_OneFloat", m_OneFloat);
+  registerOpMatcher("m_PosInfFloat", m_PosInfFloat);
+  registerOpMatcher("m_NegInfFloat", m_NegInfFloat);
+  registerOpMatcher("m_Zero", m_Zero);
+  registerOpMatcher("m_NonZero", m_NonZero);
+  registerOpMatcher("m_One", m_One);
+  registerOpMatcher("m_OneFloat", m_OneFloat);
+  registerOpMatcher("m_OneFloat", m_OneFloat);
+  registerOpMatcher("m_OneFloat", m_OneFloat);
 }
 
 RegistryMaps::~RegistryMaps() {
@@ -118,13 +123,14 @@ DynMatcher *Registry::constructMatcher(StringRef MatcherName,
 
 // static
 DynMatcher *Registry::constructMatcherWrapper(StringRef MatcherName,
-                                       const SourceRange &NameRange,
-                                       bool ExtractFunction,
-                                       ArrayRef<ParserValue> Args,
-                                       Diagnostics *Error) {
+                                              const SourceRange &NameRange,
+                                              bool ExtractFunction,
+                                              ArrayRef<ParserValue> Args,
+                                              Diagnostics *Error) {
 
   DynMatcher *Out = constructMatcher(MatcherName, NameRange, Args, Error);
-  if (!Out) return Out;
+  if (!Out)
+    return Out;
   Out->setExtract(ExtractFunction);
   return Out;
 }
