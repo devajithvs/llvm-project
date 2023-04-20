@@ -22,10 +22,8 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-/// MLIRNodeKind identifier.
-/// It can be constructed from any node kind and allows for runtime type
-/// hierarchy checks.
-/// Use getFromNodeKind<T>() to construct them.
+// MLIRNodeKind can be constructed from any node kind and allows for runtime type
+// hierarchy checks. Use getFromNodeKind<T>() to construct them.
 class MLIRNodeKind {
 public:
   // Empty identifier. It matches nothing.
@@ -53,8 +51,8 @@ private:
   // Use getFromNodeKind<T>() to construct the kind.
   constexpr MLIRNodeKind(NodeKindId KindId) : KindId(KindId) {}
 
-  /// Helper meta-function to convert a kind T to its enum value.
-  /// This struct is specialized below for all known kinds.
+  // Helper meta-function to convert a kind T to its enum value.
+  // This struct is specialized below for all known kinds.
   template <class T>
   struct KindToKindId {
     static const NodeKindId Id = NKI_None;
@@ -70,21 +68,21 @@ struct MLIRNodeKind::KindToKindId<Operation *> {
   static const NodeKindId Id = NKI_Operation;
 };
 
-/// A dynamically typed MLIR node container.
-///
-/// Stores an MLIR node in a type safe way. This allows writing code that
-/// works with different kinds of MLIR nodes, despite the fact that they don't
-/// have a common base class.
-///
-/// Use create(Node) to create a DynTypedNode from an MLIR node,
-/// and get<T>() to retrieve the node as type T if the types match.
-///
-/// See MLIRNodeKind for which node base types are currently supported;
-/// You can create DynTypedNodes for all nodes in the inheritance hierarchy of
-/// the supported base types.
+// A dynamically typed MLIR node container.
+//
+// Stores an MLIR node in a type safe way. This allows writing code that
+// works with different kinds of MLIR nodes, despite the fact that they don't
+// have a common base class.
+//
+// Use create(Node) to create a DynTypedNode from an MLIR node,
+// and get<T>() to retrieve the node as type T if the types match.
+//
+// See MLIRNodeKind for which node base types are currently supported;
+// You can create DynTypedNodes for all nodes in the inheritance hierarchy of
+// the supported base types.
 class DynTypedNode {
 public:
-  /// Creates a \c DynTypedNode from \c Node.
+  // Creates a DynTypedNode from Node.
   template <typename T>
   static DynTypedNode create(T &Node) {
     return BaseConverter<T>::create(Node);

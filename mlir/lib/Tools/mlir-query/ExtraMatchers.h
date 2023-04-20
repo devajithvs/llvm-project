@@ -8,7 +8,21 @@
 //
 // This file provides extra matchers that are very useful for mlir-query. The
 // goal is to move this to include/mlir/IR/Matchers.h after the initial testing
-// phase.
+// phase. The matchers in this file are:
+//
+// - operation(args...): Matches an operation that matches all of the matchers
+// in the vector `matchers`.
+//
+// - argument(innerMatcher, index): Matches an operation argument that matches
+// `innerMatcher` at the given `index`.
+//
+// - usedBy(innerMatcher, hops, inclusive): Matches an operation that is used by
+// an operation that matches `innerMatcher` `hops` hops away. If `inclusive` is
+// true, also matches operations upto `hops` away.
+//
+// - definedBy(innerMatcher, hops, inclusive): Matches an operation that is
+// defined by an operation that matches `innerMatcher` `hops` hops away. If
+// `inclusive` is true, also matches operations upto `hops` away.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,7 +38,9 @@ namespace query {
 namespace extramatcher {
 
 namespace detail {
-// VariadicMatcher takes a vector of DynMatchers and returns true if all
+
+// TODO: Rename to AllOf
+// OperationMatcher takes a vector of DynMatchers and returns true if all
 // DynMatchers match the given operation.
 struct OperationMatcher {
   OperationMatcher(std::vector<matcher::DynMatcher> matchers)
@@ -38,6 +54,7 @@ struct OperationMatcher {
   std::vector<matcher::DynMatcher> matchers;
 };
 
+// ArgumentMatcher matches the operand of an operation at a specific index.
 struct ArgumentMatcher {
   ArgumentMatcher(matcher::DynMatcher innerMatcher, unsigned index)
       : innerMatcher(innerMatcher), index(index) {}
@@ -57,6 +74,9 @@ struct ArgumentMatcher {
   unsigned index;
 };
 
+// This matcher checks if an operation is used by another operation that matches
+// the given inner matcher. It allows specifying the number of hops to follow in
+// the use-def chain, and whether the chain should be inclusive or not.
 struct UsedByMatcher {
   UsedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops, bool inclusive)
       : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
@@ -90,6 +110,10 @@ struct UsedByMatcher {
   bool inclusive;
 };
 
+// This matcher checks if an operation is defined by another operation that
+// matches the given inner matcher. It allows specifying the number of hops to
+// follow in the def-use chain, and whether the chain should be inclusive or
+// not.
 struct DefinedByMatcher {
   DefinedByMatcher(matcher::DynMatcher innerMatcher, unsigned hops,
                    bool inclusive)
@@ -121,6 +145,7 @@ struct DefinedByMatcher {
 
 } // namespace detail
 
+// TODO: Rename to allOf()
 inline detail::OperationMatcher operation(matcher::DynMatcher args...) {
   std::vector<matcher::DynMatcher> matchers({args});
   return detail::OperationMatcher(matchers);
