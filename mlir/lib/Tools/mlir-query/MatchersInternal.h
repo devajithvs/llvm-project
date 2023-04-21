@@ -51,7 +51,6 @@ public:
 template <typename T>
 class MatcherInterface : public DynMatcherInterface {
 public:
-  // Returns true if 'Node' can be matched.
   virtual bool matches(T Node) = 0;
 
   bool dynMatches(DynTypedNode &DynNode) override {
@@ -73,14 +72,8 @@ public:
         RestrictKind(SupportedKind), Implementation(Implementation),
         ExtractFunction(false) {}
 
-  // Returns true if the matcher matches the given op.
   bool matches(DynTypedNode &DynNode) const {
-    if (RestrictKind.isSame(DynNode.getNodeKind()) &&
-        Implementation->dynMatches(DynNode)) {
-      return true;
-    }
-
-    return false;
+    return RestrictKind.isSame(DynNode.getNodeKind()) && Implementation->dynMatches(DynNode);
   }
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
@@ -105,7 +98,7 @@ template <typename T>
 class Matcher {
 public:
   // Takes ownership of the provided implementation pointer.
-  explicit Matcher(MatcherInterface<T> *Implementation)
+  Matcher(MatcherInterface<T> *Implementation)
       : Implementation(Implementation) {}
 
   // Forwards the call to the underlying MatcherInterface<T> pointer.

@@ -177,7 +177,7 @@ private:
       }
     }
 
-    Result->Text = Code.substr(0, Length);
+    Result->Text = Code.take_front(Length);
     Code = Code.drop_front(Length);
 
     if (isFloatingLiteral) {
