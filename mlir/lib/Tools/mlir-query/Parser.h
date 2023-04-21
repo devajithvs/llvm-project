@@ -56,7 +56,7 @@ public:
     // All the arguments passed here have already been processed.
     // MatcherName is the matcher name found by the parser.
     // Args is the argument list for the matcher.
-    // Returns the matcher object constructed by the processor, or NULL
+    // Returns the matcher object constructed by the processor, or nullptr
     // if an error occurred. In that case, Error will contain a
     // description of the error.
     // The caller takes ownership of the Matcher object returned.
@@ -74,7 +74,7 @@ public:
   // use the overload below that takes a Sema.
 
   // MatcherCode is the matcher expression to parse.
-  // Returns the matcher object constructed, or NULL if an error occurred.
+  // Returns the matcher object constructed, or nullptr if an error occurred.
   // In that case, Error will contain a description of the error.
   // The caller takes ownership of the DynMatcher object returned.
   static DynMatcher *parseMatcherExpression(StringRef MatcherCode,
@@ -86,7 +86,7 @@ public:
 
   // S is the Sema instance that will help the parser
   // construct the matchers.
-  // Returns the matcher object constructed by the processor, or NULL
+  // Returns the matcher object constructed by the processor, or nullptr
   // if an error occurred. In that case, Error will contain a
   // description of the error.
   // The caller takes ownership of the DynMatcher object returned.

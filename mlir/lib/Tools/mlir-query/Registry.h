@@ -36,7 +36,7 @@ public:
   // values must be valid for the matcher requested. Otherwise, the function
   // will return an error.
 
-  // Returns the matcher if no error was found. NULL if the matcher is not
+  // Returns the matcher if no error was found. nullptr if the matcher is not
   // found, or if the number of arguments or argument types do not
   // match the signature. In that case Error will contain the description
   // of the error.

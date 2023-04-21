@@ -112,7 +112,7 @@ DynMatcher *Registry::constructMatcher(StringRef MatcherName,
   if (it == RegistryData->constructors().end()) {
     Error->addError(NameRange, Error->ET_RegistryMatcherNotFound)
         << MatcherName;
-    return NULL;
+    return nullptr;
   }
 
   return it->second->run(NameRange, Args, Error);
