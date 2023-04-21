@@ -144,7 +144,7 @@ private:
 
 // Helper function to perform template argument deduction.
 template <typename MarshallerType, typename FuncType>
-MatcherCreateCallback *createMarshallerCallback(MarshallerType Marshaller,
+auto createMarshallerCallback(MarshallerType Marshaller,
                                                 FuncType Func,
                                                 StringRef MatcherName) {
   return new FixedArgCountMatcherCreateCallback<MarshallerType, FuncType>(
@@ -235,7 +235,7 @@ DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1, InArgType2),
 
 // 0-arg overload
 template <typename T, typename ReturnType>
-MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(),
+auto makeMatcherAutoMarshall(ReturnType (*Func)(),
                                                StringRef MatcherName) {
   return createMarshallerCallback(matcherMarshall0<T, ReturnType>, Func,
                                   MatcherName);
@@ -243,7 +243,7 @@ MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(),
 
 // 1-arg overload
 template <typename T, typename ReturnType, typename ArgType1>
-MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
+auto makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                                                StringRef MatcherName) {
   return createMarshallerCallback(matcherMarshall1<T, ReturnType, ArgType1>,
                                   Func, MatcherName);
@@ -251,7 +251,7 @@ MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
 
 // 2-arg overload
 template <typename T, typename ReturnType, typename ArgType1, typename ArgType2>
-MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1,
+auto makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1,
                                                                   ArgType2),
                                                StringRef MatcherName) {
   return createMarshallerCallback(
@@ -260,7 +260,7 @@ MatcherCreateCallback *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1,
 
 // Variadic overload.
 template <typename T, typename MatcherType>
-MatcherCreateCallback *makeMatcherAutoMarshall(MatcherType Func,
+auto makeMatcherAutoMarshall(MatcherType Func,
                                                StringRef MatcherName) {
   return new VariadicMatcherCreateCallback<T>(MatcherName);
 }

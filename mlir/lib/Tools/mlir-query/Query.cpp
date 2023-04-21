@@ -95,9 +95,9 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
     builder.clone(*slicedOp, mapper);
 
   // Remove func arguments that are not used.
-  int currentIndex = 0;
-  for (auto value : funcOp.getArguments()) {
-    if (value.getUses().empty()) {
+  unsigned currentIndex = 0;
+  while (currentIndex < funcOp.getNumArguments()) {
+    if (funcOp.getArgument(currentIndex).getUses().empty()) {
       funcOp.eraseArgument(currentIndex);
     } else {
       currentIndex++;
