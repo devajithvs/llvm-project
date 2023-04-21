@@ -355,7 +355,7 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   DynMatcher *Result = S->actOnMatcherExpression(NameToken.Text, MatcherRange,
                                                  extractFunction, Args, Error);
 
-  if (Result == NULL) {
+  if (Result == nullptr) {
     // TODO: Add appropriate error.
     // Error->addError(NameToken.Range, Error->ET_ParserMatcherFailure)
     //    << NameToken.Text;
@@ -451,11 +451,11 @@ DynMatcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
   VariantValue Value;
   if (!parseExpression(Code, S, &Value, Error)) {
 
-    return NULL;
+    return nullptr;
   }
   if (!Value.isMatcher()) {
     Error->addError(SourceRange(), Error->ET_ParserNotAMatcher);
-    return NULL;
+    return nullptr;
   }
   // FIXME: remove clone
   return Value.getMatcher().clone();
