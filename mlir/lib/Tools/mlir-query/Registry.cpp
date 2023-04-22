@@ -74,7 +74,7 @@ RegistryMaps::RegistryMaps() {
   registerOpMatcher("definedBy", extramatcher::definedBy);
   registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
   registerOpMatcher("getAllDefinitions", extramatcher::getAllDefinitions);
-  registerOpMatcher("usedBy", extramatcher::usedBy);
+  registerOpMatcher("uses", extramatcher::uses);
   registerOpMatcher("getUses", extramatcher::getUses);
   registerOpMatcher("getAllUses", extramatcher::getAllUses);
   registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
