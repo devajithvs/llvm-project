@@ -68,7 +68,8 @@ RegistryMaps::RegistryMaps() {
   };
 
   // Register matchers using the template function
-  registerOpMatcher("operation", extramatcher::operation);
+  registerOpMatcher("allOf", extramatcher::allOf);
+  registerOpMatcher("anyOf", extramatcher::anyOf);
   registerOpMatcher("hasArgument", extramatcher::hasArgument);
   registerOpMatcher("definedBy", extramatcher::definedBy);
   registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
