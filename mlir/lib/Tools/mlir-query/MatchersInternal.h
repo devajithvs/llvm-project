@@ -122,7 +122,8 @@ private:
   MatcherFn matcherFn;
 };
 
-// VariadicMatcher takes a vector of Matchers and returns true if all Matchers
+// TODO: Use a polymorphic matcher instead for this usecase
+// VariadicMatcher takes a vector of Matchers and returns true if any Matchers
 // match the given operation.
 template <typename T>
 class VariadicMatcher : public MatcherInterface<T> {
@@ -131,7 +132,7 @@ public:
 
   bool matches(T Node) override {
     DynTypedNode DynNode = DynTypedNode::create(Node);
-    return llvm::all_of(matchers, [&](const DynMatcher &matcher) {
+    return llvm::any_of(matchers, [&](const DynMatcher &matcher) {
       return matcher.matches(DynNode);
     });
   }

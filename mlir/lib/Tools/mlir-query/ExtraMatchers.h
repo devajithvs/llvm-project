@@ -10,8 +10,7 @@
 // goal is to move this to include/mlir/IR/Matchers.h after the initial testing
 // phase. The matchers in this file are:
 //
-// - operation(args...): Matches an operation that matches all of the matchers
-// in the vector `matchers`.
+// - operation(args...): Matches all of the matchers in the vector `matchers`.
 //
 // - argument(innerMatcher, index): Matches an operation argument that matches
 // `innerMatcher` at the given `index`.
@@ -39,15 +38,26 @@ namespace extramatcher {
 
 namespace detail {
 
-// TODO: Rename to AllOf
-// OperationMatcher takes a vector of DynMatchers and returns true if all
-// DynMatchers match the given operation.
-struct OperationMatcher {
-  OperationMatcher(std::vector<matcher::DynMatcher> matchers)
+// AllOf takes a vector of DynMatchers and returns true if all the DynMatchers match the given operation.
+struct AllOfMatcher {
+  AllOfMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}
   bool match(Operation *op) {
     matcher::DynTypedNode node = matcher::DynTypedNode::create(op);
     return llvm::all_of(matchers, [&](const matcher::DynMatcher &matcher) {
+      return matcher.matches(node);
+    });
+  }
+  std::vector<matcher::DynMatcher> matchers;
+};
+
+// AnyOf takes a vector of DynMatchers and returns true if any of the DynMatchers match the given operation.
+struct AnyOfMatcher {
+  AnyOfMatcher(std::vector<matcher::DynMatcher> matchers)
+      : matchers(matchers) {}
+  bool match(Operation *op) {
+    matcher::DynTypedNode node = matcher::DynTypedNode::create(op);
+    return llvm::any_of(matchers, [&](const matcher::DynMatcher &matcher) {
       return matcher.matches(node);
     });
   }
@@ -145,10 +155,14 @@ struct DefinedByMatcher {
 
 } // namespace detail
 
-// TODO: Rename to allOf()
-inline detail::OperationMatcher operation(matcher::DynMatcher args...) {
+inline detail::AllOfMatcher allOf(matcher::DynMatcher args...) {
   std::vector<matcher::DynMatcher> matchers({args});
-  return detail::OperationMatcher(matchers);
+  return detail::AllOfMatcher(matchers);
+}
+
+inline detail::AnyOfMatcher anyOf(matcher::DynMatcher args...) {
+  std::vector<matcher::DynMatcher> matchers({args});
+  return detail::AnyOfMatcher(matchers);
 }
 
 inline detail::ArgumentMatcher hasArgument(matcher::DynMatcher innerMatcher,
