@@ -60,11 +60,10 @@ public:
     // if an error occurred. In that case, Error will contain a
     // description of the error.
     // The caller takes ownership of the Matcher object returned.
-    virtual DynMatcher *actOnMatcherExpression(StringRef MatcherName,
-                                               const SourceRange &NameRange,
-                                               bool ExtractFunction,
-                                               ArrayRef<ParserValue> Args,
-                                               Diagnostics *Error) = 0;
+    virtual DynMatcher *
+    actOnMatcherExpression(StringRef MatcherName, const SourceRange &NameRange,
+                           bool ExtractFunction, StringRef FunctionName,
+                           ArrayRef<ParserValue> Args, Diagnostics *Error) = 0;
   };
 
   // Parse a matcher expression, creating matchers from the registry.

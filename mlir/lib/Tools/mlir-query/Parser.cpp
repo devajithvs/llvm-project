@@ -324,11 +324,13 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
   }
 
   bool extractFunction = false;
+  StringRef functionName;
   if (Tokenizer->peekNextToken().Kind == TokenInfo::TK_Period) {
     // Parse ".extract()"
     Tokenizer->consumeNextToken(); // consume the period.
     const TokenInfo ExtractToken = Tokenizer->consumeNextToken();
     const TokenInfo OpenToken = Tokenizer->consumeNextToken();
+    const TokenInfo NameToken = Tokenizer->consumeNextToken();
     const TokenInfo CloseToken = Tokenizer->consumeNextToken();
 
     // TODO: We could use different error codes for each/some to be more
@@ -342,18 +344,25 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
       Error->addError(OpenToken.Range, Error->ET_ParserMalformedBindExpr);
       return false;
     }
+    if (NameToken.Kind != TokenInfo::TK_Literal ||
+        !NameToken.Value.isString()) {
+      Error->addError(NameToken.Range, Error->ET_ParserMalformedBindExpr);
+      return false;
+    }
     if (CloseToken.Kind != TokenInfo::TK_CloseParen) {
       Error->addError(CloseToken.Range, Error->ET_ParserMalformedBindExpr);
       return false;
     }
+    functionName = NameToken.Value.getString();
     extractFunction = true;
+    LLVM_DEBUG(DBGS() << "Function Name: " << functionName << "\n");
   }
 
   // Merge the start and end infos.
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
-  DynMatcher *Result = S->actOnMatcherExpression(NameToken.Text, MatcherRange,
-                                                 extractFunction, Args, Error);
+  DynMatcher *Result = S->actOnMatcherExpression(
+      NameToken.Text, MatcherRange, extractFunction, functionName, Args, Error);
 
   if (Result == nullptr) {
     // TODO: Add appropriate error.
@@ -415,10 +424,11 @@ public:
   DynMatcher *actOnMatcherExpression(StringRef MatcherName,
                                      const SourceRange &NameRange,
                                      bool ExtractFunction,
+                                     StringRef FunctionName,
                                      ArrayRef<ParserValue> Args,
                                      Diagnostics *Error) override {
-    return Registry::constructMatcherWrapper(MatcherName, NameRange,
-                                             ExtractFunction, Args, Error);
+    return Registry::constructMatcherWrapper(
+        MatcherName, NameRange, ExtractFunction, FunctionName, Args, Error);
   }
 };
 
