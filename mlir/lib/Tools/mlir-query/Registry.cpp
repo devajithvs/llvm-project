@@ -78,7 +78,7 @@ RegistryMaps::RegistryMaps() {
   registerOpMatcher("getUses", extramatcher::getUses);
   registerOpMatcher("getAllUses", extramatcher::getAllUses);
   registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
-  registerOpMatcher("hasOpAttr", static_cast<attrFnType *>(m_Attr));
+  registerOpMatcher("hasOpAttrName", static_cast<attrFnType *>(m_Attr));
   registerOpMatcher("hasOpName", static_cast<opFnType *>(m_Op));
   registerOpMatcher("m_PosZeroFloat", m_PosZeroFloat);
   registerOpMatcher("m_NegZeroFloat", m_NegZeroFloat);
