@@ -120,16 +120,15 @@ DynMatcher *Registry::constructMatcher(StringRef MatcherName,
 }
 
 // static
-DynMatcher *Registry::constructMatcherWrapper(StringRef MatcherName,
-                                              const SourceRange &NameRange,
-                                              bool ExtractFunction,
-                                              ArrayRef<ParserValue> Args,
-                                              Diagnostics *Error) {
+DynMatcher *Registry::constructMatcherWrapper(
+    StringRef MatcherName, const SourceRange &NameRange, bool ExtractFunction,
+    StringRef FunctionName, ArrayRef<ParserValue> Args, Diagnostics *Error) {
 
   DynMatcher *Out = constructMatcher(MatcherName, NameRange, Args, Error);
   if (!Out)
     return Out;
   Out->setExtract(ExtractFunction);
+  Out->setFunctionName(FunctionName);
   return Out;
 }
 

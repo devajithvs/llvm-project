@@ -56,7 +56,7 @@ getMatches(Operation *rootOp, const matcher::DynMatcher *matcher) {
 
 // TODO: Only supports operation node type.
 Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
-                           OpBuilder builder) {
+                           OpBuilder builder, StringRef functionName) {
   std::vector<Operation *> slice;
   std::vector<Value> values;
 
@@ -81,7 +81,7 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
 
   auto loc = builder.getUnknownLoc();
   func::FuncOp funcOp = func::FuncOp::create(
-      loc, "extracted",
+      loc, functionName,
       builder.getFunctionType(ValueRange(values), resultType));
 
   loc = funcOp.getLoc();
@@ -119,10 +119,11 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   auto matches = getMatches(rootOp, matcher);
 
   if (matcher->getExtract()) {
+    auto functionName = matcher->getFunctionName();
     MLIRContext context;
     context.loadDialect<func::FuncDialect>();
     OpBuilder builder(&context);
-    Operation *function = extractFunction(matches, builder);
+    Operation *function = extractFunction(matches, builder, functionName);
     OS << "\n\n" << *function << "\n\n\n";
   } else {
     unsigned MatchCount = 0;

@@ -45,11 +45,10 @@ public:
                                       const SourceRange &NameRange,
                                       ArrayRef<ParserValue> Args,
                                       Diagnostics *Error);
-  static DynMatcher *constructMatcherWrapper(StringRef MatcherName,
-                                             const SourceRange &NameRange,
-                                             bool ExtractFunction,
-                                             ArrayRef<ParserValue> Args,
-                                             Diagnostics *Error);
+  static DynMatcher *
+  constructMatcherWrapper(StringRef MatcherName, const SourceRange &NameRange,
+                          bool ExtractFunction, StringRef FunctionName,
+                          ArrayRef<ParserValue> Args, Diagnostics *Error);
 };
 
 } // namespace matcher

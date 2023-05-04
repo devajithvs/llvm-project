@@ -79,8 +79,10 @@ public:
   DynMatcher *clone() const { return new DynMatcher(*this); }
 
   void setExtract(bool extractFunction) { ExtractFunction = extractFunction; };
+  void setFunctionName(StringRef functionName) { FunctionName = functionName; };
 
   bool getExtract() const { return ExtractFunction; };
+  StringRef getFunctionName() const { return FunctionName; };
 
 private:
   MLIRNodeKind SupportedKind;
@@ -91,6 +93,7 @@ private:
   MLIRNodeKind RestrictKind;
   llvm::IntrusiveRefCntPtr<DynMatcherInterface> Implementation;
   bool ExtractFunction;
+  StringRef FunctionName;
 };
 
 // Wrapper of a MatcherInterface<T> *
