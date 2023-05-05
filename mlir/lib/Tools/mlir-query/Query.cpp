@@ -80,6 +80,11 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
   }
 
   auto loc = builder.getUnknownLoc();
+
+  if (!hasReturn) {
+    resultType = slice.back()->getResults().getTypes();
+  }
+
   func::FuncOp funcOp = func::FuncOp::create(
       loc, functionName,
       builder.getFunctionType(ValueRange(values), resultType));
@@ -91,8 +96,11 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
   IRMapping mapper;
   for (const auto &arg : llvm::enumerate(values))
     mapper.map(arg.value(), funcOp.getArgument(arg.index()));
+
+  // TODO: FIX assiging lastOp every iteration.
+  Operation *lastOp;
   for (Operation *slicedOp : slice)
-    builder.clone(*slicedOp, mapper);
+    lastOp = builder.clone(*slicedOp, mapper);
 
   // Remove func arguments that are not used.
   unsigned currentIndex = 0;
@@ -103,8 +111,11 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
       currentIndex++;
     }
   }
-  if (!hasReturn)
-    builder.create<func::ReturnOp>(loc);
+
+  // Add an extra return operation with the result of the final operation
+  if (!hasReturn) {
+    builder.create<func::ReturnOp>(loc, lastOp->getResults());
+  }
 
   return funcOp;
 }
