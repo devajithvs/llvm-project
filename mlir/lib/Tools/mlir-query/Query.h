@@ -12,7 +12,6 @@
 #include "Parser.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/Twine.h"
 #include <string>
 
