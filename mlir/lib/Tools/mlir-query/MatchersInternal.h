@@ -73,7 +73,8 @@ public:
         ExtractFunction(false) {}
 
   bool matches(DynTypedNode &DynNode) const {
-    return RestrictKind.isSame(DynNode.getNodeKind()) && Implementation->dynMatches(DynNode);
+    return RestrictKind.isSame(DynNode.getNodeKind()) &&
+           Implementation->dynMatches(DynNode);
   }
 
   DynMatcher *clone() const { return new DynMatcher(*this); }

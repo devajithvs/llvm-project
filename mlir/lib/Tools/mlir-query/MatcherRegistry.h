@@ -15,8 +15,8 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERREGISTRY_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERREGISTRY_H
 
-#include "MatcherDiagnostics.h"
 #include "Marshallers.h"
+#include "MatcherDiagnostics.h"
 #include "MatcherVariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"

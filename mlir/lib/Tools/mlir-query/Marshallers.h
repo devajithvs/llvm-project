@@ -18,8 +18,8 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 
-#include "MatchersInternal.h"
 #include "MatcherVariantValue.h"
+#include "MatchersInternal.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
 
@@ -100,7 +100,8 @@ public:
                                      StringRef MatcherName)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
-  DynMatcher *run(const SourceRange &NameRange, const ArrayRef<ParserValue> &Args,
+  DynMatcher *run(const SourceRange &NameRange,
+                  const ArrayRef<ParserValue> &Args,
                   Diagnostics *Error) const override {
     return Marshaller(Func, MatcherName, NameRange, Args, Error);
   }
@@ -120,7 +121,8 @@ public:
 
   typedef DynMatcher DerivedMatcherType;
 
-  DynMatcher *run(const SourceRange &NameRange, const ArrayRef<ParserValue> &Args,
+  DynMatcher *run(const SourceRange &NameRange,
+                  const ArrayRef<ParserValue> &Args,
                   Diagnostics *Error) const override {
     std::vector<DerivedMatcherType> References;
     std::vector<const DerivedMatcherType *> InnerArgs(Args.size());
@@ -144,9 +146,8 @@ private:
 
 // Helper function to perform template argument deduction.
 template <typename MarshallerType, typename FuncType>
-auto *createMarshallerCallback(MarshallerType Marshaller,
-                                                FuncType Func,
-                                                StringRef MatcherName) {
+auto *createMarshallerCallback(MarshallerType Marshaller, FuncType Func,
+                               StringRef MatcherName) {
   return new FixedArgCountMatcherCreateCallback<MarshallerType, FuncType>(
       Marshaller, Func, MatcherName);
 }
@@ -235,8 +236,7 @@ DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1, InArgType2),
 
 // 0-arg overload
 template <typename T, typename ReturnType>
-auto *makeMatcherAutoMarshall(ReturnType (*Func)(),
-                                               StringRef MatcherName) {
+auto *makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
   return createMarshallerCallback(matcherMarshall0<T, ReturnType>, Func,
                                   MatcherName);
 }
@@ -244,24 +244,22 @@ auto *makeMatcherAutoMarshall(ReturnType (*Func)(),
 // 1-arg overload
 template <typename T, typename ReturnType, typename ArgType1>
 auto *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
-                                               StringRef MatcherName) {
+                              StringRef MatcherName) {
   return createMarshallerCallback(matcherMarshall1<T, ReturnType, ArgType1>,
                                   Func, MatcherName);
 }
 
 // 2-arg overload
 template <typename T, typename ReturnType, typename ArgType1, typename ArgType2>
-auto *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1,
-                                                                  ArgType2),
-                                               StringRef MatcherName) {
+auto *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
+                              StringRef MatcherName) {
   return createMarshallerCallback(
       matcherMarshall1<T, ReturnType, ArgType1, ArgType2>, Func, MatcherName);
 }
 
 // Variadic overload.
 template <typename T, typename MatcherType>
-auto *makeMatcherAutoMarshall(MatcherType Func,
-                                               StringRef MatcherName) {
+auto *makeMatcherAutoMarshall(MatcherType Func, StringRef MatcherName) {
   return new VariadicMatcherCreateCallback<T>(MatcherName);
 }
 

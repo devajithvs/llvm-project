@@ -38,7 +38,8 @@ namespace extramatcher {
 
 namespace detail {
 
-// AllOf takes a vector of DynMatchers and returns true if all the DynMatchers match the given operation.
+// AllOf takes a vector of DynMatchers and returns true if all the DynMatchers
+// match the given operation.
 struct AllOfMatcher {
   AllOfMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}
@@ -51,7 +52,8 @@ struct AllOfMatcher {
   std::vector<matcher::DynMatcher> matchers;
 };
 
-// AnyOf takes a vector of DynMatchers and returns true if any of the DynMatchers match the given operation.
+// AnyOf takes a vector of DynMatchers and returns true if any of the
+// DynMatchers match the given operation.
 struct AnyOfMatcher {
   AnyOfMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}
@@ -126,7 +128,7 @@ struct UsesMatcher {
 // not.
 struct DefinitionsMatcher {
   DefinitionsMatcher(matcher::DynMatcher innerMatcher, unsigned hops,
-                   bool inclusive)
+                     bool inclusive)
       : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
 
   bool recursiveMatch(Operation *op, unsigned tempHops) {
@@ -175,12 +177,12 @@ inline detail::UsesMatcher uses(matcher::DynMatcher innerMatcher) {
 }
 
 inline detail::UsesMatcher getUses(matcher::DynMatcher innerMatcher,
-                                     unsigned hops) {
+                                   unsigned hops) {
   return detail::UsesMatcher(innerMatcher, hops, false);
 }
 
 inline detail::UsesMatcher getAllUses(matcher::DynMatcher innerMatcher,
-                                        unsigned hops) {
+                                      unsigned hops) {
   return detail::UsesMatcher(innerMatcher, hops, true);
 }
 
@@ -188,8 +190,8 @@ inline detail::DefinitionsMatcher definedBy(matcher::DynMatcher innerMatcher) {
   return detail::DefinitionsMatcher(innerMatcher, 1, false);
 }
 
-inline detail::DefinitionsMatcher getDefinitions(matcher::DynMatcher innerMatcher,
-                                               unsigned hops) {
+inline detail::DefinitionsMatcher
+getDefinitions(matcher::DynMatcher innerMatcher, unsigned hops) {
   return detail::DefinitionsMatcher(innerMatcher, hops, false);
 }
 

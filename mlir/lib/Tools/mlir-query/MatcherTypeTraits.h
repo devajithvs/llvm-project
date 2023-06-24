@@ -22,8 +22,8 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-// MLIRNodeKind can be constructed from any node kind and allows for runtime type
-// hierarchy checks. Use getFromNodeKind<T>() to construct them.
+// MLIRNodeKind can be constructed from any node kind and allows for runtime
+// type hierarchy checks. Use getFromNodeKind<T>() to construct them.
 class MLIRNodeKind {
 public:
   // Empty identifier. It matches nothing.
