@@ -1,4 +1,4 @@
-//===--- VariantValue.h - Polymorphic value type --------------------------===//
+//===--- MatcherVariantValue.h - Polymorphic value type -------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -13,8 +13,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_VARIANTVALUE_H
-#define MLIR_TOOLS_MLIRQUERY_MATCHERS_VARIANTVALUE_H
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERVARIANTVALUE_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERVARIANTVALUE_H
 
 #include "MatchersInternal.h"
 #include "mlir/IR/Matchers.h"
@@ -121,4 +121,4 @@ private:
 } // end namespace query
 } // end namespace mlir
 
-#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_VARIANTVALUE_H
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERVARIANTVALUE_H

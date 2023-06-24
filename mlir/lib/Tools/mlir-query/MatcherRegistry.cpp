@@ -1,4 +1,4 @@
-//===- Registry.cpp - Matcher registry ------------------------------------===//
+//===- MatcherRegistry.cpp - Matcher registry -----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Registry.h"
+#include "MatcherRegistry.h"
 #include "ExtraMatchers.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/StringMap.h"

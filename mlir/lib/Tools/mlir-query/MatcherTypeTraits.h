@@ -1,4 +1,4 @@
-//===--- MLIRTypeTraits.h -------------------------------------------------===//
+//===--- MatcherTypeTraits.h ----------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -12,8 +12,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MLIRTYPETRAITS_H
-#define MLIR_TOOLS_MLIRQUERY_MATCHERS_MLIRTYPETRAITS_H
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MatcherTYPETRAITS_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERS_MatcherTYPETRAITS_H
 
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/OpDefinition.h"
@@ -150,4 +150,4 @@ struct DynTypedNode::BaseConverter<Value, void> : public ValueConverter<Value> {
 } // namespace query
 } // namespace mlir
 
-#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_MLIRTYPETRAITS_H
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_MatcherTYPETRAITS_H

@@ -1,4 +1,4 @@
-//===- Parser.cpp - Matcher expression parser -----------------------------===//
+//===- MatcherParser.cpp - Matcher expression parser ----------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -10,8 +10,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Parser.h"
-#include "Registry.h"
+#include "MatcherParser.h"
+#include "MatcherRegistry.h"
 #include "llvm/ADT/Twine.h"
 #include <string>
 #include <vector>

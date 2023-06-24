@@ -1,4 +1,4 @@
-//===--- VariantValue.cpp - Polymorphic value type ------------------------===//
+//===--- MatcherVariantValue.cpp - Polymorphic value type -----------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "VariantValue.h"
+#include "MatcherVariantValue.h"
 
 namespace mlir {
 namespace query {

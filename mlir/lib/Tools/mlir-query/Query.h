@@ -9,7 +9,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERY_H
 #define MLIR_TOOLS_MLIRQUERY_QUERY_H
 
-#include "Parser.h"
+#include "MatcherParser.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/Twine.h"

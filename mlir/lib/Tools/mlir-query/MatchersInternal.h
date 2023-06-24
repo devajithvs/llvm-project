@@ -25,7 +25,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MATCHERSINTERNAL_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_MATCHERSINTERNAL_H
 
-#include "MLIRTypeTraits.h"
+#include "MatcherTypeTraits.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 

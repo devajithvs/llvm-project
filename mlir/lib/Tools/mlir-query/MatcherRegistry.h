@@ -1,4 +1,4 @@
-//===--- Registry.h - Matcher registry ------------------------------------===//
+//===--- MatcherRegistry.h - Matcher registry -----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -12,12 +12,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_REGISTRY_H
-#define MLIR_TOOLS_MLIRQUERY_MATCHERS_REGISTRY_H
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERREGISTRY_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERREGISTRY_H
 
-#include "Diagnostics.h"
+#include "MatcherDiagnostics.h"
 #include "Marshallers.h"
-#include "VariantValue.h"
+#include "MatcherVariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -55,4 +55,4 @@ public:
 } // namespace query
 } // namespace mlir
 
-#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_REGISTRY_H
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERREGISTRY_H

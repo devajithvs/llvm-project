@@ -1,4 +1,4 @@
-//===--- Diagnostics.h - Helper class for error diagnostics ---------------===//
+//===--- MatcherDiagnostics.h - Helper class for error diagnostics --------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -10,10 +10,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_DIAGNOSTICS_H
-#define MLIR_TOOLS_MLIRQUERY_MATCHERS_DIAGNOSTICS_H
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHERDIAGNOSTICS_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHERDIAGNOSTICS_H
 
-#include "VariantValue.h"
+#include "MatcherVariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -177,4 +177,4 @@ private:
 } // namespace query
 } // namespace mlir
 
-#endif // MLIR_TOOLS_MLIRQUERY_MATCHERS_DIAGNOSTICS_H
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHERDIAGNOSTICS_H

@@ -19,7 +19,7 @@
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 
 #include "MatchersInternal.h"
-#include "VariantValue.h"
+#include "MatcherVariantValue.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
 
