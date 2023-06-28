@@ -38,23 +38,13 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-class DynMatcherInterface : public llvm::RefCountedBase<DynMatcherInterface> {
-public:
-  virtual ~DynMatcherInterface() = default;
-
-  // Returns true if 'op' can be matched.
-  virtual bool dynMatch(Operation *op) = 0;
-};
-
 // Generic interface for matchers on an MLIR operation.
-class MatcherInterface : public DynMatcherInterface {
+class MatcherInterface : public llvm::RefCountedBase<MatcherInterface> {
 public:
+  virtual ~MatcherInterface() = default;
+
   virtual bool match(Operation *op) = 0;
-
-  bool dynMatch(Operation *op) override { return match(op); }
 };
-
-class Matcher;
 
 // Matcher wraps a MatcherInterface implementation and provides a match()
 // method that redirects calls to the underlying implementation.
@@ -64,7 +54,7 @@ public:
   DynMatcher(MatcherInterface *Implementation)
       : Implementation(Implementation), ExtractFunction(false) {}
 
-  bool match(Operation *op) const { return Implementation->dynMatch(op); }
+  bool match(Operation *op) const { return Implementation->match(op); }
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
 
@@ -75,23 +65,9 @@ public:
   StringRef getFunctionName() const { return FunctionName; };
 
 private:
-  llvm::IntrusiveRefCntPtr<DynMatcherInterface> Implementation;
+  llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
   bool ExtractFunction;
   StringRef FunctionName;
-};
-
-// Wrapper of a MatcherInterface *
-class Matcher {
-public:
-  // Takes ownership of the provided implementation pointer.
-  Matcher(MatcherInterface *Implementation)
-      : Implementation(Implementation) {}
-
-  // Forwards the call to the underlying MatcherInterface pointer.
-  bool match(Operation *op) const { return Implementation.match(op); }
-
-private:
-  DynMatcher Implementation;
 };
 
 // SingleMatcher takes a matcher function object and implements
