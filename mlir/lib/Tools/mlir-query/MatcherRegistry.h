@@ -20,17 +20,32 @@
 #include "MatcherVariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
+#include <string>
 
 namespace mlir {
 namespace query {
 namespace matcher {
 
+namespace internal {
+class MatcherCreateCallback;
+} // namespace internal
+
+typedef const internal::MatcherCreateCallback *MatcherCtor;
+
 class Registry {
 public:
-  // Construct a matcher from the registry by name.
-
+  // Look up a matcher in the registry by name,
   // Consult the registry of known matchers and construct the appropriate
-  // matcher by name. MatcherName is the name of the matcher to instantiate.
+  // matcher by name.
+  // return An opaque value which may be used to refer to the matcher
+  // constructor, or optional<MatcherCtor>() if not found.  In that case
+  // Error will contain the description of the error.
+  static std::optional<MatcherCtor>
+  lookupMatcherCtor(StringRef MatcherName, const SourceRange &NameRange,
+                    Diagnostics *Error);
+
+  // Construct a matcher from the registry.
+  // Ctor The matcher constructor to instantiate.
 
   // Args is the argument list for the matcher. The number and types of the
   // values must be valid for the matcher requested. Otherwise, the function
@@ -41,12 +56,12 @@ public:
   // match the signature. In that case Error will contain the description
   // of the error.
   // TODO: Cleanup - Remove one of these
-  static DynMatcher *constructMatcher(StringRef MatcherName,
+  static DynMatcher *constructMatcher(MatcherCtor Ctor,
                                       const SourceRange &NameRange,
                                       ArrayRef<ParserValue> Args,
                                       Diagnostics *Error);
   static DynMatcher *
-  constructMatcherWrapper(StringRef MatcherName, const SourceRange &NameRange,
+  constructMatcherWrapper(MatcherCtor Ctor, const SourceRange &NameRange,
                           bool ExtractFunction, StringRef FunctionName,
                           ArrayRef<ParserValue> Args, Diagnostics *Error);
 };
