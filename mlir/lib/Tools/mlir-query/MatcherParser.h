@@ -27,6 +27,7 @@
 #define MLIR_TOOLS_MLIRQUERY_MATCHERPARSER_H
 
 #include "MatcherDiagnostics.h"
+#include "MatcherRegistry.h"
 #include "MatcherVariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
@@ -54,16 +55,25 @@ public:
 
     // Process a matcher expression.
     // All the arguments passed here have already been processed.
-    // MatcherName is the matcher name found by the parser.
+    // Ctor is a matcher constructor looked up by lookupMatcherCtor.
     // Args is the argument list for the matcher.
     // Returns the matcher object constructed by the processor, or nullptr
     // if an error occurred. In that case, Error will contain a
     // description of the error.
     // The caller takes ownership of the Matcher object returned.
     virtual DynMatcher *
-    actOnMatcherExpression(StringRef MatcherName, const SourceRange &NameRange,
+    actOnMatcherExpression(MatcherCtor Ctor, const SourceRange &NameRange,
                            bool ExtractFunction, StringRef FunctionName,
                            ArrayRef<ParserValue> Args, Diagnostics *Error) = 0;
+
+    // Look up a matcher by name in the matcher name found by the parser.
+    // NameRange is the location of the name in the matcher source, useful for
+    // error reporting. Returns the matcher constructor, or
+    // optional<MatcherCtor>() if an error occurred. In that case, Error will
+    // contain a description of the error.
+    virtual std::optional<MatcherCtor>
+    lookupMatcherCtor(StringRef MatcherName, const SourceRange &NameRange,
+                      Diagnostics *Error) = 0;
   };
 
   // Parse a matcher expression, creating matchers from the registry.

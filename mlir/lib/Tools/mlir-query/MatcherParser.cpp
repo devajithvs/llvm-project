@@ -287,6 +287,9 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     return false;
   }
 
+  std::optional<MatcherCtor> Ctor =
+      S->lookupMatcherCtor(NameToken.Text, NameToken.Range, Error);
+
   std::vector<ParserValue> Args;
   TokenInfo EndToken;
   while (Tokenizer->nextTokenKind() != TokenInfo::TK_Eof) {
@@ -358,11 +361,14 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     LLVM_DEBUG(DBGS() << "Function Name: " << functionName << "\n");
   }
 
+  if (!Ctor)
+    return false;
+
   // Merge the start and end infos.
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
   DynMatcher *Result = S->actOnMatcherExpression(
-      NameToken.Text, MatcherRange, extractFunction, functionName, Args, Error);
+      *Ctor, MatcherRange, extractFunction, functionName, Args, Error);
 
   if (Result == nullptr) {
     // TODO: Add appropriate error.
@@ -421,14 +427,19 @@ Parser::Parser(CodeTokenizer *Tokenizer, Sema *S, Diagnostics *Error)
 class RegistrySema : public Parser::Sema {
 public:
   virtual ~RegistrySema(){};
-  DynMatcher *actOnMatcherExpression(StringRef MatcherName,
+  std::optional<MatcherCtor> lookupMatcherCtor(StringRef MatcherName,
+                                               const SourceRange &NameRange,
+                                               Diagnostics *Error) {
+    return Registry::lookupMatcherCtor(MatcherName, NameRange, Error);
+  }
+  DynMatcher *actOnMatcherExpression(MatcherCtor Ctor,
                                      const SourceRange &NameRange,
                                      bool ExtractFunction,
                                      StringRef FunctionName,
                                      ArrayRef<ParserValue> Args,
                                      Diagnostics *Error) override {
-    return Registry::constructMatcherWrapper(
-        MatcherName, NameRange, ExtractFunction, FunctionName, Args, Error);
+    return Registry::constructMatcherWrapper(Ctor, NameRange, ExtractFunction,
+                                             FunctionName, Args, Error);
   }
 };
 

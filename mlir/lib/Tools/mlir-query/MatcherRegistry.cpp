@@ -103,28 +103,33 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 
 } // anonymous namespace
 
-// static
-DynMatcher *Registry::constructMatcher(StringRef MatcherName,
-                                       const SourceRange &NameRange,
-                                       ArrayRef<ParserValue> Args,
-                                       Diagnostics *Error) {
+std::optional<MatcherCtor>
+Registry::lookupMatcherCtor(StringRef MatcherName, const SourceRange &NameRange,
+                            Diagnostics *Error) {
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
   if (it == RegistryData->constructors().end()) {
-    Error->addError(NameRange, Error->ET_RegistryMatcherNotFound)
-        << MatcherName;
-    return nullptr;
+    Error->addError(NameRange, Error->ET_RegistryMatcherNotFound) << MatcherName;
+    return std::optional<MatcherCtor>();
   }
 
-  return it->second->run(NameRange, Args, Error);
+  return it->second;
+}
+
+// static
+DynMatcher *Registry::constructMatcher(MatcherCtor Ctor,
+                                       const SourceRange &NameRange,
+                                       ArrayRef<ParserValue> Args,
+                                       Diagnostics *Error) {
+  return Ctor->run(NameRange, Args, Error);
 }
 
 // static
 DynMatcher *Registry::constructMatcherWrapper(
-    StringRef MatcherName, const SourceRange &NameRange, bool ExtractFunction,
+    MatcherCtor Ctor, const SourceRange &NameRange, bool ExtractFunction,
     StringRef FunctionName, ArrayRef<ParserValue> Args, Diagnostics *Error) {
 
-  DynMatcher *Out = constructMatcher(MatcherName, NameRange, Args, Error);
+  DynMatcher *Out = constructMatcher(Ctor, NameRange, Args, Error);
   if (!Out)
     return Out;
   Out->setExtract(ExtractFunction);
