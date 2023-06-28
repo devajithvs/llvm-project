@@ -9,7 +9,7 @@
 // Implements the base layer of the matcher framework.
 //
 // Matchers are methods that return a Matcher which provides a method
-// matches(Operation *op)
+// match(Operation *op)
 //
 // In general, matchers have two parts:
 // 1. A function Matcher MatcherName(<arguments>) which returns a Matcher
@@ -25,7 +25,6 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MATCHERSINTERNAL_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_MATCHERSINTERNAL_H
 
-#include "MatcherTypeTraits.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 
@@ -44,45 +43,28 @@ public:
   virtual ~DynMatcherInterface() = default;
 
   // Returns true if 'op' can be matched.
-  virtual bool dynMatches(DynTypedNode &DynNode) = 0;
-  virtual bool dynMatches(Operation *op) = 0;
+  virtual bool dynMatch(Operation *op) = 0;
 };
 
-// Generic interface for matchers on an MLIR node of type T.
-template <typename T>
+// Generic interface for matchers on an MLIR operation.
 class MatcherInterface : public DynMatcherInterface {
 public:
-  virtual bool matches(T Node) = 0;
-
   virtual bool match(Operation *op) = 0;
 
-  bool dynMatches(DynTypedNode &DynNode) override {
-    return matches(DynNode.getUnchecked<T>());
-  }
-
-  bool dynMatches(Operation *op) override { return match(op); }
+  bool dynMatch(Operation *op) override { return match(op); }
 };
 
-template <typename>
 class Matcher;
 
-// Matcher wraps a MatcherInterface implementation and provides a matches()
+// Matcher wraps a MatcherInterface implementation and provides a match()
 // method that redirects calls to the underlying implementation.
 class DynMatcher {
 public:
   // Takes ownership of the provided implementation pointer.
-  template <typename T>
-  DynMatcher(MatcherInterface<T> *Implementation)
-      : SupportedKind(MLIRNodeKind::getFromNodeKind<T>()),
-        RestrictKind(SupportedKind), Implementation(Implementation),
-        ExtractFunction(false) {}
+  DynMatcher(MatcherInterface *Implementation)
+      : Implementation(Implementation), ExtractFunction(false) {}
 
-  bool match(Operation *op) const { return Implementation->dynMatches(op); }
-
-  bool matches(DynTypedNode &DynNode) const {
-    return RestrictKind.isSame(DynNode.getNodeKind()) &&
-           Implementation->dynMatches(DynNode);
-  }
+  bool match(Operation *op) const { return Implementation->dynMatch(op); }
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
 
@@ -93,30 +75,19 @@ public:
   StringRef getFunctionName() const { return FunctionName; };
 
 private:
-  MLIRNodeKind SupportedKind;
-
-  // A potentially stricter node kind.
-  // It allows to perform implicit and dynamic cast of matchers without
-  // needing to change Implementation.
-  MLIRNodeKind RestrictKind;
   llvm::IntrusiveRefCntPtr<DynMatcherInterface> Implementation;
   bool ExtractFunction;
   StringRef FunctionName;
 };
 
-// Wrapper of a MatcherInterface<T> *
-template <typename T>
+// Wrapper of a MatcherInterface *
 class Matcher {
 public:
   // Takes ownership of the provided implementation pointer.
-  Matcher(MatcherInterface<T> *Implementation)
+  Matcher(MatcherInterface *Implementation)
       : Implementation(Implementation) {}
 
-  // Forwards the call to the underlying MatcherInterface<T> pointer.
-  bool matches(T Node) {
-    return Implementation.matches(DynTypedNode::create(Node));
-  }
-
+  // Forwards the call to the underlying MatcherInterface pointer.
   bool match(Operation *op) const { return Implementation.match(op); }
 
 private:
@@ -125,11 +96,10 @@ private:
 
 // SingleMatcher takes a matcher function object and implements
 // MatcherInterface.
-template <typename T, typename MatcherFn>
-class SingleMatcher : public MatcherInterface<T> {
+template <typename MatcherFn>
+class SingleMatcher : public MatcherInterface {
 public:
   SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
-  bool matches(T Node) override { return matcherFn.match(Node); }
   bool match(Operation *op) override { return matcherFn.match(op); }
 
 private:
@@ -139,17 +109,9 @@ private:
 // TODO: Use a polymorphic matcher instead for this usecase
 // VariadicMatcher takes a vector of Matchers and returns true if any Matchers
 // match the given operation.
-template <typename T>
-class VariadicMatcher : public MatcherInterface<T> {
+class VariadicMatcher : public MatcherInterface {
 public:
   VariadicMatcher(std::vector<DynMatcher> matchers) : matchers(matchers) {}
-
-  bool matches(T Node) override {
-    DynTypedNode DynNode = DynTypedNode::create(Node);
-    return llvm::any_of(matchers, [&](const DynMatcher &matcher) {
-      return matcher.matches(DynNode);
-    });
-  }
 
   bool match(Operation *op) override {
     return llvm::any_of(
@@ -164,13 +126,12 @@ private:
 class MatchFinder {
 public:
   // Returns all operations that match the given matcher.
-  std::vector<DynTypedNode> getMatches(Operation *op,
-                                       const DynMatcher *matcher) {
-    std::vector<DynTypedNode> matches;
-    op->walk([&](Operation *subOp) {
-      DynTypedNode node = DynTypedNode::create(subOp);
-      if (matcher->matches(node))
-        matches.push_back(node);
+  std::vector<Operation *> getMatches(Operation *root,
+                                      const DynMatcher *matcher) {
+    std::vector<Operation *> matches;
+    root->walk([&](Operation *subOp) {
+      if (matcher->match(subOp))
+        matches.push_back(subOp);
     });
     return matches;
   }

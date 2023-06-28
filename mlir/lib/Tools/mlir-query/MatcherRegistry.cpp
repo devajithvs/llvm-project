@@ -64,7 +64,7 @@ RegistryMaps::RegistryMaps() {
 
   // Define a template function to register operation matchers
   auto registerOpMatcher = [&](const std::string &name, auto matcher) {
-    registerMatcher(name, makeMatcherAutoMarshall<Operation *>(matcher, name));
+    registerMatcher(name, makeMatcherAutoMarshall(matcher, name));
   };
 
   // Register matchers using the template function
