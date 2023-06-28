@@ -44,9 +44,8 @@ struct AllOfMatcher {
   AllOfMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}
   bool match(Operation *op) {
-    matcher::DynTypedNode node = matcher::DynTypedNode::create(op);
     return llvm::all_of(matchers, [&](const matcher::DynMatcher &matcher) {
-      return matcher.matches(node);
+      return matcher.match(op);
     });
   }
   std::vector<matcher::DynMatcher> matchers;
@@ -58,9 +57,8 @@ struct AnyOfMatcher {
   AnyOfMatcher(std::vector<matcher::DynMatcher> matchers)
       : matchers(matchers) {}
   bool match(Operation *op) {
-    matcher::DynTypedNode node = matcher::DynTypedNode::create(op);
     return llvm::any_of(matchers, [&](const matcher::DynMatcher &matcher) {
-      return matcher.matches(node);
+      return matcher.match(op);
     });
   }
   std::vector<matcher::DynMatcher> matchers;
@@ -75,8 +73,7 @@ struct ArgumentMatcher {
     if (op->getNumOperands() > index) {
       auto operand = op->getOperand(index);
       if (Operation *operandOp = operand.getDefiningOp()) {
-        matcher::DynTypedNode node = matcher::DynTypedNode::create(operandOp);
-        return innerMatcher.matches(node);
+        return innerMatcher.match(op);
       }
     }
     return false;
@@ -95,14 +92,12 @@ struct UsesMatcher {
 
   bool recursiveMatch(Operation *op, unsigned tempHops) {
     if (tempHops == 0) {
-      auto currentNode = matcher::DynTypedNode::create(op);
-      return innerMatcher.matches(currentNode);
+      return innerMatcher.match(op);
     }
     if (inclusive) {
       return llvm::any_of(op->getOperands(), [&](Value operand) {
         if (Operation *operandOp = operand.getDefiningOp()) {
-          matcher::DynTypedNode node = matcher::DynTypedNode::create(operandOp);
-          return innerMatcher.matches(node) ||
+          return innerMatcher.match(operandOp) ||
                  recursiveMatch(operandOp, tempHops - 1);
         }
         return false;
@@ -133,13 +128,11 @@ struct DefinitionsMatcher {
 
   bool recursiveMatch(Operation *op, unsigned tempHops) {
     if (tempHops == 0) {
-      auto currentNode = matcher::DynTypedNode::create(op);
-      return innerMatcher.matches(currentNode);
+      return innerMatcher.match(op);
     }
     if (inclusive) {
       return llvm::any_of(op->getUsers(), [&](Operation *userOp) {
-        auto userNode = matcher::DynTypedNode::create(userOp);
-        return innerMatcher.matches(userNode) ||
+        return innerMatcher.match(userOp) ||
                recursiveMatch(userOp, tempHops - 1);
       });
     } else {

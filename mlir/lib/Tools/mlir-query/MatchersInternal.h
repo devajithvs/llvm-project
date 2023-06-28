@@ -45,6 +45,7 @@ public:
 
   // Returns true if 'op' can be matched.
   virtual bool dynMatches(DynTypedNode &DynNode) = 0;
+  virtual bool dynMatches(Operation *op) = 0;
 };
 
 // Generic interface for matchers on an MLIR node of type T.
@@ -53,9 +54,13 @@ class MatcherInterface : public DynMatcherInterface {
 public:
   virtual bool matches(T Node) = 0;
 
+  virtual bool match(Operation *op) = 0;
+
   bool dynMatches(DynTypedNode &DynNode) override {
     return matches(DynNode.getUnchecked<T>());
   }
+
+  bool dynMatches(Operation *op) override { return match(op); }
 };
 
 template <typename>
@@ -71,6 +76,8 @@ public:
       : SupportedKind(MLIRNodeKind::getFromNodeKind<T>()),
         RestrictKind(SupportedKind), Implementation(Implementation),
         ExtractFunction(false) {}
+
+  bool match(Operation *op) const { return Implementation->dynMatches(op); }
 
   bool matches(DynTypedNode &DynNode) const {
     return RestrictKind.isSame(DynNode.getNodeKind()) &&
@@ -110,6 +117,8 @@ public:
     return Implementation.matches(DynTypedNode::create(Node));
   }
 
+  bool match(Operation *op) const { return Implementation.match(op); }
+
 private:
   DynMatcher Implementation;
 };
@@ -121,6 +130,7 @@ class SingleMatcher : public MatcherInterface<T> {
 public:
   SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
   bool matches(T Node) override { return matcherFn.match(Node); }
+  bool match(Operation *op) override { return matcherFn.match(op); }
 
 private:
   MatcherFn matcherFn;
@@ -139,6 +149,11 @@ public:
     return llvm::any_of(matchers, [&](const DynMatcher &matcher) {
       return matcher.matches(DynNode);
     });
+  }
+
+  bool match(Operation *op) override {
+    return llvm::any_of(
+        matchers, [&](const DynMatcher &matcher) { return matcher.match(op); });
   }
 
 private:
