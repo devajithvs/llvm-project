@@ -48,14 +48,14 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 }
 
 // This could be done better but is not worth the variadic template trouble.
-std::vector<matcher::DynTypedNode>
+std::vector<Operation*>
 getMatches(Operation *rootOp, const matcher::DynMatcher *matcher) {
   auto matchFinder = matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
 }
 
 // TODO: Only supports operation node type.
-Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
+Operation *extractFunction(std::vector<Operation *> &ops,
                            OpBuilder builder, StringRef functionName) {
   std::vector<Operation *> slice;
   std::vector<Value> values;
@@ -63,8 +63,7 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
   bool hasReturn = false;
   TypeRange resultType = std::nullopt;
 
-  for (matcher::DynTypedNode node : nodes) {
-    if (Operation *op = *node.get<Operation *>()) {
+  for (auto *op : ops) {
       slice.push_back(op);
       if (auto returnOp = dyn_cast<func::ReturnOp>(op)) {
         resultType = returnOp.getOperands().getTypes();
@@ -76,7 +75,6 @@ Operation *extractFunction(std::vector<matcher::DynTypedNode> &nodes,
           values.push_back(value);
         }
       }
-    }
   }
 
   auto loc = builder.getUnknownLoc();
@@ -138,14 +136,12 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
     OS << "\n\n" << *function << "\n\n\n";
   } else {
     unsigned MatchCount = 0;
-    for (auto node : matches) {
-      if (Operation *op = *node.get<Operation *>()) {
+    for (auto *op : matches) {
         auto opLoc = op->getLoc().cast<FileLineColLoc>();
         OS << "\nMatch #" << ++MatchCount << ":\n\n";
         OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
            << opLoc.getColumn() << ": note: \"root\" binds here\n"
            << *op << "\n";
-      }
     }
     OS << "\n"
        << MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");

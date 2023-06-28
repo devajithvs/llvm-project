@@ -114,7 +114,6 @@ private:
 };
 
 // Variadic marshaller function.
-template <typename T>
 class VariadicMatcherCreateCallback : public MatcherCreateCallback {
 public:
   explicit VariadicMatcherCreateCallback(StringRef MatcherName)
@@ -138,7 +137,7 @@ public:
           ArgTypeTraits<DerivedMatcherType>::get(Args[i].Value));
       InnerArgs[i] = &References.back();
     }
-    return new DynMatcher(new VariadicMatcher<T>(References));
+    return new DynMatcher(new VariadicMatcher(References));
   }
 
 private:
@@ -161,7 +160,7 @@ struct remove_const_ref
     : public std::remove_const<typename std::remove_reference<T>::type> {};
 
 // 0-arg marshaller function.
-template <typename T, typename ReturnType>
+template <typename ReturnType>
 DynMatcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
                              const SourceRange &NameRange,
                              ArrayRef<ParserValue> Args, Diagnostics *Error) {
@@ -171,13 +170,13 @@ DynMatcher *matcherMarshall0(ReturnType (*Func)(), StringRef MatcherName,
     return nullptr;
   }
   ReturnType matcherFn = Func();
-  MatcherInterface<T> *singleMatcher =
-      new SingleMatcher<T, ReturnType>(matcherFn);
+  MatcherInterface *singleMatcher =
+      new SingleMatcher<ReturnType>(matcherFn);
   return new DynMatcher(singleMatcher);
 }
 
 // 1-arg marshaller function.
-template <typename T, typename ReturnType, typename InArgType1>
+template <typename ReturnType, typename InArgType1>
 DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
                              StringRef MatcherName,
                              const SourceRange &NameRange,
@@ -195,13 +194,13 @@ DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1),
     return nullptr;
   }
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value));
-  MatcherInterface<T> *singleMatcher =
-      new SingleMatcher<T, ReturnType>(matcherFn);
+  MatcherInterface *singleMatcher =
+      new SingleMatcher<ReturnType>(matcherFn);
   return new DynMatcher(singleMatcher);
 }
 
 // 2-arg marshaller function.
-template <typename T, typename ReturnType, typename InArgType1,
+template <typename ReturnType, typename InArgType1,
           typename InArgType2>
 DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1, InArgType2),
                              StringRef MatcherName,
@@ -227,8 +226,8 @@ DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1, InArgType2),
   }
   ReturnType matcherFn = Func(ArgTypeTraits<ArgType1>::get(Args[0].Value),
                               ArgTypeTraits<ArgType2>::get(Args[1].Value));
-  MatcherInterface<T> *singleMatcher =
-      new SingleMatcher<T, ReturnType>(matcherFn);
+  MatcherInterface *singleMatcher =
+      new SingleMatcher<ReturnType>(matcherFn);
   return new DynMatcher(singleMatcher);
 }
 
@@ -236,32 +235,32 @@ DynMatcher *matcherMarshall1(ReturnType (*Func)(InArgType1, InArgType2),
 // They detects the number of arguments, arguments types and return type.
 
 // 0-arg overload
-template <typename T, typename ReturnType>
+template <typename ReturnType>
 auto *makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
-  return createMarshallerCallback(matcherMarshall0<T, ReturnType>, Func,
+  return createMarshallerCallback(matcherMarshall0<ReturnType>, Func,
                                   MatcherName);
 }
 
 // 1-arg overload
-template <typename T, typename ReturnType, typename ArgType1>
+template <typename ReturnType, typename ArgType1>
 auto *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                               StringRef MatcherName) {
-  return createMarshallerCallback(matcherMarshall1<T, ReturnType, ArgType1>,
+  return createMarshallerCallback(matcherMarshall1<ReturnType, ArgType1>,
                                   Func, MatcherName);
 }
 
 // 2-arg overload
-template <typename T, typename ReturnType, typename ArgType1, typename ArgType2>
+template <typename ReturnType, typename ArgType1, typename ArgType2>
 auto *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
                               StringRef MatcherName) {
   return createMarshallerCallback(
-      matcherMarshall1<T, ReturnType, ArgType1, ArgType2>, Func, MatcherName);
+      matcherMarshall1<ReturnType, ArgType1, ArgType2>, Func, MatcherName);
 }
 
 // Variadic overload.
-template <typename T, typename MatcherType>
+template <typename MatcherType>
 auto *makeMatcherAutoMarshall(MatcherType Func, StringRef MatcherName) {
-  return new VariadicMatcherCreateCallback<T>(MatcherName);
+  return new VariadicMatcherCreateCallback(MatcherName);
 }
 
 } // namespace internal
