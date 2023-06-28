@@ -27,10 +27,10 @@ namespace query {
 namespace matcher {
 
 namespace internal {
-class MatcherCreateCallback;
+class MatcherDescriptor;
 } // namespace internal
 
-typedef const internal::MatcherCreateCallback *MatcherCtor;
+typedef const internal::MatcherDescriptor *MatcherCtor;
 
 class Registry {
 public:

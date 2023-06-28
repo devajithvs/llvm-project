@@ -29,8 +29,8 @@ namespace query {
 namespace matcher {
 namespace {
 
-using internal::MatcherCreateCallback;
-using ConstructorMap = llvm::StringMap<const MatcherCreateCallback *>;
+using internal::MatcherDescriptor;
+using ConstructorMap = llvm::StringMap<const MatcherDescriptor *>;
 
 using constantFnType = detail::constant_op_matcher();
 using attrFnType = detail::AttrOpMatcher(StringRef);
@@ -44,12 +44,12 @@ public:
   const ConstructorMap &constructors() const { return Constructors; }
 
 private:
-  void registerMatcher(StringRef MatcherName, MatcherCreateCallback *Callback);
+  void registerMatcher(StringRef MatcherName, MatcherDescriptor *Callback);
   ConstructorMap Constructors;
 };
 
 void RegistryMaps::registerMatcher(StringRef MatcherName,
-                                   MatcherCreateCallback *Callback) {
+                                   MatcherDescriptor *Callback) {
   Constructors[MatcherName] = Callback;
 }
 
@@ -121,7 +121,7 @@ DynMatcher *Registry::constructMatcher(MatcherCtor Ctor,
                                        const SourceRange &NameRange,
                                        ArrayRef<ParserValue> Args,
                                        Diagnostics *Error) {
-  return Ctor->run(NameRange, Args, Error);
+  return Ctor->create(NameRange, Args, Error);
 }
 
 // static
