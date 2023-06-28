@@ -77,13 +77,13 @@ struct ArgTypeTraits<unsigned> {
   static unsigned get(const VariantValue &Value) { return Value.getUnsigned(); }
 };
 
-// Generic MatcherCreate interface.
-// Provides a run() method that constructs the matcher from the provided
+// Generic Matcher descriptor interface.
+// Provides a create() method that constructs the matcher from the provided
 // arguments.
-class MatcherCreateCallback {
+class MatcherDescriptor {
 public:
-  virtual ~MatcherCreateCallback() = default;
-  virtual DynMatcher *run(const SourceRange &NameRange,
+  virtual ~MatcherDescriptor() = default;
+  virtual DynMatcher *create(const SourceRange &NameRange,
                           const ArrayRef<ParserValue> &Args,
                           Diagnostics *Error) const = 0;
 };
@@ -94,13 +94,13 @@ public:
 // Func: Matcher construct function. This is the function that
 // compile-time matcher expressions would use to create the matcher.
 template <typename MarshallerType, typename FuncType>
-class FixedArgCountMatcherCreateCallback : public MatcherCreateCallback {
+class FixedArgCountMatcherDescriptor : public MatcherDescriptor {
 public:
-  FixedArgCountMatcherCreateCallback(MarshallerType Marshaller, FuncType Func,
+  FixedArgCountMatcherDescriptor(MarshallerType Marshaller, FuncType Func,
                                      StringRef MatcherName)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
-  DynMatcher *run(const SourceRange &NameRange,
+  DynMatcher *create(const SourceRange &NameRange,
                   const ArrayRef<ParserValue> &Args,
                   Diagnostics *Error) const override {
     return Marshaller(Func, MatcherName, NameRange, Args, Error);
@@ -113,14 +113,14 @@ private:
 };
 
 // Variadic marshaller function.
-class VariadicMatcherCreateCallback : public MatcherCreateCallback {
+class VariadicMatcherDescriptor : public MatcherDescriptor {
 public:
-  explicit VariadicMatcherCreateCallback(StringRef MatcherName)
+  explicit VariadicMatcherDescriptor(StringRef MatcherName)
       : MatcherName(MatcherName.str()) {}
 
   typedef DynMatcher DerivedMatcherType;
 
-  DynMatcher *run(const SourceRange &NameRange,
+  DynMatcher *create(const SourceRange &NameRange,
                   const ArrayRef<ParserValue> &Args,
                   Diagnostics *Error) const override {
     std::vector<DerivedMatcherType> References;
@@ -147,7 +147,7 @@ private:
 template <typename MarshallerType, typename FuncType>
 auto *createMarshallerCallback(MarshallerType Marshaller, FuncType Func,
                                StringRef MatcherName) {
-  return new FixedArgCountMatcherCreateCallback<MarshallerType, FuncType>(
+  return new FixedArgCountMatcherDescriptor<MarshallerType, FuncType>(
       Marshaller, Func, MatcherName);
 }
 
@@ -259,7 +259,7 @@ auto *makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
 // Variadic overload.
 template <typename MatcherType>
 auto *makeMatcherAutoMarshall(MatcherType Func, StringRef MatcherName) {
-  return new VariadicMatcherCreateCallback(MatcherName);
+  return new VariadicMatcherDescriptor(MatcherName);
 }
 
 } // namespace internal
