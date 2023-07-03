@@ -50,6 +50,7 @@ private:
 
 void RegistryMaps::registerMatcher(StringRef MatcherName,
                                    MatcherDescriptor *Callback) {
+  assert(Constructors.find(MatcherName) == Constructors.end());
   Constructors[MatcherName] = Callback;
 }
 
@@ -68,18 +69,18 @@ RegistryMaps::RegistryMaps() {
   };
 
   // Register matchers using the template function
-  registerOpMatcher("allOf", extramatcher::allOf);
-  registerOpMatcher("anyOf", extramatcher::anyOf);
-  registerOpMatcher("hasArgument", extramatcher::hasArgument);
-  registerOpMatcher("definedBy", extramatcher::definedBy);
-  registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
-  registerOpMatcher("getAllDefinitions", extramatcher::getAllDefinitions);
-  registerOpMatcher("uses", extramatcher::uses);
-  registerOpMatcher("getUses", extramatcher::getUses);
-  registerOpMatcher("getAllUses", extramatcher::getAllUses);
-  registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
-  registerOpMatcher("hasOpAttrName", static_cast<attrFnType *>(m_Attr));
-  registerOpMatcher("hasOpName", static_cast<opFnType *>(m_Op));
+  // registerOpMatcher("allOf", extramatcher::allOf);
+  // registerOpMatcher("anyOf", extramatcher::anyOf);
+  // registerOpMatcher("hasArgument", extramatcher::hasArgument);
+  // registerOpMatcher("definedBy", extramatcher::definedBy);
+  // registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
+  // registerOpMatcher("getAllDefinitions", extramatcher::getAllDefinitions);
+  // registerOpMatcher("uses", extramatcher::uses);
+  // registerOpMatcher("getUses", extramatcher::getUses);
+  // registerOpMatcher("getAllUses", extramatcher::getAllUses);
+  // registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
+  // registerOpMatcher("hasOpAttrName", static_cast<attrFnType *>(m_Attr));
+  // registerOpMatcher("hasOpName", static_cast<opFnType *>(m_Op));
   registerOpMatcher("m_PosZeroFloat", m_PosZeroFloat);
   registerOpMatcher("m_NegZeroFloat", m_NegZeroFloat);
   registerOpMatcher("m_AnyZeroFloat", m_AnyZeroFloat);
@@ -117,7 +118,7 @@ Registry::lookupMatcherCtor(StringRef MatcherName, const SourceRange &NameRange,
 }
 
 // static
-DynMatcher *Registry::constructMatcher(MatcherCtor Ctor,
+VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
                                        const SourceRange &NameRange,
                                        ArrayRef<ParserValue> Args,
                                        Diagnostics *Error) {
@@ -125,16 +126,44 @@ DynMatcher *Registry::constructMatcher(MatcherCtor Ctor,
 }
 
 // static
-DynMatcher *Registry::constructMatcherWrapper(
+VariantMatcher Registry::constructMatcherWrapper(
     MatcherCtor Ctor, const SourceRange &NameRange, bool ExtractFunction,
     StringRef FunctionName, ArrayRef<ParserValue> Args, Diagnostics *Error) {
 
-  DynMatcher *Out = constructMatcher(Ctor, NameRange, Args, Error);
-  if (!Out)
-    return Out;
-  Out->setExtract(ExtractFunction);
-  Out->setFunctionName(FunctionName);
-  return Out;
+  VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
+  if (Out.isNull()) return Out;
+  
+  std::optional<DynMatcher> Result = Out.getSingleMatcher();
+  if (Result.has_value()) {
+    Result->setExtract(ExtractFunction);
+    Result->setFunctionName(FunctionName);
+    if (Result.has_value()) {
+      return VariantMatcher::SingleMatcher(*Result);
+    }
+  }
+  Error->addError(NameRange, Error->ET_RegistryNotBindable);
+  return VariantMatcher();
+}
+
+// static
+VariantMatcher Registry::constructBoundMatcher(MatcherCtor Ctor,
+                                               const SourceRange &NameRange,
+                                               StringRef BindID,
+                                               ArrayRef<ParserValue> Args,
+                                               Diagnostics *Error) {
+  VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
+  if (Out.isNull()) return Out;
+
+  std::optional<DynMatcher> Result = Out.getSingleMatcher();
+  if (Result.has_value()) {
+    // FIXME
+    // std::optional<DynMatcher> Bound = Result->tryBind(BindID);
+    // if (Bound.has_value()) {
+      return VariantMatcher::SingleMatcher(*Result);
+    // }
+  }
+  Error->addError(NameRange, Error->ET_RegistryNotBindable);
+  return VariantMatcher();
 }
 
 } // namespace matcher

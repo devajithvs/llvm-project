@@ -61,10 +61,12 @@ public:
     // if an error occurred. In that case, Error will contain a
     // description of the error.
     // The caller takes ownership of the Matcher object returned.
-    virtual DynMatcher *
-    actOnMatcherExpression(MatcherCtor Ctor, const SourceRange &NameRange,
-                           bool ExtractFunction, StringRef FunctionName,
-                           ArrayRef<ParserValue> Args, Diagnostics *Error) = 0;
+    virtual VariantMatcher actOnMatcherExpression(MatcherCtor Ctor, 
+                                                  const SourceRange &NameRange,
+                                                  bool ExtractFunction, StringRef FunctionName,
+                                                  StringRef BindID,
+                                                  ArrayRef<ParserValue> Args,
+                                                  Diagnostics *Error) = 0;
 
     // Look up a matcher by name in the matcher name found by the parser.
     // NameRange is the location of the name in the matcher source, useful for
@@ -86,8 +88,7 @@ public:
   // Returns the matcher object constructed, or nullptr if an error occurred.
   // In that case, Error will contain a description of the error.
   // The caller takes ownership of the DynMatcher object returned.
-  static DynMatcher *parseMatcherExpression(StringRef MatcherCode,
-                                            Diagnostics *Error);
+  static std::optional<DynMatcher> parseMatcherExpression(StringRef MatcherCode, Diagnostics *Error);
 
   // Parse a matcher expression.
 
@@ -99,8 +100,7 @@ public:
   // if an error occurred. In that case, Error will contain a
   // description of the error.
   // The caller takes ownership of the DynMatcher object returned.
-  static DynMatcher *parseMatcherExpression(StringRef MatcherCode, Sema *S,
-                                            Diagnostics *Error);
+  static std::optional<DynMatcher> parseMatcherExpression(StringRef MatcherCode, Sema *S, Diagnostics *Error);
 
   // Parse an expression, creating matchers from the registry.
 

@@ -56,14 +56,27 @@ public:
   // match the signature. In that case Error will contain the description
   // of the error.
   // TODO: Cleanup - Remove one of these
-  static DynMatcher *constructMatcher(MatcherCtor Ctor,
+  static VariantMatcher constructMatcher(MatcherCtor Ctor,
                                       const SourceRange &NameRange,
                                       ArrayRef<ParserValue> Args,
                                       Diagnostics *Error);
-  static DynMatcher *
-  constructMatcherWrapper(MatcherCtor Ctor, const SourceRange &NameRange,
+
+  static VariantMatcher constructMatcherWrapper(MatcherCtor Ctor, const SourceRange &NameRange,
                           bool ExtractFunction, StringRef FunctionName,
                           ArrayRef<ParserValue> Args, Diagnostics *Error);
+  
+  // TODO: FIX COMMENT
+  /// \brief Construct a matcher from the registry and bind it.
+  ///
+  /// Similar the \c constructMatcher() above, but it then tries to bind the
+  /// matcher to the specified \c BindID.
+  /// If the matcher is not bindable, it sets an error in \c Error and returns
+  /// a null matcher.
+  static VariantMatcher constructBoundMatcher(MatcherCtor Ctor,
+                                              const SourceRange &NameRange,
+                                              StringRef BindID,
+                                              ArrayRef<ParserValue> Args,
+                                              Diagnostics *Error);
 };
 
 } // namespace matcher

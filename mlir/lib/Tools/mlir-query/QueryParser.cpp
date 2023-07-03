@@ -169,14 +169,14 @@ QueryRef QueryParser::doParse() {
     matcher::Diagnostics Diag;
     auto MatchExpr = Line.ltrim();
 
-    const matcher::DynMatcher *matcher =
+    auto matcher =
         matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
 
-    if (!matcher) {
+    if (!matcher.has_value()) {
       return makeInvalidQueryFromDiagnostics(Diag);
     }
 
-    return new MatchQuery(matcher);
+    return new MatchQuery(&matcher.value());
   }
 
   case PQK_Invalid:
