@@ -53,6 +53,32 @@ public:
   // Takes ownership of the provided implementation pointer.
   DynMatcher(MatcherInterface *Implementation)
       : Implementation(Implementation), ExtractFunction(false) {}
+  
+    /// Construct from a variadic function.
+  enum VariadicOperator {
+    /// Matches nodes for which all provided matchers match.
+    VO_AllOf,
+
+    /// Matches nodes for which at least one of the provided matchers
+    /// matches.
+    VO_AnyOf,
+
+    /// Matches nodes for which at least one of the provided matchers
+    /// matches, but doesn't stop at the first match.
+    VO_EachOf,
+
+    /// Matches any node but executes all inner matchers to find result
+    /// bindings.
+    VO_Optionally,
+
+    /// Matches nodes that do not match the provided matcher.
+    ///
+    /// Uses the variadic matcher interface, but fails if
+    /// InnerMatchers.size() != 1.
+    VO_UnaryNot
+  };
+
+  static DynMatcher constructVariadic(VariadicOperator Op, std::vector<DynMatcher> InnerMatchers);
 
   bool match(Operation *op) const { return Implementation->match(op); }
 
@@ -82,6 +108,109 @@ private:
   MatcherFn matcherFn;
 };
 
+/// VariadicOperatorMatcher related types.
+/// @{
+
+/// Polymorphic matcher object that uses a \c
+/// DynMatcher::VariadicOperator operator.
+///
+/// Input matchers can have any type (including other polymorphic matcher
+/// types), and the actual Matcher<T> is generated on demand with an implicit
+/// conversion operator.
+template <typename... Ps> class VariadicOperatorMatcher {
+public:
+  VariadicOperatorMatcher(DynMatcher::VariadicOperator VariadicOp, Ps &&... Params)
+      : VariadicOp(VariadicOp), Params(std::forward<Ps>(Params)...) {}
+
+  operator DynMatcher() const & {
+    return DynMatcher::constructVariadic(
+               VariadicOp, getMatchers(std::index_sequence_for<Ps...>()));
+  }
+
+  operator DynMatcher() && {
+    return DynMatcher::constructVariadic(
+               VariadicOp, getMatchers(std::index_sequence_for<Ps...>()));
+  }
+
+private:
+  // Helper method to unpack the tuple into a vector.
+  template <std::size_t... Is>
+  std::vector<DynMatcher> getMatchers(std::index_sequence<Is...>) const & {
+    return {DynMatcher(std::get<Is>(Params))...};
+  }
+
+  template <std::size_t... Is>
+  std::vector<DynMatcher> getMatchers(std::index_sequence<Is...>) && {
+    return {DynMatcher(std::get<Is>(std::move(Params)))...};
+  }
+
+  const DynMatcher::VariadicOperator VariadicOp;
+  std::tuple<Ps...> Params;
+};
+
+/// Overloaded function object to generate VariadicOperatorMatcher
+///   objects from arbitrary matchers.
+template <unsigned MinCount, unsigned MaxCount>
+struct VariadicOperatorMatcherFunc {
+  DynMatcher::VariadicOperator Op;
+
+  template <typename... Ms>
+  VariadicOperatorMatcher<Ms...> operator()(Ms &&... Ps) const {
+    static_assert(MinCount <= sizeof...(Ms) && sizeof...(Ms) <= MaxCount,
+                  "invalid number of parameters for variadic matcher");
+    return VariadicOperatorMatcher<Ms...>(Op, std::forward<Ms>(Ps)...);
+  }
+};
+
+
+/// Variadic function object.
+///
+/// Most of the functions below that use VariadicFunction could be implemented
+/// using plain C++11 variadic functions, but the function object allows us to
+/// capture it on the dynamic matcher registry.
+template <typename ResultT, typename ArgT,
+          ResultT (*Func)(ArrayRef<const ArgT *>)>
+struct VariadicFunction {
+  ResultT operator()() const { return Func(std::nullopt); }
+
+  template <typename... ArgsT>
+  ResultT operator()(const ArgT &Arg1, const ArgsT &... Args) const {
+    return Execute(Arg1, static_cast<const ArgT &>(Args)...);
+  }
+
+  // We also allow calls with an already created array, in case the caller
+  // already had it.
+  ResultT operator()(ArrayRef<ArgT> Args) const {
+    return Func(llvm::to_vector<8>(llvm::make_pointer_range(Args)));
+  }
+
+private:
+  // Trampoline function to allow for implicit conversions to take place
+  // before we make the array.
+  template <typename... ArgsT> ResultT Execute(const ArgsT &... Args) const {
+    const ArgT *const ArgsArray[] = {&Args...};
+    return Func(ArrayRef<const ArgT *>(ArgsArray, sizeof...(ArgsT)));
+  }
+};
+
+typedef bool (*VariadicOperatorFunction)(Operation *op, ArrayRef<DynMatcher> InnerMatchers);
+
+
+// \brief \c MatcherInterface<T> implementation for an variadic operator.
+class VariadicOperatorMatcherInterface : public MatcherInterface {
+public:
+  VariadicOperatorMatcherInterface(VariadicOperatorFunction Func,
+                                   ArrayRef<DynMatcher> InnerMatchers)
+    : Func(Func), InnerMatchers(InnerMatchers) {}
+  bool match(Operation *op) override {
+    return Func(op, InnerMatchers);
+  }
+private:
+  const VariadicOperatorFunction Func;
+  const std::vector<DynMatcher> InnerMatchers;
+};
+
+  
 // TODO: Use a polymorphic matcher instead for this usecase
 // VariadicMatcher takes a vector of Matchers and returns true if any Matchers
 // match the given operation.
@@ -97,6 +226,41 @@ public:
 private:
   std::vector<DynMatcher> matchers;
 };
+
+bool AllOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
+  // allOf leads to one matcher for each alternative in the first
+  // matcher combined with each alternative in the second matcher.
+  // Thus, we can reuse the same Builder.
+  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
+    if (!InnerMatchers[i].match(op))
+      return false;
+  }
+  return true;
+}
+
+bool EachOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
+  bool Matched = false;
+  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
+    if (InnerMatchers[i].match(op)) {
+      Matched = true;
+      // TODO
+      // Add match to result
+      // Result.addMatch
+    }
+  }
+  // Set builder to result
+  return Matched;
+}
+
+bool AnyOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
+  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
+    if (InnerMatchers[i].match(op)) {
+      // TODO: Add match to results. 
+      return true;
+    }
+  }
+  return false;
+}
 
 // MatchFinder is used to find all operations that match a given matcher.
 class MatchFinder {

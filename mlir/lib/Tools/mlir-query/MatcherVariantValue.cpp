@@ -16,6 +16,115 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
+
+VariantMatcher::MatcherOps::~MatcherOps() {}
+VariantMatcher::Payload::~Payload() {}
+
+class VariantMatcher::SinglePayload : public VariantMatcher::Payload {
+public:
+  SinglePayload(const DynMatcher &Matcher) : Matcher(Matcher) {}
+
+  virtual std::optional<DynMatcher> getSingleMatcher() const {
+    return Matcher;
+  }
+
+  virtual std::string getTypeAsString() const {
+    return "Matcher";
+  }
+
+  virtual void makeTypedMatcher(MatcherOps &Ops) const {
+    if (Ops.canConstructFrom(Matcher))
+      Ops.constructFrom(Matcher);
+  }
+
+private:
+  const DynMatcher Matcher;
+};
+
+class VariantMatcher::PolymorphicPayload : public VariantMatcher::Payload {
+public:
+  PolymorphicPayload(ArrayRef<DynMatcher> MatchersIn)
+      : Matchers(MatchersIn) {}
+
+  virtual ~PolymorphicPayload() {}
+
+  virtual std::optional<DynMatcher> getSingleMatcher() const {
+    if (Matchers.size() != 1)
+      return std::optional<DynMatcher>();
+    return Matchers[0];
+  }
+
+  virtual std::string getTypeAsString() const {
+    return "Matcher";
+  }
+
+  virtual void makeTypedMatcher(MatcherOps &Ops) const {
+    const DynMatcher *Found = nullptr;
+    for (size_t i = 0, e = Matchers.size(); i != e; ++i) {
+      if (Found)
+        return;
+      Found = &Matchers[i];
+    }
+    if (Found)
+      Ops.constructFrom(*Found);
+  }
+
+  const std::vector<DynMatcher> Matchers;
+};
+
+class VariantMatcher::VariadicOpPayload : public VariantMatcher::Payload {
+public:
+  VariadicOpPayload(VariadicOperatorFunction Func,
+                    ArrayRef<VariantMatcher> Args)
+      : Func(Func), Args(Args) {}
+
+  virtual std::optional<DynMatcher> getSingleMatcher() const {
+    return std::optional<DynMatcher>();
+  }
+
+  // TODO: Remove
+  virtual std::string getTypeAsString() const {
+    return "Op";
+  }
+
+  virtual void makeTypedMatcher(MatcherOps &Ops) const {
+    Ops.constructVariadicOperator(Func, Args);
+  }
+
+private:
+  const VariadicOperatorFunction Func;
+  const std::vector<VariantMatcher> Args;
+};
+
+VariantMatcher::VariantMatcher() {}
+
+VariantMatcher VariantMatcher::SingleMatcher(const DynMatcher &Matcher) {
+  return VariantMatcher(new SinglePayload(Matcher));
+}
+
+VariantMatcher
+VariantMatcher::PolymorphicMatcher(ArrayRef<DynMatcher> Matchers) {
+  return VariantMatcher(new PolymorphicPayload(Matchers));
+}
+
+VariantMatcher VariantMatcher::VariadicOperatorMatcher(
+    VariadicOperatorFunction Func,
+    ArrayRef<VariantMatcher> Args) {
+  return VariantMatcher(new VariadicOpPayload(Func, Args));
+}
+
+std::optional<DynMatcher> VariantMatcher::getSingleMatcher() const {
+  return Value ? Value->getSingleMatcher() : std::optional<DynMatcher>();
+}
+
+void VariantMatcher::reset() { Value.reset(); }
+
+// TODO: Remove
+std::string VariantMatcher::getTypeAsString() const {
+  return "<Nothing>";
+}
+
+
 VariantValue::VariantValue(const VariantValue &Other) : Type(VT_Nothing) {
   *this = Other;
 }
@@ -36,7 +145,7 @@ VariantValue::VariantValue(const StringRef &String) : Type(VT_Nothing) {
   setString(String);
 }
 
-VariantValue::VariantValue(const DynMatcher &Matcher) : Type(VT_Nothing) {
+VariantValue::VariantValue(const VariantMatcher &Matcher) : Type(VT_Nothing) {
   setMatcher(Matcher);
 }
 
@@ -141,22 +250,27 @@ void VariantValue::setString(const StringRef &NewValue) {
 
 bool VariantValue::isMatcher() const { return Type == VT_Matcher; }
 
-const DynMatcher &VariantValue::getMatcher() const {
+const VariantMatcher &VariantValue::getMatcher() const {
   assert(isMatcher());
   return *Value.Matcher;
 }
 
-void VariantValue::setMatcher(const DynMatcher &NewValue) {
+void VariantValue::setMatcher(const VariantMatcher &NewValue) {
   reset();
   Type = VT_Matcher;
-  // FIXME
-  Value.Matcher = NewValue.clone();
+  Value.Matcher = new VariantMatcher(NewValue);
 }
 
-void VariantValue::takeMatcher(DynMatcher *NewValue) {
-  reset();
-  Type = VT_Matcher;
-  Value.Matcher = NewValue;
+std::string VariantValue::getTypeAsString() const {
+  switch (Type) {
+  case VT_String: return "String";
+  case VT_Matcher: return "Matcher";
+  case VT_Unsigned: return "Unsigned";
+  case VT_Boolean: return "Boolean";
+  case VT_Double: return "Double";
+  case VT_Nothing: return "Nothing";
+  }
+  llvm_unreachable("Invalid Type");
 }
 
 } // end namespace matcher

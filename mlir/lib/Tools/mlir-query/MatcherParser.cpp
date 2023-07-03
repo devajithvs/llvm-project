@@ -43,6 +43,7 @@ struct Parser::TokenInfo {
 
   // Some known identifiers.
   static const char *const ID_Extract;
+  static const char *const ID_Bind;
 
   TokenInfo() : Text(), Kind(TK_Eof), Range(), Value() {}
 
@@ -53,6 +54,7 @@ struct Parser::TokenInfo {
 };
 
 const char *const Parser::TokenInfo::ID_Extract = "extract";
+const char *const Parser::TokenInfo::ID_Bind = "bind";
 
 // Simple tokenizer for the parser.
 class Parser::CodeTokenizer {
@@ -326,21 +328,24 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     return false;
   }
 
+  // TODO: Remove bool
   bool extractFunction = false;
+  // TODO: use std::optional
   StringRef functionName;
+  StringRef BindID;
   if (Tokenizer->peekNextToken().Kind == TokenInfo::TK_Period) {
     // Parse ".extract()"
     Tokenizer->consumeNextToken(); // consume the period.
-    const TokenInfo ExtractToken = Tokenizer->consumeNextToken();
+    const TokenInfo IdentifierToken = Tokenizer->consumeNextToken();
     const TokenInfo OpenToken = Tokenizer->consumeNextToken();
     const TokenInfo NameToken = Tokenizer->consumeNextToken();
     const TokenInfo CloseToken = Tokenizer->consumeNextToken();
 
     // TODO: We could use different error codes for each/some to be more
     //       explicit about the syntax error.
-    if (ExtractToken.Kind != TokenInfo::TK_Ident ||
-        ExtractToken.Text != TokenInfo::ID_Extract) {
-      Error->addError(ExtractToken.Range, Error->ET_ParserMalformedBindExpr);
+    if (IdentifierToken.Kind != TokenInfo::TK_Ident ||
+        !(IdentifierToken.Text == TokenInfo::ID_Extract || IdentifierToken.Text == TokenInfo::ID_Bind)) {
+      Error->addError(IdentifierToken.Range, Error->ET_ParserMalformedBindExpr);
       return false;
     }
     if (OpenToken.Kind != TokenInfo::TK_OpenParen) {
@@ -356,28 +361,31 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
       Error->addError(CloseToken.Range, Error->ET_ParserMalformedBindExpr);
       return false;
     }
-    functionName = NameToken.Value.getString();
-    extractFunction = true;
-    LLVM_DEBUG(DBGS() << "Function Name: " << functionName << "\n");
+    if (IdentifierToken.Text == TokenInfo::ID_Extract){
+      functionName = NameToken.Value.getString();
+      extractFunction = true;
+      LLVM_DEBUG(DBGS() << "Function Name: " << functionName << "\n");
+    }
+    if (IdentifierToken.Text == TokenInfo::ID_Bind){
+      BindID = NameToken.Value.getString();
+      LLVM_DEBUG(DBGS() << "BindID: " << BindID << "\n");
+    }
   }
 
   if (!Ctor)
     return false;
 
   // Merge the start and end infos.
+  Diagnostics::Context Ctx(Diagnostics::Context::ConstructMatcher, Error,
+                           NameToken.Text, NameToken.Range);
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
-  DynMatcher *Result = S->actOnMatcherExpression(
-      *Ctor, MatcherRange, extractFunction, functionName, Args, Error);
+  VariantMatcher Result = S->actOnMatcherExpression(
+      *Ctor, MatcherRange, extractFunction, functionName, BindID, Args, Error);
 
-  if (Result == nullptr) {
-    // TODO: Add appropriate error.
-    // Error->addError(NameToken.Range, Error->ET_ParserMatcherFailure)
-    //    << NameToken.Text;
-    return false;
-  }
+  if (Result.isNull()) return false;
 
-  Value->takeMatcher(Result);
+  *Value = Result;
   return true;
 }
 
@@ -432,14 +440,21 @@ public:
                                                Diagnostics *Error) {
     return Registry::lookupMatcherCtor(MatcherName, NameRange, Error);
   }
-  DynMatcher *actOnMatcherExpression(MatcherCtor Ctor,
+  // TODO: IMPORTANT
+  VariantMatcher actOnMatcherExpression(MatcherCtor Ctor,
                                      const SourceRange &NameRange,
                                      bool ExtractFunction,
                                      StringRef FunctionName,
+                                     StringRef BindID,
                                      ArrayRef<ParserValue> Args,
                                      Diagnostics *Error) override {
-    return Registry::constructMatcherWrapper(Ctor, NameRange, ExtractFunction,
-                                             FunctionName, Args, Error);
+    if (BindID.empty()) {
+      return Registry::constructMatcherWrapper(Ctor, NameRange, ExtractFunction,
+                                               FunctionName, Args, Error);
+    } else {
+      return Registry::constructBoundMatcher(Ctor, NameRange, BindID, Args,
+                                             Error);
+    }
   }
 };
 
@@ -452,8 +467,7 @@ bool Parser::parseExpression(StringRef Code, VariantValue *Value,
 bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value,
                              Diagnostics *Error) {
   CodeTokenizer Tokenizer(Code, Error);
-  if (!Parser(&Tokenizer, S, Error).parseExpressionImpl(Value))
-    return false;
+  if (!Parser(&Tokenizer, S, Error).parseExpressionImpl(Value)) return false;
   if (Tokenizer.peekNextToken().Kind != TokenInfo::TK_Eof) {
     Error->addError(Tokenizer.peekNextToken().Range,
                     Error->ET_ParserTrailingCode);
@@ -462,24 +476,30 @@ bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value,
   return true;
 }
 
-DynMatcher *Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {
+std::optional<DynMatcher> Parser::parseMatcherExpression(StringRef Code, Diagnostics *Error) {
   RegistrySema S;
   return parseMatcherExpression(Code, &S, Error);
 }
 
-DynMatcher *Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
+std::optional<DynMatcher> Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
                                            Diagnostics *Error) {
   VariantValue Value;
   if (!parseExpression(Code, S, &Value, Error)) {
-
-    return nullptr;
+    return std::nullopt;
   }
   if (!Value.isMatcher()) {
     Error->addError(SourceRange(), Error->ET_ParserNotAMatcher);
-    return nullptr;
+    return std::nullopt;
   }
-  // FIXME: remove clone
-  return Value.getMatcher().clone();
+  
+  std::optional<DynMatcher> Result =
+      Value.getMatcher().getSingleMatcher();
+  if (!Result.has_value()) {
+    // TODO: Fix
+    // Error->addError(SourceRange(), Error->ET_ParserOverloadedType)
+    //     << Value.getTypeAsString();
+  }
+  return Result;
 }
 
 } // namespace matcher

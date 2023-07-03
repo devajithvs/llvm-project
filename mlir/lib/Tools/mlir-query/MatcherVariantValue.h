@@ -25,6 +25,123 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
+/// \brief A variant matcher object.
+///
+/// The purpose of this object is to abstract simple and polymorphic matchers
+/// into a single object type.
+/// Polymorphic matchers might be implemented as a list of all the possible
+/// overloads of the matcher. \c VariantMatcher knows how to select the
+/// appropriate overload when needed.
+/// To get a real matcher object out of a \c VariantMatcher you can do:
+///  - getSingleMatcher() which returns a matcher, only if it is not ambiguous
+///    to decide which matcher to return. Eg. it contains only a single
+///    matcher, or a polymorphic one with only one overload.
+///  - hasTypedMatcher<T>()/getTypedMatcher<T>(): These calls will determine if
+///    the underlying matcher(s) can unambiguously return a Matcher<T>.
+class VariantMatcher {
+  /// \brief Methods that depend on T from hasTypedMatcher/getTypedMatcher.
+  class MatcherOps {
+  public:
+    virtual ~MatcherOps();
+    virtual bool canConstructFrom(const DynMatcher &Matcher) const = 0;
+    virtual void constructFrom(const DynMatcher &Matcher) = 0;
+    virtual void constructVariadicOperator(VariadicOperatorFunction Func, ArrayRef<VariantMatcher> InnerMatchers) = 0;
+  };
+
+  /// \brief Payload interface to be specialized by each matcher type.
+  ///
+  /// It follows a similar interface as VariantMatcher itself.
+  class Payload : public llvm::RefCountedBase<Payload> {
+  public:
+    virtual ~Payload();
+    virtual std::optional<DynMatcher> getSingleMatcher() const = 0;
+    virtual std::string getTypeAsString() const = 0;
+    virtual void makeTypedMatcher(MatcherOps &Ops) const = 0;
+  };
+
+public:
+  /// \brief A null matcher.
+  VariantMatcher();
+
+  /// \brief Clones the provided matcher.
+  static VariantMatcher SingleMatcher(const DynMatcher &Matcher);
+
+  /// \brief Clones the provided matchers.
+  ///
+  /// They should be the result of a polymorphic matcher.
+  static VariantMatcher PolymorphicMatcher(ArrayRef<DynMatcher> Matchers);
+
+  /// \brief Creates a 'variadic' operator matcher.
+  ///
+  /// It will bind to the appropriate type on getTypedMatcher<T>().
+  static VariantMatcher VariadicOperatorMatcher(VariadicOperatorFunction Func, ArrayRef<VariantMatcher> Args);
+
+  /// \brief Makes the matcher the "null" matcher.
+  void reset();
+
+  /// \brief Whether the matcher is null.
+  bool isNull() const { return !Value; }
+
+  /// \brief Return a single matcher, if there is no ambiguity.
+  ///
+  /// \returns the matcher, if there is only one matcher. An empty Optional, if
+  /// the underlying matcher is a polymorphic matcher with more than one
+  /// representation.
+  std::optional<DynMatcher> getSingleMatcher() const;
+
+
+  /// \brief Return this matcher as a \c DynMatcher.
+  ///
+  /// Handles the different types (Single, Polymorphic) accordingly.
+  DynMatcher getTypedMatcher() const {
+    TypedMatcherOps Ops;
+    Value->makeTypedMatcher(Ops);
+    assert(Ops.hasMatcher() && "hasMatcher() == false");
+    return Ops.matcher();
+  }
+
+  /// \brief String representation of the type of the value.
+  ///
+  /// If the underlying matcher is a polymorphic one, the string will show all
+  /// the types.
+  std::string getTypeAsString() const;
+
+private:
+  explicit VariantMatcher(Payload *Value) : Value(Value) {}
+
+  class SinglePayload;
+  class PolymorphicPayload;
+  class VariadicOpPayload;
+
+  class TypedMatcherOps : public MatcherOps {
+  public:
+    // TODO: Cleanup
+    bool canConstructFrom(const DynMatcher &Matcher) const override {
+      return true;
+    }
+
+    void constructFrom(const DynMatcher& Matcher) override {
+      Out.reset(&Matcher);
+    }
+
+    void constructVariadicOperator(VariadicOperatorFunction Func, ArrayRef<VariantMatcher> InnerMatchers) override {
+      std::vector<DynMatcher> DynMatchers;
+      for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
+        DynMatchers.push_back(InnerMatchers[i].getTypedMatcher());
+      }
+      Out.reset(new DynMatcher(new VariadicOperatorMatcherInterface(Func, DynMatchers)));
+    }
+
+    bool hasMatcher() const { return Out.get() != nullptr; }
+    const DynMatcher &matcher() const { return *Out; }
+
+  private:
+    std::shared_ptr<const DynMatcher> Out;
+  };
+
+  llvm::IntrusiveRefCntPtr<const Payload> Value;
+};
+
 // Variant value class.
 //
 // Basically, a tagged union with value type semantics.
@@ -38,7 +155,7 @@ namespace matcher {
 //  - double
 //  - unsigned
 //  - StringRef
-//  - Any Matcher
+//  - VariantMatcher
 class VariantValue {
 public:
   VariantValue() : Type(VT_Nothing) {}
@@ -52,7 +169,7 @@ public:
   VariantValue(double Double);
   VariantValue(unsigned Unsigned);
   VariantValue(const StringRef &String);
-  VariantValue(const DynMatcher &Matchers);
+  VariantValue(const VariantMatcher &Matcher);
 
   // Boolean value functions.
   bool isBoolean() const;
@@ -76,21 +193,11 @@ public:
 
   // Matcher value functions.
   bool isMatcher() const;
-  const DynMatcher &getMatcher() const;
-  void setMatcher(const DynMatcher &Matcher);
-
-  // Set the value to be DynMatcher by taking ownership of the
-  // object.
-  void takeMatcher(DynMatcher *Matcher);
-
-  // Specialized Matcher<T> is/get functions.
-  template <class T>
-  bool isTypedMatcher() const {
-    // TODO: Add some logic to test if T is actually valid for the underlying
-    // type of the matcher.
-    return isMatcher();
-  }
-
+  const VariantMatcher &getMatcher() const;
+  void setMatcher(const VariantMatcher &Matcher);
+  
+  /// \brief String representation of the type of the value.
+  std::string getTypeAsString() const;
 private:
   void reset();
 
@@ -110,7 +217,7 @@ private:
     double Double;
     bool Boolean;
     StringRef *String;
-    DynMatcher *Matcher;
+    VariantMatcher *Matcher;
   };
 
   ValueType Type;
