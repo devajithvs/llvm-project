@@ -24,15 +24,15 @@ class VariantMatcher::SinglePayload : public VariantMatcher::Payload {
 public:
   SinglePayload(const DynMatcher &Matcher) : Matcher(Matcher) {}
 
-  virtual std::optional<DynMatcher> getSingleMatcher() const {
+  std::optional<DynMatcher> getSingleMatcher() const override {
     return Matcher;
   }
 
-  virtual std::string getTypeAsString() const {
+  std::string getTypeAsString() const override {
     return "Matcher";
   }
 
-  virtual void makeTypedMatcher(MatcherOps &Ops) const {
+  void makeTypedMatcher(MatcherOps &Ops) const override {
     if (Ops.canConstructFrom(Matcher))
       Ops.constructFrom(Matcher);
   }
@@ -48,17 +48,17 @@ public:
 
   virtual ~PolymorphicPayload() {}
 
-  virtual std::optional<DynMatcher> getSingleMatcher() const {
+  std::optional<DynMatcher> getSingleMatcher() const override {
     if (Matchers.size() != 1)
       return std::optional<DynMatcher>();
     return Matchers[0];
   }
 
-  virtual std::string getTypeAsString() const {
+  std::string getTypeAsString() const override {
     return "Matcher";
   }
 
-  virtual void makeTypedMatcher(MatcherOps &Ops) const {
+  void makeTypedMatcher(MatcherOps &Ops) const override {
     const DynMatcher *Found = nullptr;
     for (size_t i = 0, e = Matchers.size(); i != e; ++i) {
       if (Found)
@@ -74,25 +74,26 @@ public:
 
 class VariantMatcher::VariadicOpPayload : public VariantMatcher::Payload {
 public:
-  VariadicOpPayload(VariadicOperatorFunction Func,
+  // TODO: Rename Func
+  VariadicOpPayload(DynMatcher::VariadicOperator Func,
                     ArrayRef<VariantMatcher> Args)
       : Func(Func), Args(Args) {}
 
-  virtual std::optional<DynMatcher> getSingleMatcher() const {
+  std::optional<DynMatcher> getSingleMatcher() const override {
     return std::optional<DynMatcher>();
   }
 
   // TODO: Remove
-  virtual std::string getTypeAsString() const {
+  std::string getTypeAsString() const override {
     return "Op";
   }
 
-  virtual void makeTypedMatcher(MatcherOps &Ops) const {
+  void makeTypedMatcher(MatcherOps &Ops) const override {
     Ops.constructVariadicOperator(Func, Args);
   }
 
 private:
-  const VariadicOperatorFunction Func;
+  const DynMatcher::VariadicOperator Func;
   const std::vector<VariantMatcher> Args;
 };
 
@@ -108,9 +109,9 @@ VariantMatcher::PolymorphicMatcher(ArrayRef<DynMatcher> Matchers) {
 }
 
 VariantMatcher VariantMatcher::VariadicOperatorMatcher(
-    VariadicOperatorFunction Func,
+     DynMatcher::VariadicOperator varOp,
     ArrayRef<VariantMatcher> Args) {
-  return VariantMatcher(new VariadicOpPayload(Func, Args));
+  return VariantMatcher(new VariadicOpPayload(varOp, std::move(Args)));
 }
 
 std::optional<DynMatcher> VariantMatcher::getSingleMatcher() const {

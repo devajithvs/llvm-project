@@ -28,7 +28,6 @@
 
 #include "MatcherDiagnostics.h"
 #include "MatcherRegistry.h"
-#include "MatcherVariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 

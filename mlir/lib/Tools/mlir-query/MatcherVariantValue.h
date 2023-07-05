@@ -45,7 +45,8 @@ class VariantMatcher {
     virtual ~MatcherOps();
     virtual bool canConstructFrom(const DynMatcher &Matcher) const = 0;
     virtual void constructFrom(const DynMatcher &Matcher) = 0;
-    virtual void constructVariadicOperator(VariadicOperatorFunction Func, ArrayRef<VariantMatcher> InnerMatchers) = 0;
+    // TODO: Rename Func
+    virtual void constructVariadicOperator(DynMatcher::VariadicOperator Func, ArrayRef<VariantMatcher> InnerMatchers) = 0;
   };
 
   /// \brief Payload interface to be specialized by each matcher type.
@@ -74,7 +75,7 @@ public:
   /// \brief Creates a 'variadic' operator matcher.
   ///
   /// It will bind to the appropriate type on getTypedMatcher<T>().
-  static VariantMatcher VariadicOperatorMatcher(VariadicOperatorFunction Func, ArrayRef<VariantMatcher> Args);
+  static VariantMatcher VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp, ArrayRef<VariantMatcher> Args);
 
   /// \brief Makes the matcher the "null" matcher.
   void reset();
@@ -123,13 +124,10 @@ private:
     void constructFrom(const DynMatcher& Matcher) override {
       Out.reset(&Matcher);
     }
-
-    void constructVariadicOperator(VariadicOperatorFunction Func, ArrayRef<VariantMatcher> InnerMatchers) override {
-      std::vector<DynMatcher> DynMatchers;
-      for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
-        DynMatchers.push_back(InnerMatchers[i].getTypedMatcher());
-      }
-      Out.reset(new DynMatcher(new VariadicOperatorMatcherInterface(Func, DynMatchers)));
+    // TODO: Rename Func
+    void constructVariadicOperator(DynMatcher::VariadicOperator Func, ArrayRef<VariantMatcher> InnerMatchers) override {
+      // TODO: REMOVE
+      Out.reset(VariadicOperatorMatcher(Func, InnerMatchers).getTypedMatcher().clone());
     }
 
     bool hasMatcher() const { return Out.get() != nullptr; }

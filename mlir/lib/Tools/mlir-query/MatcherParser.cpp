@@ -289,8 +289,12 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
     return false;
   }
 
+  LLVM_DEBUG(DBGS() << "pre lookupMatcherCtor"
+                    << "\n");
   std::optional<MatcherCtor> Ctor =
       S->lookupMatcherCtor(NameToken.Text, NameToken.Range, Error);
+  LLVM_DEBUG(DBGS() << "post lookupMatcherCtor"
+                    << "\n");
 
   std::vector<ParserValue> Args;
   TokenInfo EndToken;
@@ -371,18 +375,28 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
       LLVM_DEBUG(DBGS() << "BindID: " << BindID << "\n");
     }
   }
-
+  
+  LLVM_DEBUG(DBGS() << "pre Ctor check"
+                    << "\n");
   if (!Ctor)
     return false;
+  
+  LLVM_DEBUG(DBGS() << "post Ctor check"
+                    << "\n");
 
   // Merge the start and end infos.
   Diagnostics::Context Ctx(Diagnostics::Context::ConstructMatcher, Error,
                            NameToken.Text, NameToken.Range);
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
+
+  LLVM_DEBUG(DBGS() << "pre varianMatcher"
+                    << "\n");
   VariantMatcher Result = S->actOnMatcherExpression(
       *Ctor, MatcherRange, extractFunction, functionName, BindID, Args, Error);
 
+  LLVM_DEBUG(DBGS() << "post varianMatcher"
+                    << "\n");
   if (Result.isNull()) return false;
 
   *Value = Result;
@@ -391,6 +405,8 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
 
 // Parse an <Expresssion>
 bool Parser::parseExpressionImpl(VariantValue *Value) {
+  LLVM_DEBUG(DBGS() << "Where does this fail?"
+                      << "\n");
   switch (Tokenizer->nextTokenKind()) {
   case TokenInfo::TK_Literal:
 
@@ -431,13 +447,16 @@ bool Parser::parseExpressionImpl(VariantValue *Value) {
 }
 
 Parser::Parser(CodeTokenizer *Tokenizer, Sema *S, Diagnostics *Error)
-    : Tokenizer(Tokenizer), S(S), Error(Error) {}
+    : Tokenizer(Tokenizer), S(S), Error(Error) {
+      LLVM_DEBUG(DBGS() << "initializing Parser"
+                      << "\n");
+    }
 class RegistrySema : public Parser::Sema {
 public:
   virtual ~RegistrySema(){};
   std::optional<MatcherCtor> lookupMatcherCtor(StringRef MatcherName,
                                                const SourceRange &NameRange,
-                                               Diagnostics *Error) {
+                                               Diagnostics *Error) override {
     return Registry::lookupMatcherCtor(MatcherName, NameRange, Error);
   }
   // TODO: IMPORTANT
@@ -449,6 +468,8 @@ public:
                                      ArrayRef<ParserValue> Args,
                                      Diagnostics *Error) override {
     if (BindID.empty()) {
+      LLVM_DEBUG(DBGS() << "pre constructMatcherWrapper"
+                    << "\n");
       return Registry::constructMatcherWrapper(Ctor, NameRange, ExtractFunction,
                                                FunctionName, Args, Error);
     } else {
@@ -467,10 +488,18 @@ bool Parser::parseExpression(StringRef Code, VariantValue *Value,
 bool Parser::parseExpression(StringRef Code, Sema *S, VariantValue *Value,
                              Diagnostics *Error) {
   CodeTokenizer Tokenizer(Code, Error);
-  if (!Parser(&Tokenizer, S, Error).parseExpressionImpl(Value)) return false;
+  LLVM_DEBUG(DBGS() << "parseExpression Function"
+                      << "\n");
+  if (!Parser(&Tokenizer, S, Error).parseExpressionImpl(Value)) { 
+    LLVM_DEBUG(DBGS() << "parseExpressionImpl failed"
+                      << "\n");
+    return false;
+  };
   if (Tokenizer.peekNextToken().Kind != TokenInfo::TK_Eof) {
     Error->addError(Tokenizer.peekNextToken().Range,
                     Error->ET_ParserTrailingCode);
+    LLVM_DEBUG(DBGS() << "parsing failed :("
+                      << "\n");
     return false;
   }
   return true;
@@ -483,18 +512,27 @@ std::optional<DynMatcher> Parser::parseMatcherExpression(StringRef Code, Diagnos
 
 std::optional<DynMatcher> Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
                                            Diagnostics *Error) {
+  LLVM_DEBUG(DBGS() << "parseMatcherExpression function"
+                      << "\n");
   VariantValue Value;
   if (!parseExpression(Code, S, &Value, Error)) {
     return std::nullopt;
   }
+  LLVM_DEBUG(DBGS() << "Parse expression did not fail"
+                      << "\n");
   if (!Value.isMatcher()) {
     Error->addError(SourceRange(), Error->ET_ParserNotAMatcher);
     return std::nullopt;
   }
-  
+  LLVM_DEBUG(DBGS() << "Going to do value.getMatcher() "
+                      << "\n");
   std::optional<DynMatcher> Result =
       Value.getMatcher().getSingleMatcher();
+  LLVM_DEBUG(DBGS() << "here's the result " << Result.value().getFunctionName()
+                      << "\n");
   if (!Result.has_value()) {
+    LLVM_DEBUG(DBGS() << "Result has No value???"
+                      << "\n");
     // TODO: Fix
     // Error->addError(SourceRange(), Error->ET_ParserOverloadedType)
     //     << Value.getTypeAsString();
