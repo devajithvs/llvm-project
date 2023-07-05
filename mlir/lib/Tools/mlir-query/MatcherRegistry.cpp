@@ -52,6 +52,7 @@ void RegistryMaps::registerMatcher(StringRef MatcherName,
                                    MatcherDescriptor *Callback) {
   assert(Constructors.find(MatcherName) == Constructors.end());
   Constructors[MatcherName] = Callback;
+  llvm::errs() << MatcherName << ": callback(" << Callback << ")\n";
 }
 
 // Generate a registry map with all the known matchers.
@@ -69,18 +70,18 @@ RegistryMaps::RegistryMaps() {
   };
 
   // Register matchers using the template function
-  // registerOpMatcher("allOf", extramatcher::allOf);
-  // registerOpMatcher("anyOf", extramatcher::anyOf);
-  // registerOpMatcher("hasArgument", extramatcher::hasArgument);
-  // registerOpMatcher("definedBy", extramatcher::definedBy);
-  // registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
-  // registerOpMatcher("getAllDefinitions", extramatcher::getAllDefinitions);
-  // registerOpMatcher("uses", extramatcher::uses);
-  // registerOpMatcher("getUses", extramatcher::getUses);
-  // registerOpMatcher("getAllUses", extramatcher::getAllUses);
-  // registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
-  // registerOpMatcher("hasOpAttrName", static_cast<attrFnType *>(m_Attr));
-  // registerOpMatcher("hasOpName", static_cast<opFnType *>(m_Op));
+  registerOpMatcher("allOf", extramatcher::allOf);
+  registerOpMatcher("anyOf", extramatcher::anyOf);
+  registerOpMatcher("hasArgument", extramatcher::hasArgument);
+  registerOpMatcher("definedBy", extramatcher::definedBy);
+  registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
+  registerOpMatcher("getAllDefinitions", extramatcher::getAllDefinitions);
+  registerOpMatcher("uses", extramatcher::uses);
+  registerOpMatcher("getUses", extramatcher::getUses);
+  registerOpMatcher("getAllUses", extramatcher::getAllUses);
+  registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
+  registerOpMatcher("hasOpAttrName", static_cast<attrFnType *>(m_Attr));
+  registerOpMatcher("hasOpName", static_cast<opFnType *>(m_Op));
   registerOpMatcher("m_PosZeroFloat", m_PosZeroFloat);
   registerOpMatcher("m_NegZeroFloat", m_NegZeroFloat);
   registerOpMatcher("m_AnyZeroFloat", m_AnyZeroFloat);
@@ -96,7 +97,8 @@ RegistryMaps::~RegistryMaps() {
   for (ConstructorMap::iterator it = Constructors.begin(),
                                 end = Constructors.end();
        it != end; ++it) {
-    delete it->second;
+        // TODO
+    // delete it->second;
   }
 }
 
@@ -107,13 +109,15 @@ static llvm::ManagedStatic<RegistryMaps> RegistryData;
 std::optional<MatcherCtor>
 Registry::lookupMatcherCtor(StringRef MatcherName, const SourceRange &NameRange,
                             Diagnostics *Error) {
+  llvm::errs() << "registry lookupMatcherCtor" << "\n";
   ConstructorMap::const_iterator it =
       RegistryData->constructors().find(MatcherName);
+  llvm::errs() << "registry lookupMatcherCtor found" << "\n";
   if (it == RegistryData->constructors().end()) {
     Error->addError(NameRange, Error->ET_RegistryMatcherNotFound) << MatcherName;
     return std::optional<MatcherCtor>();
   }
-
+  llvm::errs() << "registry lookupMatcherCtor: " << it->first() << ": " << (int*)it->second << "\n";
   return it->second;
 }
 
@@ -122,6 +126,7 @@ VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
                                        const SourceRange &NameRange,
                                        ArrayRef<ParserValue> Args,
                                        Diagnostics *Error) {
+  llvm::errs() << "Ctor->create()"  << "\n";
   return Ctor->create(NameRange, Args, Error);
 }
 
@@ -129,11 +134,19 @@ VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
 VariantMatcher Registry::constructMatcherWrapper(
     MatcherCtor Ctor, const SourceRange &NameRange, bool ExtractFunction,
     StringRef FunctionName, ArrayRef<ParserValue> Args, Diagnostics *Error) {
-
+  
+  LLVM_DEBUG(DBGS() << "pre constructMatcher"
+                    << "\n");
   VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
+  LLVM_DEBUG(DBGS() << "post constructMatcher"
+                    << "\n");
   if (Out.isNull()) return Out;
   
+  LLVM_DEBUG(DBGS() << "pre getSingleMatcher"
+                    << "\n");
   std::optional<DynMatcher> Result = Out.getSingleMatcher();
+  LLVM_DEBUG(DBGS() << "post getSingleMatcher"
+                    << "\n");
   if (Result.has_value()) {
     Result->setExtract(ExtractFunction);
     Result->setFunctionName(FunctionName);

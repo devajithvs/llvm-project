@@ -20,7 +20,6 @@
 
 #include "MatcherVariantValue.h"
 #include "MatcherDiagnostics.h"
-#include "MatchersInternal.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
 
@@ -133,11 +132,15 @@ public:
   ///   compile-time matcher expressions would use to create the matcher.
   FixedArgCountMatcherDescriptor(MarshallerType Marshaller, void (*Func)(),
                                  StringRef MatcherName)
-      : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
+      : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {
+        llvm::errs() << "MatcherDescriptor: " << (int*)this << ":func:" << (int*)Func
+                    << "\n";
+      }
 
   VariantMatcher create(const SourceRange &NameRange,
                   ArrayRef<ParserValue> Args,
                   Diagnostics *Error) const override {
+    llvm::errs() << "Marshaller: " << (int*) Marshaller << ":func:" << (int*)Func << "\n";
     return Marshaller(Func, MatcherName, NameRange, Args, Error);
   }
 
@@ -179,7 +182,9 @@ private:
 template <class PolyMatcher>
 static void mergePolyMatchers(const PolyMatcher &Poly,
                               std::vector<DynMatcher> &Out) {
-  Out.push_back(DynMatcher(new SingleMatcher<PolyMatcher>(Poly)));
+  
+  Out.push_back(DynMatcher(Poly));
+  llvm::errs() << "recursice merge PolyMatcher begin" << "\n";
   mergePolyMatchers(Poly, Out);
 }
 
@@ -190,14 +195,20 @@ static void mergePolyMatchers(const PolyMatcher &Poly,
 // For the latter, we instantiate all the possible Matcher<T> of the poly
 // matcher.
 static VariantMatcher outvalueToVariantMatcher(const DynMatcher &Matcher) {
+    llvm::errs() << "outvalueToVariantMatcher" << "\n";
+
   return VariantMatcher::SingleMatcher(Matcher);
 }
 
 template <typename T>
 static VariantMatcher outvalueToVariantMatcher(const T &PolyMatcher) {
-  std::vector<DynMatcher> Matchers;
-  mergePolyMatchers(PolyMatcher, Matchers);
+  // TODO: Refractor
+    llvm::errs() << "outvalueToVariantMatcher PolyMatcher" << "\n";
+  std::vector<DynMatcher> Matchers = {DynMatcher(PolyMatcher)};
+    llvm::errs() << "pre merge PolyMatcher" << "\n";
+    llvm::errs() << "post merge PolyMatcher" << "\n";
   VariantMatcher Out = VariantMatcher::PolymorphicMatcher(Matchers);
+    llvm::errs() << "post PolymorphicMatcher" << "\n";
   return Out;
 }
 
@@ -232,6 +243,7 @@ static VariantMatcher matcherMarshall1(void (*Func)(), StringRef MatcherName,
         << MatcherName << 1;
     return VariantMatcher();
   }
+    llvm::errs() << "Failing here: " << "\n";
   return outvalueToVariantMatcher(reinterpret_cast<FuncType>(Func)(
       ArgTypeTraits<ArgType1>::get(Args[0].Value)));
 }
@@ -339,13 +351,13 @@ private:
 /// \brief Variadic operator marshaller function.
 class VariadicOperatorMatcherDescriptor : public MatcherDescriptor {
 public:
-  typedef VariadicOperatorFunction VarFunc;
+  using VarOp = DynMatcher::VariadicOperator;
   VariadicOperatorMatcherDescriptor(unsigned MinCount, unsigned MaxCount,
-                                    VarFunc Func, StringRef MatcherName)
-      : MinCount(MinCount), MaxCount(MaxCount), Func(Func),
+                                    VarOp varOp, StringRef MatcherName)
+      : MinCount(MinCount), MaxCount(MaxCount), varOp(varOp),
         MatcherName(MatcherName) {}
 
-  virtual VariantMatcher create(const SourceRange &NameRange,
+  VariantMatcher create(const SourceRange &NameRange,
                                 ArrayRef<ParserValue> Args,
                                 Diagnostics *Error) const override {
     if (Args.size() < MinCount || MaxCount < Args.size()) {
@@ -368,12 +380,12 @@ public:
       }
       InnerArgs.push_back(Value.getMatcher());
     }
-    return VariantMatcher::VariadicOperatorMatcher(Func, InnerArgs);
+    return VariantMatcher::VariadicOperatorMatcher(varOp, std::move(InnerArgs));
   }
 private:
   const unsigned MinCount;
   const unsigned MaxCount;
-  const VarFunc Func;
+  const VarOp varOp;
   const StringRef MatcherName;
 };
 
@@ -383,6 +395,9 @@ private:
 // 0-arg overload
 template <typename ReturnType>
 auto makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
+  LLVM_DEBUG(DBGS() << "pre matcherMarshall0"
+                    << "\n");
+  llvm::errs() << "matcherMarshall0: " <<  ":func:" << (int*)Func << "\n";
   return new FixedArgCountMatcherDescriptor(matcherMarshall0<ReturnType>, reinterpret_cast<void (*)()>(Func), MatcherName);
 }
 
@@ -390,6 +405,9 @@ auto makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
 template <typename ReturnType, typename ArgType1>
 auto makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                               StringRef MatcherName) {
+LLVM_DEBUG(DBGS() << "pre matcherMarshall1"
+                    << "\n");
+  llvm::errs() << "matcherMarshall1: " <<  ":func:" << (int*)Func << "\n";
   return new FixedArgCountMatcherDescriptor(matcherMarshall1<ReturnType, ArgType1>, reinterpret_cast<void (*)()>(Func), MatcherName);
 }
 
@@ -397,19 +415,23 @@ auto makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
 template <typename ReturnType, typename ArgType1, typename ArgType2>
 auto makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
                               StringRef MatcherName) {
-  return new FixedArgCountMatcherDescriptor(matcherMarshall1<ReturnType, ArgType1, ArgType2>, reinterpret_cast<void (*)()>(Func), MatcherName);
+                                LLVM_DEBUG(DBGS() << "pre matcherMarshall2"
+                    << "\n");
+  llvm::errs() << "matcherMarshall2: " <<  ":func:" << (int*)Func << "\n";
+  return new FixedArgCountMatcherDescriptor(matcherMarshall2<ReturnType, ArgType1, ArgType2>, reinterpret_cast<void (*)()>(Func), MatcherName);
 }
 
 // Variadic overload.
 template <typename ResultT, typename ArgT, ResultT (*Func)(ArrayRef<const ArgT *>)>
 auto makeMatcherAutoMarshall(VariadicFunction<ResultT, ArgT, Func> VarFunc, StringRef MatcherName) {
+  llvm::errs() << "FreeFuncMatcherDescriptor: " <<  ":func:" << (int*)Func << "\n";
   return new FreeFuncMatcherDescriptor(&variadicMatcherDescriptor<ResultT, ArgT, Func>, MatcherName);
 }
 
 // Variadic operator overload.
 template <unsigned MinCount, unsigned MaxCount>
 auto makeMatcherAutoMarshall(VariadicOperatorMatcherFunc<MinCount, MaxCount> Func, StringRef MatcherName) {
-  return new VariadicOperatorMatcherDescriptor(MinCount, MaxCount, Func.Func,
+  return new VariadicOperatorMatcherDescriptor(MinCount, MaxCount, Func.Op,
                                                MatcherName);
 }
 
