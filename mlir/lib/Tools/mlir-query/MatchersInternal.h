@@ -45,14 +45,18 @@ public:
   virtual bool match(Operation *op) = 0;
 };
 
-
+// TODO: Rename singleMatcher to MatcherFnImpl
 // SingleMatcher takes a matcher function object and implements
 // MatcherInterface.
 template <typename MatcherFn>
 class SingleMatcher : public MatcherInterface {
 public:
-  SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
-  bool match(Operation *op) override { return matcherFn.match(op); }
+  SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {
+    llvm::errs() << "Setting matcher function: " << (int*)&matcherFn << ":impl: " << (int*) this << "\n";
+  }
+  bool match(Operation *op) override { 
+    llvm::errs() << "singleMatcher working?\n";
+    return matcherFn.match(op); }
 
 private:
   MatcherFn matcherFn;
@@ -64,13 +68,11 @@ class DynMatcher {
 public:
   // Takes ownership of the provided implementation pointer.
   DynMatcher(MatcherInterface *Implementation)
-      : Implementation(Implementation), ExtractFunction(false) {}
-  
-    // MatcherInterface.
-  template <typename MatcherFn>
-  DynMatcher(MatcherFn &matcherFn)
-      : Implementation( new SingleMatcher<MatcherFn>(matcherFn)), ExtractFunction(false) {}
-  
+      : Implementation(Implementation), ExtractFunction(false) {
+        llvm::errs() << "Implementation init: " << (int*)Implementation << "\n";
+
+      }
+
     /// Construct from a variadic function.
   enum VariadicOperator {
     /// Matches nodes for which all provided matchers match.
@@ -96,9 +98,18 @@ public:
   };
 
   static DynMatcher constructVariadic(VariadicOperator Op, std::vector<DynMatcher> InnerMatchers);
+  
+  template <typename MatcherFn>
+  static DynMatcher *constructDynMatcherFromMatcherFn(MatcherFn &matcherFn) {
+    auto impl = new SingleMatcher<MatcherFn>(matcherFn);
+    llvm::errs() << "Implementation static: " << (int*)impl << "\n";
+
+    return new DynMatcher(impl);
+  };
 
   bool match(Operation *op) const { 
-    llvm::errs() << "Is this even working?\n";
+    llvm::errs() << "DynMatcher match working\n";
+    llvm::errs() << "Implementation match: " << (int*)Implementation << "\n";
     return Implementation->match(op); 
   }
 
@@ -111,7 +122,7 @@ public:
   StringRef getFunctionName() const { return FunctionName; };
 
 private:
-  llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
+  MatcherInterface *Implementation;
   bool ExtractFunction;
   StringRef FunctionName;
 };
@@ -294,14 +305,13 @@ private:
 class MatchFinder {
 public:
   // Returns all operations that match the given matcher.
-  std::vector<Operation *> getMatches(Operation *root,
-                                      const DynMatcher *matcher) {
+  std::vector<Operation *> getMatches(Operation *root, DynMatcher matcher) {
     std::vector<Operation *> matches;
     llvm::errs() << "pre walk\n";
-    matcher->match(root);
+    matcher.match(root);
 
     root->walk([&](Operation *subOp) {
-      if (matcher->match(subOp))
+      if (matcher.match(subOp))
         matches.push_back(subOp);
     });
     llvm::errs() << "post walk\n";

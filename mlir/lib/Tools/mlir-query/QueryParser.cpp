@@ -179,7 +179,7 @@ QueryRef QueryParser::doParse() {
     }
     llvm::errs() << "pre MatchQuery\n";
 
-    return new MatchQuery(&matcher.value());
+    return new MatchQuery(matcher.value());
   }
 
   case PQK_Invalid:
