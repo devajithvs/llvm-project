@@ -22,7 +22,7 @@ VariantMatcher::Payload::~Payload() {}
 
 class VariantMatcher::SinglePayload : public VariantMatcher::Payload {
 public:
-  SinglePayload(const DynMatcher &Matcher) : Matcher(Matcher) {}
+  SinglePayload(DynMatcher Matcher) : Matcher(Matcher) {}
 
   std::optional<DynMatcher> getSingleMatcher() const override {
     return Matcher;
@@ -38,7 +38,7 @@ public:
   }
 
 private:
-  const DynMatcher Matcher;
+  DynMatcher Matcher;
 };
 
 class VariantMatcher::PolymorphicPayload : public VariantMatcher::Payload {
@@ -99,7 +99,7 @@ private:
 
 VariantMatcher::VariantMatcher() {}
 
-VariantMatcher VariantMatcher::SingleMatcher(const DynMatcher &Matcher) {
+VariantMatcher VariantMatcher::SingleMatcher(DynMatcher Matcher) {
   return VariantMatcher(new SinglePayload(Matcher));
 }
 

@@ -512,27 +512,27 @@ std::optional<DynMatcher> Parser::parseMatcherExpression(StringRef Code, Diagnos
 
 std::optional<DynMatcher> Parser::parseMatcherExpression(StringRef Code, Parser::Sema *S,
                                            Diagnostics *Error) {
-  LLVM_DEBUG(DBGS() << "parseMatcherExpression function"
-                      << "\n");
+  llvm::errs() << "parseMatcherExpression function"
+                      << "\n";
   VariantValue Value;
   if (!parseExpression(Code, S, &Value, Error)) {
     return std::nullopt;
   }
-  LLVM_DEBUG(DBGS() << "Parse expression did not fail"
-                      << "\n");
+  llvm::errs() << "Parse expression did not fail"
+                      << "\n";
   if (!Value.isMatcher()) {
     Error->addError(SourceRange(), Error->ET_ParserNotAMatcher);
     return std::nullopt;
   }
-  LLVM_DEBUG(DBGS() << "Going to do value.getMatcher() "
-                      << "\n");
+  llvm::errs() << "Going to do value.getMatcher() "
+                      << "\n";
   std::optional<DynMatcher> Result =
       Value.getMatcher().getSingleMatcher();
-  LLVM_DEBUG(DBGS() << "here's the result " << Result.value().getFunctionName()
-                      << "\n");
+  llvm::errs() << "here's the result " << Result.value().getFunctionName()
+                      << "\n";
   if (!Result.has_value()) {
-    LLVM_DEBUG(DBGS() << "Result has No value???"
-                      << "\n");
+    llvm::errs() << "Result has No value???"
+                      << "\n";
     // TODO: Fix
     // Error->addError(SourceRange(), Error->ET_ParserOverloadedType)
     //     << Value.getTypeAsString();

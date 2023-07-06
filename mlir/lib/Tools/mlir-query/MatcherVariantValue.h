@@ -43,8 +43,8 @@ class VariantMatcher {
   class MatcherOps {
   public:
     virtual ~MatcherOps();
-    virtual bool canConstructFrom(const DynMatcher &Matcher) const = 0;
-    virtual void constructFrom(const DynMatcher &Matcher) = 0;
+    virtual bool canConstructFrom(DynMatcher Matcher) const = 0;
+    virtual void constructFrom(DynMatcher Matcher) = 0;
     // TODO: Rename Func
     virtual void constructVariadicOperator(DynMatcher::VariadicOperator Func, ArrayRef<VariantMatcher> InnerMatchers) = 0;
   };
@@ -65,7 +65,7 @@ public:
   VariantMatcher();
 
   /// \brief Clones the provided matcher.
-  static VariantMatcher SingleMatcher(const DynMatcher &Matcher);
+  static VariantMatcher SingleMatcher(DynMatcher Matcher);
 
   /// \brief Clones the provided matchers.
   ///
@@ -117,11 +117,11 @@ private:
   class TypedMatcherOps : public MatcherOps {
   public:
     // TODO: Cleanup
-    bool canConstructFrom(const DynMatcher &Matcher) const override {
+    bool canConstructFrom(DynMatcher Matcher) const override {
       return true;
     }
 
-    void constructFrom(const DynMatcher& Matcher) override {
+    void constructFrom(DynMatcher Matcher) override {
       Out.reset(&Matcher);
     }
     // TODO: Rename Func
@@ -131,10 +131,10 @@ private:
     }
 
     bool hasMatcher() const { return Out.get() != nullptr; }
-    const DynMatcher &matcher() const { return *Out; }
+    DynMatcher &matcher() const { return *Out; }
 
   private:
-    std::shared_ptr<const DynMatcher> Out;
+    std::shared_ptr<DynMatcher> Out;
   };
 
   llvm::IntrusiveRefCntPtr<const Payload> Value;

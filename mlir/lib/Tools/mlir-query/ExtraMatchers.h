@@ -38,32 +38,6 @@ namespace extramatcher {
 
 namespace detail {
 
-// AllOf takes a vector of DynMatchers and returns true if all the DynMatchers
-// match the given operation.
-struct AllOfMatcher {
-  AllOfMatcher(std::vector<matcher::DynMatcher> matchers)
-      : matchers(matchers) {}
-  bool match(Operation *op) const {
-    return llvm::all_of(matchers, [&](const matcher::DynMatcher &matcher) {
-      return matcher.match(op);
-    });
-  }
-  std::vector<matcher::DynMatcher> matchers;
-};
-
-// AnyOf takes a vector of DynMatchers and returns true if any of the
-// DynMatchers match the given operation.
-struct AnyOfMatcher {
-  AnyOfMatcher(std::vector<matcher::DynMatcher> matchers)
-      : matchers(matchers) {}
-  bool match(Operation *op) const {
-    return llvm::any_of(matchers, [&](const matcher::DynMatcher &matcher) {
-      return matcher.match(op);
-    });
-  }
-  std::vector<matcher::DynMatcher> matchers;
-};
-
 // ArgumentMatcher matches the operand of an operation at a specific index.
 struct ArgumentMatcher {
   ArgumentMatcher(matcher::DynMatcher innerMatcher, unsigned index)

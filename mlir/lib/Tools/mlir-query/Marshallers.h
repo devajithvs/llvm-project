@@ -194,7 +194,7 @@ static void mergePolyMatchers(const PolyMatcher &Poly,
 // polymorphic matcher. For the former, we just construct the VariantMatcher.
 // For the latter, we instantiate all the possible Matcher<T> of the poly
 // matcher.
-static VariantMatcher outvalueToVariantMatcher(const DynMatcher &Matcher) {
+static VariantMatcher outvalueToVariantMatcher(DynMatcher Matcher) {
     llvm::errs() << "outvalueToVariantMatcher" << "\n";
 
   return VariantMatcher::SingleMatcher(Matcher);
@@ -217,13 +217,15 @@ template <typename ReturnType>
 static VariantMatcher matcherMarshall0(void (*Func)(), StringRef MatcherName,
                              const SourceRange &NameRange,
                              ArrayRef<ParserValue> Args, Diagnostics *Error) {
-  typedef ReturnType (*FuncType)();
+  using FuncType = ReturnType (*)();
   if (Args.size() != 0) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
         << 0 << Args.size();
     return VariantMatcher();
   }
-  return outvalueToVariantMatcher(reinterpret_cast<FuncType>(Func)());
+  ReturnType fnPointer = reinterpret_cast<FuncType>(Func)();
+  auto implementation = new SingleMatcher<ReturnType>(fnPointer);
+  return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
 // 1-arg marshaller function.
@@ -231,7 +233,7 @@ template <typename ReturnType, typename ArgType1>
 static VariantMatcher matcherMarshall1(void (*Func)(), StringRef MatcherName,
                              const SourceRange &NameRange,
                              ArrayRef<ParserValue> Args, Diagnostics *Error) {
-  typedef ReturnType (*FuncType)(ArgType1);
+  using FuncType = ReturnType (*)(ArgType1);
   // TODO: Extract this into a separate function.
   if (Args.size() != 1) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
@@ -243,9 +245,9 @@ static VariantMatcher matcherMarshall1(void (*Func)(), StringRef MatcherName,
         << MatcherName << 1;
     return VariantMatcher();
   }
-    llvm::errs() << "Failing here: " << "\n";
-  return outvalueToVariantMatcher(reinterpret_cast<FuncType>(Func)(
-      ArgTypeTraits<ArgType1>::get(Args[0].Value)));
+  ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(ArgTypeTraits<ArgType1>::get(Args[0].Value));
+  auto implementation = new SingleMatcher<ReturnType>(fnPointer);
+  return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
 /// \brief 2-arg marshaller function.
@@ -254,7 +256,7 @@ static VariantMatcher matcherMarshall2(void (*Func)(), StringRef MatcherName,
                                        const SourceRange &NameRange,
                                        ArrayRef<ParserValue> Args,
                                        Diagnostics *Error) {
-  typedef ReturnType (*FuncType)(ArgType1, ArgType2);
+  using FuncType = ReturnType (*)(ArgType1, ArgType2);
   if (Args.size() != 2) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
         << 1 << Args.size();
@@ -270,9 +272,11 @@ static VariantMatcher matcherMarshall2(void (*Func)(), StringRef MatcherName,
         << MatcherName << 1;
     return VariantMatcher();
   }
-  return outvalueToVariantMatcher(reinterpret_cast<FuncType>(Func)(
+  ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
       ArgTypeTraits<ArgType1>::get(Args[0].Value),
-      ArgTypeTraits<ArgType2>::get(Args[1].Value)));
+      ArgTypeTraits<ArgType2>::get(Args[1].Value));
+  auto implementation = new SingleMatcher<ReturnType>(fnPointer);
+  return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
 /// \brief Variadic marshaller function.
@@ -299,6 +303,8 @@ variadicMatcherDescriptor(StringRef MatcherName, const SourceRange &NameRange,
 
   VariantMatcher Out;
   if (!HasError) {
+    llvm::errs() << "Culprit here: " << "\n";
+
     Out = outvalueToVariantMatcher(
         Func(ArrayRef<const ArgT *>(InnerArgs, Args.size())));
   }
