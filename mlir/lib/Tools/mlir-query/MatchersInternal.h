@@ -62,6 +62,32 @@ private:
   MatcherFn matcherFn;
 };
 
+class DynMatcher;
+
+// TODO: Use a polymorphic matcher instead for this usecase
+// VariadicMatcher takes a vector of Matchers and returns true if any Matchers
+// match the given operation.
+using VariadicOperatorFunction = bool (*)(
+    Operation *op,
+    ArrayRef<DynMatcher> InnerMatchers);
+
+template <VariadicOperatorFunction Func>
+class VariadicMatcher : public MatcherInterface {
+public:
+  VariadicMatcher(std::vector<DynMatcher> matchers) : matchers(matchers) {}
+
+  bool match(Operation *op) override {
+    return Func(op, matchers);
+  }
+
+private:
+  std::vector<DynMatcher> matchers;
+};
+
+static bool AllOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers);
+static bool EachOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers);
+static bool AnyOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers);
+
 // Matcher wraps a MatcherInterface implementation and provides a match()
 // method that redirects calls to the underlying implementation.
 class DynMatcher {
@@ -97,7 +123,17 @@ public:
     VO_UnaryNot
   };
 
-  static DynMatcher constructVariadic(VariadicOperator Op, std::vector<DynMatcher> InnerMatchers);
+  static DynMatcher *constructVariadic(VariadicOperator Op, std::vector<DynMatcher> InnerMatchers) {
+    switch (Op) {
+    case VO_AllOf:
+      return new DynMatcher(new VariadicMatcher<AllOfVariadicOperator>(std::move(InnerMatchers)));
+    case VO_AnyOf:
+      return new DynMatcher(new VariadicMatcher<AnyOfVariadicOperator>(std::move(InnerMatchers)));
+    case VO_EachOf:
+      return new DynMatcher(new VariadicMatcher<EachOfVariadicOperator>(std::move(InnerMatchers)));
+    }
+    llvm_unreachable("Invalid Op value.");
+  };
   
   template <typename MatcherFn>
   static DynMatcher *constructDynMatcherFromMatcherFn(MatcherFn &matcherFn) {
@@ -127,7 +163,6 @@ private:
   StringRef FunctionName;
 };
 
-
 /// VariadicOperatorMatcher related types.
 /// @{
 
@@ -143,12 +178,12 @@ public:
       : VariadicOp(VariadicOp), Params(std::forward<Ps>(Params)...) {}
 
   operator DynMatcher() const & {
-    return DynMatcher::constructVariadic(
+    return &DynMatcher::constructVariadic(
                VariadicOp, getMatchers(std::index_sequence_for<Ps...>()));
   }
 
   operator DynMatcher() && {
-    return DynMatcher::constructVariadic(
+    return &DynMatcher::constructVariadic(
                VariadicOp, getMatchers(std::index_sequence_for<Ps...>()));
   }
 
@@ -213,8 +248,40 @@ private:
   }
 };
 
-typedef bool (*VariadicOperatorFunction)(Operation *op, ArrayRef<DynMatcher> InnerMatchers);
+static bool AllOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
+  // allOf leads to one matcher for each alternative in the first
+  // matcher combined with each alternative in the second matcher.
+  // Thus, we can reuse the same Builder.
+  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
+    if (!InnerMatchers[i].match(op))
+      return false;
+  }
+  return true;
+}
 
+static bool EachOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
+  bool Matched = false;
+  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
+    if (InnerMatchers[i].match(op)) {
+      Matched = true;
+      // TODO
+      // Add match to result
+      // Result.addMatch
+    }
+  }
+  // Set builder to result
+  return Matched;
+}
+
+static bool AnyOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
+  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
+    if (InnerMatchers[i].match(op)) {
+      // TODO: Add match to results. 
+      return true;
+    }
+  }
+  return false;
+}
 
 // \brief \c MatcherInterface<T> implementation for an variadic operator.
 // class VariadicOperatorMatcherInterface : public MatcherInterface {
@@ -230,57 +297,6 @@ typedef bool (*VariadicOperatorFunction)(Operation *op, ArrayRef<DynMatcher> Inn
 //   const std::vector<DynMatcher> InnerMatchers;
 // };
 
-  
-// TODO: Use a polymorphic matcher instead for this usecase
-// VariadicMatcher takes a vector of Matchers and returns true if any Matchers
-// match the given operation.
-template <VariadicOperatorFunction Func>
-class VariadicMatcher : public MatcherInterface {
-public:
-  VariadicMatcher(std::vector<DynMatcher> matchers) : matchers(matchers) {}
-
-  bool match(Operation *op) override {
-    return Func(op, matchers);
-  }
-
-private:
-  std::vector<DynMatcher> matchers;
-};
-
-// static bool AllOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
-//   // allOf leads to one matcher for each alternative in the first
-//   // matcher combined with each alternative in the second matcher.
-//   // Thus, we can reuse the same Builder.
-//   for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
-//     if (!InnerMatchers[i].match(op))
-//       return false;
-//   }
-//   return true;
-// }
-
-// static bool EachOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
-//   bool Matched = false;
-//   for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
-//     if (InnerMatchers[i].match(op)) {
-//       Matched = true;
-//       // TODO
-//       // Add match to result
-//       // Result.addMatch
-//     }
-//   }
-//   // Set builder to result
-//   return Matched;
-// }
-
-// static bool AnyOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
-//   for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
-//     if (InnerMatchers[i].match(op)) {
-//       // TODO: Add match to results. 
-//       return true;
-//     }
-//   }
-//   return false;
-// }
 
 // /// \brief Creates a DynMatcher that matches if all inner matchers match.
 // DynMatcher makeAllOfComposite(ArrayRef<DynMatcher> InnerMatchers) {

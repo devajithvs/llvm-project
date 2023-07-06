@@ -527,9 +527,7 @@ std::optional<DynMatcher> Parser::parseMatcherExpression(StringRef Code, Parser:
   llvm::errs() << "Going to do value.getMatcher() "
                       << "\n";
   std::optional<DynMatcher> Result =
-      Value.getMatcher().getSingleMatcher();
-  llvm::errs() << "here's the result " << Result.value().getFunctionName()
-                      << "\n";
+      Value.getMatcher().getDynMatcher();
   if (!Result.has_value()) {
     llvm::errs() << "Result has No value???"
                       << "\n";
@@ -537,6 +535,8 @@ std::optional<DynMatcher> Parser::parseMatcherExpression(StringRef Code, Parser:
     // Error->addError(SourceRange(), Error->ET_ParserOverloadedType)
     //     << Value.getTypeAsString();
   }
+  llvm::errs() << "here's the result " << Result.value().getFunctionName()
+                      << "\n";
   return Result;
 }
 

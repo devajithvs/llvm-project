@@ -154,8 +154,10 @@ VariantMatcher Registry::constructMatcherWrapper(
       return VariantMatcher::SingleMatcher(*Result);
     }
   }
+  llvm::errs() << "constructMatcherWrapper failed"  << "\n";
+
   Error->addError(NameRange, Error->ET_RegistryNotBindable);
-  return VariantMatcher();
+  return Out;
 }
 
 // static

@@ -56,6 +56,7 @@ class VariantMatcher {
   public:
     virtual ~Payload();
     virtual std::optional<DynMatcher> getSingleMatcher() const = 0;
+    virtual std::optional<DynMatcher> getDynMatcher() const = 0;
     virtual std::string getTypeAsString() const = 0;
     virtual void makeTypedMatcher(MatcherOps &Ops) const = 0;
   };
@@ -90,6 +91,7 @@ public:
   /// representation.
   std::optional<DynMatcher> getSingleMatcher() const;
 
+  std::optional<DynMatcher> getDynMatcher() const;
 
   /// \brief Return this matcher as a \c DynMatcher.
   ///
