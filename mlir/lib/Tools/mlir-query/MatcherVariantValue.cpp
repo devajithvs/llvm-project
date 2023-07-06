@@ -28,6 +28,10 @@ public:
     return Matcher;
   }
 
+  std::optional<DynMatcher> getDynMatcher() const override {
+    return Matcher;
+  }
+
   std::string getTypeAsString() const override {
     return "Matcher";
   }
@@ -49,6 +53,13 @@ public:
   virtual ~PolymorphicPayload() {}
 
   std::optional<DynMatcher> getSingleMatcher() const override {
+    if (Matchers.size() != 1)
+      return std::optional<DynMatcher>();
+    return Matchers[0];
+  }
+
+  // TODO: Remove poly
+  std::optional<DynMatcher> getDynMatcher() const override {
     if (Matchers.size() != 1)
       return std::optional<DynMatcher>();
     return Matchers[0];
@@ -80,7 +91,19 @@ public:
       : Func(Func), Args(Args) {}
 
   std::optional<DynMatcher> getSingleMatcher() const override {
+    llvm::errs() << "empty VariadicOpPayload" << "\n";
+
     return std::optional<DynMatcher>();
+  }
+
+  std::optional<DynMatcher> getDynMatcher() const override {
+    std::vector<DynMatcher> DynMatchers;
+    for (auto variantMatcher : Args) {
+      std::optional<DynMatcher> dynMatcher = variantMatcher.getDynMatcher();
+      DynMatchers.push_back(dynMatcher.value());
+    }
+    auto result = DynMatcher::constructVariadic(Func, DynMatchers);
+    return *result;
   }
 
   // TODO: Remove
@@ -115,7 +138,17 @@ VariantMatcher VariantMatcher::VariadicOperatorMatcher(
 }
 
 std::optional<DynMatcher> VariantMatcher::getSingleMatcher() const {
+  if (Value) llvm::errs() << "getSingleMatcher success: " << "\n";
+  if (!Value) llvm::errs() << "getSingleMatcher failed: " << "\n";
+
   return Value ? Value->getSingleMatcher() : std::optional<DynMatcher>();
+}
+
+std::optional<DynMatcher> VariantMatcher::getDynMatcher() const {
+  if (Value) llvm::errs() << "getSingleMatcher success: " << "\n";
+  if (!Value) llvm::errs() << "getSingleMatcher failed: " << "\n";
+
+  return Value ? Value->getDynMatcher() : std::optional<DynMatcher>();
 }
 
 void VariantMatcher::reset() { Value.reset(); }

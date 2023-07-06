@@ -224,7 +224,6 @@ static VariantMatcher matcherMarshall0(void (*Func)(), StringRef MatcherName,
     return VariantMatcher();
   }
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)();
-  auto implementation = new SingleMatcher<ReturnType>(fnPointer);
   return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
@@ -246,7 +245,6 @@ static VariantMatcher matcherMarshall1(void (*Func)(), StringRef MatcherName,
     return VariantMatcher();
   }
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(ArgTypeTraits<ArgType1>::get(Args[0].Value));
-  auto implementation = new SingleMatcher<ReturnType>(fnPointer);
   return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
@@ -275,7 +273,6 @@ static VariantMatcher matcherMarshall2(void (*Func)(), StringRef MatcherName,
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
       ArgTypeTraits<ArgType1>::get(Args[0].Value),
       ArgTypeTraits<ArgType2>::get(Args[1].Value));
-  auto implementation = new SingleMatcher<ReturnType>(fnPointer);
   return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
