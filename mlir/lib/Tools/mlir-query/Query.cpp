@@ -58,7 +58,6 @@ getMatches(Operation *rootOp, const matcher::DynMatcher &matcher) {
   return matchFinder.getMatches(rootOp, matcher);
 }
 
-// TODO: Only supports operation node type.
 Operation *extractFunction(std::vector<Operation *> &ops,
                            OpBuilder builder, StringRef functionName) {
   std::vector<Operation *> slice;

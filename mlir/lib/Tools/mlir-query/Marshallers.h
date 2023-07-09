@@ -57,7 +57,7 @@ struct ArgTypeTraits<DynMatcher> {
   static StringRef asString() { return "DynMatcher"; }
   static bool is(const VariantValue &Value) { return Value.isMatcher(); }
   static DynMatcher get(const VariantValue &Value) {
-    return Value.getMatcher().getTypedMatcher();
+    return *Value.getMatcher().getDynMatcher();
   }
 };
 
@@ -132,15 +132,12 @@ public:
   ///   compile-time matcher expressions would use to create the matcher.
   FixedArgCountMatcherDescriptor(MarshallerType Marshaller, void (*Func)(),
                                  StringRef MatcherName)
-      : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {
-        llvm::errs() << "MatcherDescriptor: " << (int*)this << ":func:" << (int*)Func
-                    << "\n";
-      }
+      : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName) {}
 
   VariantMatcher create(const SourceRange &NameRange,
                   ArrayRef<ParserValue> Args,
                   Diagnostics *Error) const override {
-    llvm::errs() << "Marshaller: " << (int*) Marshaller << ":func:" << (int*)Func << "\n";
+    llvm::errs() << "Marshaller: " << (int*) Marshaller << ":matcherDescriptor:" << (int*)Func << "\n";
     return Marshaller(Func, MatcherName, NameRange, Args, Error);
   }
 
@@ -244,7 +241,11 @@ static VariantMatcher matcherMarshall1(void (*Func)(), StringRef MatcherName,
         << MatcherName << 1;
     return VariantMatcher();
   }
+  llvm::errs() << "Working 1-arg marshaller function\n";
+  auto x = ArgTypeTraits<ArgType1>::get(Args[0].Value);
+  llvm::errs() << "Post args[0].value\n";
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(ArgTypeTraits<ArgType1>::get(Args[0].Value));
+  llvm::errs() << "Post cast 1-arg marshaller function\n";
   return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
@@ -398,9 +399,6 @@ private:
 // 0-arg overload
 template <typename ReturnType>
 auto makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
-  LLVM_DEBUG(DBGS() << "pre matcherMarshall0"
-                    << "\n");
-  llvm::errs() << "matcherMarshall0: " <<  ":func:" << (int*)Func << "\n";
   return new FixedArgCountMatcherDescriptor(matcherMarshall0<ReturnType>, reinterpret_cast<void (*)()>(Func), MatcherName);
 }
 
@@ -408,9 +406,6 @@ auto makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
 template <typename ReturnType, typename ArgType1>
 auto makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1),
                               StringRef MatcherName) {
-LLVM_DEBUG(DBGS() << "pre matcherMarshall1"
-                    << "\n");
-  llvm::errs() << "matcherMarshall1: " <<  ":func:" << (int*)Func << "\n";
   return new FixedArgCountMatcherDescriptor(matcherMarshall1<ReturnType, ArgType1>, reinterpret_cast<void (*)()>(Func), MatcherName);
 }
 
@@ -418,9 +413,6 @@ LLVM_DEBUG(DBGS() << "pre matcherMarshall1"
 template <typename ReturnType, typename ArgType1, typename ArgType2>
 auto makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
                               StringRef MatcherName) {
-                                LLVM_DEBUG(DBGS() << "pre matcherMarshall2"
-                    << "\n");
-  llvm::errs() << "matcherMarshall2: " <<  ":func:" << (int*)Func << "\n";
   return new FixedArgCountMatcherDescriptor(matcherMarshall2<ReturnType, ArgType1, ArgType2>, reinterpret_cast<void (*)()>(Func), MatcherName);
 }
 

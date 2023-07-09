@@ -392,8 +392,10 @@ bool Parser::parseMatcherExpressionImpl(VariantValue *Value) {
 
   LLVM_DEBUG(DBGS() << "pre varianMatcher"
                     << "\n");
+  llvm::errs() << "Act on matcher expression\n";
   VariantMatcher Result = S->actOnMatcherExpression(
       *Ctor, MatcherRange, extractFunction, functionName, BindID, Args, Error);
+  llvm::errs() << "Post Act on matcher expression\n";
 
   LLVM_DEBUG(DBGS() << "post varianMatcher"
                     << "\n");
