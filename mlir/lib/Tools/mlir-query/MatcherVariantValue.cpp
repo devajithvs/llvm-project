@@ -145,8 +145,8 @@ std::optional<DynMatcher> VariantMatcher::getSingleMatcher() const {
 }
 
 std::optional<DynMatcher> VariantMatcher::getDynMatcher() const {
-  if (Value) llvm::errs() << "getSingleMatcher success: " << "\n";
-  if (!Value) llvm::errs() << "getSingleMatcher failed: " << "\n";
+  if (Value) llvm::errs() << "getDynMatcher success: " << "\n";
+  if (!Value) llvm::errs() << "getDynMatcher failed: " << "\n";
 
   return Value ? Value->getDynMatcher() : std::optional<DynMatcher>();
 }
@@ -286,6 +286,7 @@ bool VariantValue::isMatcher() const { return Type == VT_Matcher; }
 
 const VariantMatcher &VariantValue::getMatcher() const {
   assert(isMatcher());
+  llvm::errs() << "getMatcher working\n";
   return *Value.Matcher;
 }
 

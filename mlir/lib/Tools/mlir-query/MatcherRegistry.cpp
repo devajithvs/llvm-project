@@ -52,7 +52,6 @@ void RegistryMaps::registerMatcher(StringRef MatcherName,
                                    MatcherDescriptor *Callback) {
   assert(Constructors.find(MatcherName) == Constructors.end());
   Constructors[MatcherName] = Callback;
-  llvm::errs() << MatcherName << ": callback(" << Callback << ")\n";
 }
 
 // Generate a registry map with all the known matchers.
@@ -144,6 +143,7 @@ VariantMatcher Registry::constructMatcherWrapper(
   
   LLVM_DEBUG(DBGS() << "pre getSingleMatcher"
                     << "\n");
+  llvm::errs() << "getSingleMatcher\n";
   std::optional<DynMatcher> Result = Out.getSingleMatcher();
   LLVM_DEBUG(DBGS() << "post getSingleMatcher"
                     << "\n");

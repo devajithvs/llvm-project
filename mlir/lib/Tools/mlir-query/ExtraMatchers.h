@@ -39,8 +39,9 @@ namespace extramatcher {
 namespace detail {
 
 // ArgumentMatcher matches the operand of an operation at a specific index.
+template <typename Matcher>
 struct ArgumentMatcher {
-  ArgumentMatcher(matcher::DynMatcher innerMatcher, unsigned index)
+  ArgumentMatcher(Matcher innerMatcher, unsigned index)
       : innerMatcher(innerMatcher), index(index) {}
 
   bool match(Operation *op) const {
@@ -53,15 +54,16 @@ struct ArgumentMatcher {
     return false;
   }
 
-  matcher::DynMatcher innerMatcher;
+  Matcher innerMatcher;
   unsigned index;
 };
 
 // This matcher checks if an operation is used by another operation that matches
 // the given inner matcher. It allows specifying the number of hops to follow in
 // the use-def chain, and whether the chain should be inclusive or not.
+template <typename Matcher>
 struct UsesMatcher {
-  UsesMatcher(matcher::DynMatcher innerMatcher, unsigned hops, bool inclusive)
+  UsesMatcher(Matcher innerMatcher, unsigned hops, bool inclusive)
       : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
 
   bool recursiveMatch(Operation *op, unsigned tempHops) const {
@@ -86,7 +88,7 @@ struct UsesMatcher {
     }
   }
   bool match(Operation *op) const { return recursiveMatch(op, hops); }
-  matcher::DynMatcher innerMatcher;
+  Matcher innerMatcher;
   unsigned hops;
   bool inclusive;
 };
@@ -95,13 +97,15 @@ struct UsesMatcher {
 // matches the given inner matcher. It allows specifying the number of hops to
 // follow in the def-use chain, and whether the chain should be inclusive or
 // not.
+template <typename Matcher>
 struct DefinitionsMatcher {
-  DefinitionsMatcher(matcher::DynMatcher innerMatcher, unsigned hops,
+  DefinitionsMatcher(Matcher innerMatcher, unsigned hops,
                      bool inclusive)
       : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
 
   bool recursiveMatch(Operation *op, unsigned tempHops) const {
     if (tempHops == 0) {
+
       return innerMatcher.match(op);
     }
     if (inclusive) {
@@ -116,102 +120,61 @@ struct DefinitionsMatcher {
     }
   }
 
-  bool match(Operation *op) const { return recursiveMatch(op, hops); }
-  matcher::DynMatcher innerMatcher;
+  bool match(Operation *op) const { 
+       llvm::errs() << "DefinitionsMatcher working\n";
+    
+    return recursiveMatch(op, hops); }
+  Matcher innerMatcher;
   unsigned hops;
   bool inclusive;
 };
 
 } // namespace detail
 
-// inline detail::AllOfMatcher allOf(matcher::DynMatcher args...) {
-//   std::vector<matcher::DynMatcher> matchers({args});
-//   return detail::AllOfMatcher(matchers);
-// }
-
-// inline detail::AnyOfMatcher anyOf(matcher::DynMatcher args...) {
-//   std::vector<matcher::DynMatcher> matchers({args});
-//   return detail::AnyOfMatcher(matchers);
-// }
-
-// /// Matches if any of the given matchers matches.
-// ///
-// /// Unlike \c anyOf, \c eachOf will generate a match result for each
-// /// matching submatcher.
-// ///
-// /// For example, in:
-// /// \code
-// ///   class A { int a; int b; };
-// /// \endcode
-// /// The matcher:
-// /// \code
-// ///   cxxRecordDecl(eachOf(has(fieldDecl(hasName("a")).bind("v")),
-// ///                        has(fieldDecl(hasName("b")).bind("v"))))
-// /// \endcode
-// /// will generate two results binding "v", the first of which binds
-// /// the field declaration of \c a, the second the field declaration of
-// /// \c b.
-// ///
-// /// Usable as: Any Matcher
-// extern const matcher::VariadicOperatorMatcherFunc<
-//     2, std::numeric_limits<unsigned>::max()>
-//     eachOf;
-
-// /// Matches if any of the given matchers matches.
-// ///
-// /// Usable as: Any Matcher
-// extern const matcher::VariadicOperatorMatcherFunc<
-//     2, std::numeric_limits<unsigned>::max()>
-//     anyOf;
-
-// /// Matches if all given matchers match.
-// ///
-// /// Usable as: Any Matcher
-// extern const matcher::VariadicOperatorMatcherFunc<
-//     2, std::numeric_limits<unsigned>::max()>
-//     allOf;
-
 const matcher::VariadicOperatorMatcherFunc<
-    2, std::numeric_limits<unsigned>::max()>
+    1, std::numeric_limits<unsigned>::max()>
     eachOf = {matcher::DynMatcher::VO_EachOf};
 const matcher::VariadicOperatorMatcherFunc<
-    2, std::numeric_limits<unsigned>::max()>
+    1, std::numeric_limits<unsigned>::max()>
     anyOf = {matcher::DynMatcher::VO_AnyOf};
 const matcher::VariadicOperatorMatcherFunc<
-    2, std::numeric_limits<unsigned>::max()>
+    1, std::numeric_limits<unsigned>::max()>
     allOf = {matcher::DynMatcher::VO_AllOf};
 
-inline detail::ArgumentMatcher hasArgument(matcher::DynMatcher innerMatcher,
+inline detail::ArgumentMatcher<matcher::DynMatcher> hasArgument(matcher::DynMatcher innerMatcher,
                                            unsigned argIndex) {
-  return detail::ArgumentMatcher(innerMatcher, argIndex);
+  return detail::ArgumentMatcher<matcher::DynMatcher>(innerMatcher, argIndex);
 }
 
-inline detail::UsesMatcher uses(matcher::DynMatcher innerMatcher) {
-  return detail::UsesMatcher(innerMatcher, 1, false);
+inline detail::UsesMatcher<matcher::DynMatcher> uses(matcher::DynMatcher innerMatcher) {
+  return detail::UsesMatcher<matcher::DynMatcher>(innerMatcher, 1, false);
 }
 
-inline detail::UsesMatcher getUses(matcher::DynMatcher innerMatcher,
+inline detail::UsesMatcher<matcher::DynMatcher> getUses(matcher::DynMatcher innerMatcher,
                                    unsigned hops) {
-  return detail::UsesMatcher(innerMatcher, hops, false);
+  return detail::UsesMatcher<matcher::DynMatcher>(innerMatcher, hops, false);
 }
 
-inline detail::UsesMatcher getAllUses(matcher::DynMatcher innerMatcher,
+inline detail::UsesMatcher<matcher::DynMatcher> getAllUses(matcher::DynMatcher innerMatcher,
                                       unsigned hops) {
-  return detail::UsesMatcher(innerMatcher, hops, true);
+  return detail::UsesMatcher<matcher::DynMatcher>(innerMatcher, hops, true);
 }
 
-inline detail::DefinitionsMatcher definedBy(matcher::DynMatcher innerMatcher) {
-  return detail::DefinitionsMatcher(innerMatcher, 1, false);
+inline detail::DefinitionsMatcher<matcher::DynMatcher> definedBy(matcher::DynMatcher innerMatcher) {
+  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, 1, false);
 }
 
-inline detail::DefinitionsMatcher
+inline detail::DefinitionsMatcher<matcher::DynMatcher>
 getDefinitions(matcher::DynMatcher innerMatcher, unsigned hops) {
-  return detail::DefinitionsMatcher(innerMatcher, hops, false);
+  //  m getAllDefinitions(hasOpName("test.coo"), 2)
+  llvm::errs() << "getDefinitions working\n";
+  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, hops, false);
 }
 
-inline detail::DefinitionsMatcher
+inline detail::DefinitionsMatcher<matcher::DynMatcher>
 getAllDefinitions(matcher::DynMatcher innerMatcher, unsigned hops) {
-  return detail::DefinitionsMatcher(innerMatcher, hops, true);
+  llvm::errs() << "getAllDefinitions working\n";
+  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, hops, true);
 }
 
 } // namespace extramatcher
