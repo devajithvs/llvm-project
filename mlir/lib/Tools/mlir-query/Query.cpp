@@ -48,14 +48,14 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 }
 
 // This could be done better but is not worth the variadic template trouble.
-std::vector<Operation*>
-getMatches(Operation *rootOp, const matcher::DynMatcher &matcher) {
+std::vector<Operation *> getMatches(Operation *rootOp,
+                                    const matcher::DynMatcher &matcher) {
   auto matchFinder = matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
 }
 
-Operation *extractFunction(std::vector<Operation *> &ops,
-                           OpBuilder builder, StringRef functionName) {
+Operation *extractFunction(std::vector<Operation *> &ops, OpBuilder builder,
+                           StringRef functionName) {
   std::vector<Operation *> slice;
   std::vector<Value> values;
 
@@ -63,17 +63,17 @@ Operation *extractFunction(std::vector<Operation *> &ops,
   TypeRange resultType = std::nullopt;
 
   for (auto *op : ops) {
-      slice.push_back(op);
-      if (auto returnOp = dyn_cast<func::ReturnOp>(op)) {
-        resultType = returnOp.getOperands().getTypes();
-        hasReturn = true;
-      } else {
-        // Extract all values that might potentially be needed as func
-        // arguments.
-        for (Value value : op->getOperands()) {
-          values.push_back(value);
-        }
+    slice.push_back(op);
+    if (auto returnOp = dyn_cast<func::ReturnOp>(op)) {
+      resultType = returnOp.getOperands().getTypes();
+      hasReturn = true;
+    } else {
+      // Extract all values that might potentially be needed as func
+      // arguments.
+      for (Value value : op->getOperands()) {
+        values.push_back(value);
       }
+    }
   }
 
   auto loc = builder.getUnknownLoc();
@@ -131,11 +131,11 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   } else {
     unsigned MatchCount = 0;
     for (auto *op : matches) {
-        auto opLoc = op->getLoc().cast<FileLineColLoc>();
-        OS << "\nMatch #" << ++MatchCount << ":\n\n";
-        OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
-           << opLoc.getColumn() << ": note: \"root\" binds here\n"
-           << *op << "\n";
+      auto opLoc = op->getLoc().cast<FileLineColLoc>();
+      OS << "\nMatch #" << ++MatchCount << ":\n\n";
+      OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
+         << opLoc.getColumn() << ": note: \"root\" binds here\n"
+         << *op << "\n";
     }
     OS << "\n"
        << MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");

@@ -73,9 +73,9 @@ public:
   static internal::MatcherDescriptorPtr
   buildMatcherCtor(MatcherCtor, SourceRange NameRange,
                    ArrayRef<ParserValue> Args, Diagnostics *Error);
-  
+
   static bool isBuilderMatcher(MatcherCtor Ctor);
-  
+
   // Look up a matcher in the registry by name,
   /// \return An opaque value which may be used to refer to the matcher
   /// constructor, or std::optional<MatcherCtor>() if not found.
@@ -119,14 +119,15 @@ public:
   // of the error.
   // TODO: Cleanup - Remove one of these
   static VariantMatcher constructMatcher(MatcherCtor Ctor,
-                                      SourceRange NameRange,
-                                      ArrayRef<ParserValue> Args,
-                                      Diagnostics *Error);
+                                         SourceRange NameRange,
+                                         ArrayRef<ParserValue> Args,
+                                         Diagnostics *Error);
 
-  static VariantMatcher constructMatcherWrapper(MatcherCtor Ctor, SourceRange NameRange,
+  static VariantMatcher
+  constructMatcherWrapper(MatcherCtor Ctor, SourceRange NameRange,
                           bool ExtractFunction, StringRef FunctionName,
                           ArrayRef<ParserValue> Args, Diagnostics *Error);
-  
+
   // TODO: FIX COMMENT
   /// Construct a matcher from the registry and bind it.
   ///

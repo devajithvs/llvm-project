@@ -18,8 +18,8 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 
-#include "MatcherVariantValue.h"
 #include "MatcherDiagnostics.h"
+#include "MatcherVariantValue.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
 
@@ -45,18 +45,16 @@ struct ArgTypeTraits<const T &> : public ArgTypeTraits<T> {};
 
 template <>
 struct ArgTypeTraits<StringRef> {
-  
+
   static bool hasCorrectType(const VariantValue &Value) {
     return Value.isString();
   }
-  
+
   static const StringRef &get(const VariantValue &Value) {
     return Value.getString();
   }
-  
-  static ArgKind getKind() {
-    return ArgKind(ArgKind::AK_String);
-  }
+
+  static ArgKind getKind() { return ArgKind(ArgKind::AK_String); }
 
   static std::optional<std::string> getBestGuess(const VariantValue &) {
     return std::nullopt;
@@ -66,7 +64,7 @@ struct ArgTypeTraits<StringRef> {
 template <>
 struct ArgTypeTraits<DynMatcher> {
 
-  static bool hasCorrectType(const VariantValue& Value) {
+  static bool hasCorrectType(const VariantValue &Value) {
     return Value.isMatcher();
   }
 
@@ -74,9 +72,7 @@ struct ArgTypeTraits<DynMatcher> {
     return *Value.getMatcher().getDynMatcher();
   }
 
-  static ArgKind getKind() {
-    return ArgKind(ArgKind::AK_Matcher);
-  }
+  static ArgKind getKind() { return ArgKind(ArgKind::AK_Matcher); }
 
   static std::optional<std::string> getBestGuess(const VariantValue &) {
     return std::nullopt;
@@ -90,13 +86,9 @@ struct ArgTypeTraits<bool> {
     return Value.isBoolean();
   }
 
-  static bool get(const VariantValue &Value) {
-    return Value.getBoolean();
-  }
+  static bool get(const VariantValue &Value) { return Value.getBoolean(); }
 
-  static ArgKind getKind() {
-    return ArgKind(ArgKind::AK_Boolean);
-  }
+  static ArgKind getKind() { return ArgKind(ArgKind::AK_Boolean); }
 
   static std::optional<std::string> getBestGuess(const VariantValue &) {
     return std::nullopt;
@@ -105,18 +97,14 @@ struct ArgTypeTraits<bool> {
 
 template <>
 struct ArgTypeTraits<double> {
-  
+
   static bool hasCorrectType(const VariantValue &Value) {
     return Value.isDouble();
   }
 
-  static double get(const VariantValue &Value) {
-    return Value.getDouble();
-  }
+  static double get(const VariantValue &Value) { return Value.getDouble(); }
 
-  static ArgKind getKind() {
-    return ArgKind(ArgKind::AK_Double);
-  }
+  static ArgKind getKind() { return ArgKind(ArgKind::AK_Double); }
 
   static std::optional<std::string> getBestGuess(const VariantValue &) {
     return std::nullopt;
@@ -131,9 +119,7 @@ struct ArgTypeTraits<unsigned> {
 
   static unsigned get(const VariantValue &Value) { return Value.getUnsigned(); }
 
-  static ArgKind getKind() {
-    return ArgKind(ArgKind::AK_Unsigned);
-  }
+  static ArgKind getKind() { return ArgKind(ArgKind::AK_Unsigned); }
 
   static std::optional<std::string> getBestGuess(const VariantValue &) {
     return std::nullopt;
@@ -147,8 +133,8 @@ class MatcherDescriptor {
 public:
   virtual ~MatcherDescriptor() = default;
   virtual VariantMatcher create(SourceRange NameRange,
-                          const ArrayRef<ParserValue> Args,
-                          Diagnostics *Error) const = 0;
+                                const ArrayRef<ParserValue> Args,
+                                Diagnostics *Error) const = 0;
 
   virtual bool isBuilderMatcher() const { return false; }
 
@@ -185,12 +171,13 @@ public:
   /// \param Func Matcher construct function. This is the function that
   ///   compile-time matcher expressions would use to create the matcher.
   FixedArgCountMatcherDescriptor(MarshallerType Marshaller, void (*Func)(),
-                                 StringRef MatcherName, ArrayRef<ArgKind> ArgKinds)
-      : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName), ArgKinds(ArgKinds.begin(), ArgKinds.end()) {}
+                                 StringRef MatcherName,
+                                 ArrayRef<ArgKind> ArgKinds)
+      : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName),
+        ArgKinds(ArgKinds.begin(), ArgKinds.end()) {}
 
-  VariantMatcher create(SourceRange NameRange,
-                  ArrayRef<ParserValue> Args,
-                  Diagnostics *Error) const override {
+  VariantMatcher create(SourceRange NameRange, ArrayRef<ParserValue> Args,
+                        Diagnostics *Error) const override {
     return Marshaller(Func, MatcherName, NameRange, Args, Error);
   }
 
@@ -203,7 +190,7 @@ public:
 
 private:
   const MarshallerType Marshaller;
-  void (* const Func)();
+  void (*const Func)();
   const StringRef MatcherName;
   const std::vector<ArgKind> ArgKinds;
 };
@@ -213,7 +200,7 @@ private:
 template <class PolyMatcher>
 static void mergePolyMatchers(const PolyMatcher &Poly,
                               std::vector<DynMatcher> &Out) {
-  
+
   Out.push_back(DynMatcher(Poly));
   mergePolyMatchers(Poly, Out);
 }
@@ -236,7 +223,6 @@ static VariantMatcher outvalueToVariantMatcher(const T &PolyMatcher) {
   return Out;
 }
 
-
 /// Variadic marshaller function.
 template <typename ResultT, typename ArgT,
           ResultT (*Func)(ArrayRef<const ArgT *>)>
@@ -255,11 +241,13 @@ variadicMatcherDescriptor(StringRef MatcherName, SourceRange NameRange,
     const VariantValue &Value = Arg.Value;
     if (!ArgTraits::hasCorrectType(Value)) {
       Error->addError(Arg.Range, Error->ET_RegistryWrongArgType)
-          << (i + 1) << ArgTraits::getKind().asString() << Value.getTypeAsString();
+          << (i + 1) << ArgTraits::getKind().asString()
+          << Value.getTypeAsString();
       return {};
     }
     if (!ArgTraits::hasCorrectValue(Value)) {
-      if (std::optional<std::string> BestGuess = ArgTraits::getBestGuess(Value)) {
+      if (std::optional<std::string> BestGuess =
+              ArgTraits::getBestGuess(Value)) {
         Error->addError(Arg.Range, Error->ET_RegistryUnknownEnumWithReplace)
             << i + 1 << Value.getString() << *BestGuess;
       } else if (Value.isString()) {
@@ -283,11 +271,10 @@ variadicMatcherDescriptor(StringRef MatcherName, SourceRange NameRange,
 
 /// Matcher descriptor for variadic functions.
 ///
-/// This class simply wraps a VariadicFunction with the right signature to export
-/// it as a MatcherDescriptor.
-/// This allows us to have one implementation of the interface for as many free
-/// functions as we want, reducing the number of symbols and size of the
-/// object file.
+/// This class simply wraps a VariadicFunction with the right signature to
+/// export it as a MatcherDescriptor. This allows us to have one implementation
+/// of the interface for as many free functions as we want, reducing the number
+/// of symbols and size of the object file.
 class VariadicFuncMatcherDescriptor : public MatcherDescriptor {
 public:
   using RunFunc = VariantMatcher (*)(StringRef MatcherName,
@@ -295,16 +282,14 @@ public:
                                      ArrayRef<ParserValue> Args,
                                      Diagnostics *Error);
 
-  template <typename ResultT, typename ArgT, ResultT (*F)(ArrayRef<const ArgT *>)>
-  VariadicFuncMatcherDescriptor(
-      VariadicFunction<ResultT, ArgT, F> Func,
-      StringRef MatcherName)
+  template <typename ResultT, typename ArgT,
+            ResultT (*F)(ArrayRef<const ArgT *>)>
+  VariadicFuncMatcherDescriptor(VariadicFunction<ResultT, ArgT, F> Func,
+                                StringRef MatcherName)
       : Func(&variadicMatcherDescriptor<ResultT, ArgT, F>),
-        MatcherName(MatcherName),
-        ArgsKind(ArgTypeTraits<ArgT>::getKind()) {}
+        MatcherName(MatcherName), ArgsKind(ArgTypeTraits<ArgT>::getKind()) {}
 
-  VariantMatcher create(SourceRange NameRange,
-                        ArrayRef<ParserValue> Args,
+  VariantMatcher create(SourceRange NameRange, ArrayRef<ParserValue> Args,
                         Diagnostics *Error) const override {
     return Func(MatcherName, NameRange, Args, Error);
   }
@@ -320,9 +305,9 @@ private:
 
 // 0-arg marshaller function.
 template <typename ReturnType>
-static VariantMatcher matcherMarshall0(void (*Func)(), StringRef MatcherName,
-                             SourceRange NameRange,
-                             ArrayRef<ParserValue> Args, Diagnostics *Error) {
+static VariantMatcher
+matcherMarshall0(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
+                 ArrayRef<ParserValue> Args, Diagnostics *Error) {
   using FuncType = ReturnType (*)();
   if (Args.size() != 0) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
@@ -330,14 +315,15 @@ static VariantMatcher matcherMarshall0(void (*Func)(), StringRef MatcherName,
     return VariantMatcher();
   }
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)();
-  return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
+  return outvalueToVariantMatcher(
+      *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
 // 1-arg marshaller function.
 template <typename ReturnType, typename ArgType1>
-static VariantMatcher matcherMarshall1(void (*Func)(), StringRef MatcherName,
-                             SourceRange NameRange,
-                             ArrayRef<ParserValue> Args, Diagnostics *Error) {
+static VariantMatcher
+matcherMarshall1(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
+                 ArrayRef<ParserValue> Args, Diagnostics *Error) {
   using FuncType = ReturnType (*)(ArgType1);
   // TODO: Extract this into a separate function.
   if (Args.size() != 1) {
@@ -350,16 +336,17 @@ static VariantMatcher matcherMarshall1(void (*Func)(), StringRef MatcherName,
         << MatcherName << 1;
     return VariantMatcher();
   }
-  ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(ArgTypeTraits<ArgType1>::get(Args[0].Value));
-  return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
+  ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
+      ArgTypeTraits<ArgType1>::get(Args[0].Value));
+  return outvalueToVariantMatcher(
+      *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
 /// \brief 2-arg marshaller function.
 template <typename ReturnType, typename ArgType1, typename ArgType2>
-static VariantMatcher matcherMarshall2(void (*Func)(), StringRef MatcherName,
-                                       SourceRange NameRange,
-                                       ArrayRef<ParserValue> Args,
-                                       Diagnostics *Error) {
+static VariantMatcher
+matcherMarshall2(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
+                 ArrayRef<ParserValue> Args, Diagnostics *Error) {
   using FuncType = ReturnType (*)(ArgType1, ArgType2);
   if (Args.size() != 2) {
     Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
@@ -379,7 +366,8 @@ static VariantMatcher matcherMarshall2(void (*Func)(), StringRef MatcherName,
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
       ArgTypeTraits<ArgType1>::get(Args[0].Value),
       ArgTypeTraits<ArgType2>::get(Args[1].Value));
-  return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
+  return outvalueToVariantMatcher(
+      *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
 /// \brief Variadic operator marshaller function.
@@ -391,13 +379,13 @@ public:
       : MinCount(MinCount), MaxCount(MaxCount), varOp(varOp),
         MatcherName(MatcherName) {}
 
-  VariantMatcher create(SourceRange NameRange,
-                                ArrayRef<ParserValue> Args,
-                                Diagnostics *Error) const override {
+  VariantMatcher create(SourceRange NameRange, ArrayRef<ParserValue> Args,
+                        Diagnostics *Error) const override {
     if (Args.size() < MinCount || MaxCount < Args.size()) {
       // TODO
       // const std::string MaxStr =
-      //     (MaxCount == std::numeric_limits<unsigned>::max() ? "" : Twine(MaxCount));
+      //     (MaxCount == std::numeric_limits<unsigned>::max() ? "" :
+      //     Twine(MaxCount));
       // Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
       //     << ("(" + Twine(MinCount) + ", " + MaxStr + ")") << Args.size();
       return VariantMatcher();
@@ -409,7 +397,7 @@ public:
       const VariantValue &Value = Arg.Value;
       if (!Value.isMatcher()) {
         Error->addError(Arg.Range, Error->ET_RegistryWrongArgType)
-        << (i + 1) << "Matcher<>" << Value.getTypeAsString();
+            << (i + 1) << "Matcher<>" << Value.getTypeAsString();
         return VariantMatcher();
       }
       InnerArgs.push_back(Value.getMatcher());
@@ -458,8 +446,8 @@ template <typename ReturnType, typename ArgType1, typename ArgType2>
 std::unique_ptr<MatcherDescriptor>
 makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
                         StringRef MatcherName) {
-  ArgKind AKs[] = { ArgTypeTraits<ArgType1>::getKind(),
-                    ArgTypeTraits<ArgType2>::getKind() };
+  ArgKind AKs[] = {ArgTypeTraits<ArgType1>::getKind(),
+                   ArgTypeTraits<ArgType2>::getKind()};
   return std::make_unique<FixedArgCountMatcherDescriptor>(
       matcherMarshall2<ReturnType, ArgType1, ArgType2>,
       reinterpret_cast<void (*)()>(Func), MatcherName, AKs);
@@ -468,17 +456,17 @@ makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
 // Variadic overload.
 template <typename ResultT, typename ArgT,
           ResultT (*Func)(ArrayRef<const ArgT *>)>
-std::unique_ptr<MatcherDescriptor> makeMatcherAutoMarshall(
-    VariadicFunction<ResultT, ArgT, Func> VarFunc,
-    StringRef MatcherName) {
+std::unique_ptr<MatcherDescriptor>
+makeMatcherAutoMarshall(VariadicFunction<ResultT, ArgT, Func> VarFunc,
+                        StringRef MatcherName) {
   return std::make_unique<VariadicFuncMatcherDescriptor>(VarFunc, MatcherName);
 }
 
 // Variadic operator overload.
 template <unsigned MinCount, unsigned MaxCount>
-std::unique_ptr<MatcherDescriptor> makeMatcherAutoMarshall(
-    VariadicOperatorMatcherFunc<MinCount, MaxCount> Func,
-    StringRef MatcherName) {
+std::unique_ptr<MatcherDescriptor>
+makeMatcherAutoMarshall(VariadicOperatorMatcherFunc<MinCount, MaxCount> Func,
+                        StringRef MatcherName) {
   return std::make_unique<VariadicOperatorMatcherDescriptor>(
       MinCount, MaxCount, Func.Op, MatcherName);
 }

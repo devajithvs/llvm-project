@@ -99,8 +99,7 @@ struct UsesMatcher {
 // not.
 template <typename Matcher>
 struct DefinitionsMatcher {
-  DefinitionsMatcher(Matcher innerMatcher, unsigned hops,
-                     bool inclusive)
+  DefinitionsMatcher(Matcher innerMatcher, unsigned hops, bool inclusive)
       : innerMatcher(innerMatcher), hops(hops), inclusive(inclusive) {}
 
   bool recursiveMatch(Operation *op, unsigned tempHops) const {
@@ -120,8 +119,7 @@ struct DefinitionsMatcher {
     }
   }
 
-  bool match(Operation *op) const { 
-    return recursiveMatch(op, hops); }
+  bool match(Operation *op) const { return recursiveMatch(op, hops); }
   Matcher innerMatcher;
   unsigned hops;
   bool inclusive;
@@ -129,47 +127,52 @@ struct DefinitionsMatcher {
 
 } // namespace detail
 
-const matcher::VariadicOperatorMatcherFunc<
-    1, std::numeric_limits<unsigned>::max()>
+const matcher::VariadicOperatorMatcherFunc<1,
+                                           std::numeric_limits<unsigned>::max()>
     eachOf = {matcher::DynMatcher::VO_EachOf};
-const matcher::VariadicOperatorMatcherFunc<
-    1, std::numeric_limits<unsigned>::max()>
+const matcher::VariadicOperatorMatcherFunc<1,
+                                           std::numeric_limits<unsigned>::max()>
     anyOf = {matcher::DynMatcher::VO_AnyOf};
-const matcher::VariadicOperatorMatcherFunc<
-    1, std::numeric_limits<unsigned>::max()>
+const matcher::VariadicOperatorMatcherFunc<1,
+                                           std::numeric_limits<unsigned>::max()>
     allOf = {matcher::DynMatcher::VO_AllOf};
 
-inline detail::ArgumentMatcher<matcher::DynMatcher> hasArgument(matcher::DynMatcher innerMatcher,
-                                           unsigned argIndex) {
+inline detail::ArgumentMatcher<matcher::DynMatcher>
+hasArgument(matcher::DynMatcher innerMatcher, unsigned argIndex) {
   return detail::ArgumentMatcher<matcher::DynMatcher>(innerMatcher, argIndex);
 }
 
-inline detail::UsesMatcher<matcher::DynMatcher> uses(matcher::DynMatcher innerMatcher) {
+inline detail::UsesMatcher<matcher::DynMatcher>
+uses(matcher::DynMatcher innerMatcher) {
   return detail::UsesMatcher<matcher::DynMatcher>(innerMatcher, 1, false);
 }
 
-inline detail::UsesMatcher<matcher::DynMatcher> getUses(matcher::DynMatcher innerMatcher,
-                                   unsigned hops) {
+inline detail::UsesMatcher<matcher::DynMatcher>
+getUses(matcher::DynMatcher innerMatcher, unsigned hops) {
   return detail::UsesMatcher<matcher::DynMatcher>(innerMatcher, hops, false);
 }
 
-inline detail::UsesMatcher<matcher::DynMatcher> getAllUses(matcher::DynMatcher innerMatcher,
-                                      unsigned hops) {
+inline detail::UsesMatcher<matcher::DynMatcher>
+getAllUses(matcher::DynMatcher innerMatcher, unsigned hops) {
   return detail::UsesMatcher<matcher::DynMatcher>(innerMatcher, hops, true);
 }
 
-inline detail::DefinitionsMatcher<matcher::DynMatcher> definedBy(matcher::DynMatcher innerMatcher) {
-  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, 1, false);
+inline detail::DefinitionsMatcher<matcher::DynMatcher>
+definedBy(matcher::DynMatcher innerMatcher) {
+  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, 1,
+                                                         false);
 }
 
 inline detail::DefinitionsMatcher<matcher::DynMatcher>
 getDefinitions(matcher::DynMatcher innerMatcher, unsigned hops) {
-  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, hops, false);
+  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, hops,
+                                                         false);
 }
 
 inline detail::DefinitionsMatcher<matcher::DynMatcher>
 getAllDefinitions(matcher::DynMatcher innerMatcher, unsigned hops) {
-  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, hops, true);
+  return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, hops,
+                                                         true);
 }
 
 } // namespace extramatcher

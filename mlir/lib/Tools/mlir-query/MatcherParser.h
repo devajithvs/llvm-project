@@ -28,8 +28,8 @@
 
 #include "MatcherDiagnostics.h"
 #include "MatcherRegistry.h"
-#include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace mlir {
@@ -61,27 +61,26 @@ public:
     // if an error occurred. In that case, Error will contain a
     // description of the error.
     // The caller takes ownership of the Matcher object returned.
-    virtual VariantMatcher actOnMatcherExpression(MatcherCtor Ctor, 
-                                                  SourceRange NameRange,
-                                                  bool ExtractFunction, StringRef FunctionName,
-                                                  StringRef BindID,
-                                                  ArrayRef<ParserValue> Args,
-                                                  Diagnostics *Error) = 0;
+    virtual VariantMatcher
+    actOnMatcherExpression(MatcherCtor Ctor, SourceRange NameRange,
+                           bool ExtractFunction, StringRef FunctionName,
+                           StringRef BindID, ArrayRef<ParserValue> Args,
+                           Diagnostics *Error) = 0;
 
     // Look up a matcher by name in the matcher name found by the parser.
     // NameRange is the location of the name in the matcher source, useful for
     // error reporting. Returns the matcher constructor, or
     // optional<MatcherCtor>() if an error occurred. In that case, Error will
     // contain a description of the error.
-    virtual std::optional<MatcherCtor> lookupMatcherCtor(StringRef MatcherName) = 0;
+    virtual std::optional<MatcherCtor>
+    lookupMatcherCtor(StringRef MatcherName) = 0;
 
     virtual bool isBuilderMatcher(MatcherCtor) const = 0;
 
     virtual internal::MatcherDescriptorPtr
     buildMatcherCtor(MatcherCtor, SourceRange NameRange,
                      ArrayRef<ParserValue> Args, Diagnostics *Error) const = 0;
-  
-    
+
     // Compute the list of completion types for \p Context.
     ///
     /// Each element of \p Context represents a matcher invocation, going from
@@ -115,18 +114,17 @@ public:
     std::optional<MatcherCtor>
     lookupMatcherCtor(StringRef MatcherName) override;
 
-    VariantMatcher actOnMatcherExpression(MatcherCtor Ctor,
-                                          SourceRange NameRange,
-                                          bool ExtractFunction, StringRef FunctionName,
-                                          StringRef BindID,
-                                          ArrayRef<ParserValue> Args,
-                                          Diagnostics *Error) override;
-    
+    VariantMatcher
+    actOnMatcherExpression(MatcherCtor Ctor, SourceRange NameRange,
+                           bool ExtractFunction, StringRef FunctionName,
+                           StringRef BindID, ArrayRef<ParserValue> Args,
+                           Diagnostics *Error) override;
+
     bool isBuilderMatcher(MatcherCtor Ctor) const override;
 
     std::vector<ArgKind> getAcceptedCompletionTypes(
         llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> Context) override;
-    
+
     internal::MatcherDescriptorPtr
     buildMatcherCtor(MatcherCtor, SourceRange NameRange,
                      ArrayRef<ParserValue> Args,
@@ -154,7 +152,7 @@ public:
   ///   description of the error.
   ///   The caller takes ownership of the DynTypedMatcher object returned.
 
-  static std::optional<DynMatcher>  
+  static std::optional<DynMatcher>
   parseMatcherExpression(StringRef &MatcherCode, Sema *S,
                          const NamedValueMap *NamedValues, Diagnostics *Error);
   static std::optional<DynMatcher>
@@ -171,7 +169,7 @@ public:
   /// \c parseMatcherExpression function is a better approach to get a matcher
   /// object.
 
-   /// \param S The Sema instance that will help the parser
+  /// \param S The Sema instance that will help the parser
   ///   construct the matchers. If null, it uses the default registry.
   ///
   /// \param NamedValues A map of precomputed named values.  This provides
@@ -218,12 +216,13 @@ private:
   struct ScopedContextEntry;
   struct TokenInfo;
 
-  Parser(CodeTokenizer *Tokenizer, Sema *S, const NamedValueMap *NamedValues, Diagnostics *Error);
+  Parser(CodeTokenizer *Tokenizer, Sema *S, const NamedValueMap *NamedValues,
+         Diagnostics *Error);
 
   bool parseBindID(std::string &BindID);
 
   bool parseExpressionImpl(VariantValue *Value);
-  
+
   bool parseMatcherBuilder(MatcherCtor Ctor, const TokenInfo &NameToken,
                            const TokenInfo &OpenToken, VariantValue *Value);
   bool parseMatcherExpressionImpl(const TokenInfo &NameToken,

@@ -32,8 +32,7 @@ std::string ArgKind::asString() const {
   llvm_unreachable("unhandled ArgKind");
 }
 
-std::optional<DynMatcher>
-VariantMatcher::MatcherOps::constructVariadicOperator(
+std::optional<DynMatcher> VariantMatcher::MatcherOps::constructVariadicOperator(
     DynMatcher::VariadicOperator Op,
     ArrayRef<VariantMatcher> InnerMatchers) const {
   std::vector<DynMatcher> DynMatchers;
@@ -42,8 +41,7 @@ VariantMatcher::MatcherOps::constructVariadicOperator(
     // Matcher<T>.
     if (!InnerMatcher.Value)
       return std::nullopt;
-    std::optional<DynMatcher> Inner =
-        InnerMatcher.Value->getDynMatcher();
+    std::optional<DynMatcher> Inner = InnerMatcher.Value->getDynMatcher();
     if (!Inner)
       return std::nullopt;
     DynMatchers.push_back(*Inner);
@@ -61,13 +59,9 @@ public:
     return Matcher;
   }
 
-  std::optional<DynMatcher> getDynMatcher() const override {
-    return Matcher;
-  }
+  std::optional<DynMatcher> getDynMatcher() const override { return Matcher; }
 
-  std::string getTypeAsString() const override {
-    return "Matcher";
-  }
+  std::string getTypeAsString() const override { return "Matcher"; }
 
 private:
   DynMatcher Matcher;
@@ -93,9 +87,7 @@ public:
     return Matchers[0];
   }
 
-  std::string getTypeAsString() const override {
-    return "Matcher";
-  }
+  std::string getTypeAsString() const override { return "Matcher"; }
 
   const std::vector<DynMatcher> Matchers;
 };
@@ -121,9 +113,7 @@ public:
   }
 
   // TODO: Remove
-  std::string getTypeAsString() const override {
-    return "Op";
-  }
+  std::string getTypeAsString() const override { return "Op"; }
 
 private:
   const DynMatcher::VariadicOperator Op;
@@ -138,13 +128,15 @@ VariantMatcher VariantMatcher::SingleMatcher(DynMatcher Matcher) {
 
 VariantMatcher
 VariantMatcher::PolymorphicMatcher(ArrayRef<DynMatcher> Matchers) {
-  return VariantMatcher(std::make_shared<PolymorphicPayload>(std::move(Matchers)));
+  return VariantMatcher(
+      std::make_shared<PolymorphicPayload>(std::move(Matchers)));
 }
 
-VariantMatcher VariantMatcher::VariadicOperatorMatcher(
-     DynMatcher::VariadicOperator varOp,
-    ArrayRef<VariantMatcher> Args) {
-  return VariantMatcher(std::make_shared<VariadicOpPayload>(varOp, std::move(Args)));
+VariantMatcher
+VariantMatcher::VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp,
+                                        ArrayRef<VariantMatcher> Args) {
+  return VariantMatcher(
+      std::make_shared<VariadicOpPayload>(varOp, std::move(Args)));
 }
 
 std::optional<DynMatcher> VariantMatcher::getSingleMatcher() const {
@@ -158,10 +150,7 @@ std::optional<DynMatcher> VariantMatcher::getDynMatcher() const {
 void VariantMatcher::reset() { Value.reset(); }
 
 // TODO: Remove
-std::string VariantMatcher::getTypeAsString() const {
-  return "<Nothing>";
-}
-
+std::string VariantMatcher::getTypeAsString() const { return "<Nothing>"; }
 
 VariantValue::VariantValue(const VariantValue &Other) : Type(VT_Nothing) {
   *this = Other;
@@ -301,12 +290,18 @@ void VariantValue::setMatcher(const VariantMatcher &NewValue) {
 
 std::string VariantValue::getTypeAsString() const {
   switch (Type) {
-  case VT_String: return "String";
-  case VT_Matcher: return "Matcher";
-  case VT_Unsigned: return "Unsigned";
-  case VT_Boolean: return "Boolean";
-  case VT_Double: return "Double";
-  case VT_Nothing: return "Nothing";
+  case VT_String:
+    return "String";
+  case VT_Matcher:
+    return "Matcher";
+  case VT_Unsigned:
+    return "Unsigned";
+  case VT_Boolean:
+    return "Boolean";
+  case VT_Double:
+    return "Double";
+  case VT_Nothing:
+    return "Nothing";
   }
   llvm_unreachable("Invalid Type");
 }
