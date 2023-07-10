@@ -169,15 +169,12 @@ QueryRef QueryParser::doParse() {
     matcher::Diagnostics Diag;
     auto MatchExpr = Line.ltrim();
 
-    llvm::errs() << "getting matcher with parseMatcherExpression\n";
     auto matcher =
         matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
-    llvm::errs() << "got matcher with parseMatcherExpression\n";
 
     if (!matcher.has_value()) {
       return makeInvalidQueryFromDiagnostics(Diag);
     }
-    llvm::errs() << "pre MatchQuery\n";
 
     return new MatchQuery(matcher.value());
   }

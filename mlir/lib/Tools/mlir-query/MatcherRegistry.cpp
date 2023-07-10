@@ -185,7 +185,6 @@ VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
                                        SourceRange NameRange,
                                        ArrayRef<ParserValue> Args,
                                        Diagnostics *Error) {
-  llvm::errs() << "Ctor->create()"  << "\n";
   return Ctor->create(NameRange, Args, Error);
 }
 
@@ -203,7 +202,6 @@ VariantMatcher Registry::constructMatcherWrapper(
   
   LLVM_DEBUG(DBGS() << "pre getSingleMatcher"
                     << "\n");
-  llvm::errs() << "getSingleMatcher\n";
   std::optional<DynMatcher> Result = Out.getSingleMatcher();
   LLVM_DEBUG(DBGS() << "post getSingleMatcher"
                     << "\n");
@@ -214,8 +212,6 @@ VariantMatcher Registry::constructMatcherWrapper(
       return VariantMatcher::SingleMatcher(*Result);
     }
   }
-  llvm::errs() << "constructMatcherWrapper failed"  << "\n";
-
   Error->addError(NameRange, Error->ET_RegistryNotBindable);
   return Out;
 }

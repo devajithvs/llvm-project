@@ -50,11 +50,7 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 // This could be done better but is not worth the variadic template trouble.
 std::vector<Operation*>
 getMatches(Operation *rootOp, const matcher::DynMatcher &matcher) {
-  llvm::errs() << "pre matchFinder()\n";
-
   auto matchFinder = matcher::MatchFinder();
-  llvm::errs() << "post matchFinder()\n";
-
   return matchFinder.getMatches(rootOp, matcher);
 }
 
@@ -122,16 +118,8 @@ Operation *extractFunction(std::vector<Operation *> &ops,
 }
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  llvm::errs() << "inside MatchQuery::run\n";
   Operation *rootOp = QS.Op;
-  llvm::errs() << "post rootOp\n";
-
-  // if (!matcher) {
-  //   return false;
-  // }
-  llvm::errs() << "pre getMatches\n";
   auto matches = getMatches(rootOp, matcher);
-  llvm::errs() << "post getMatches\n";
 
   if (matcher.getExtract()) {
     auto functionName = matcher.getFunctionName();
