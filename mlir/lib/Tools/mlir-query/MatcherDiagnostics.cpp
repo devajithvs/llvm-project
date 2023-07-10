@@ -98,15 +98,10 @@ static StringRef errorTypeToFormatString(Diagnostics::ErrorType Type) {
     return "Incorrect type for arg $0. (Expected = $1) != (Actual = $2)";
   case Diagnostics::ET_RegistryNotBindable:
     return "Matcher does not support binding.";
-  case Diagnostics::ET_RegistryAmbiguousOverload:
-    // TODO: Add type info about the overload error.
-    return "Ambiguous matcher overload.";
   case Diagnostics::ET_RegistryValueNotFound:
     return "Value not found: $0";
   case Diagnostics::ET_RegistryUnknownEnumWithReplace:
     return "Unknown value '$1' for arg $0; did you mean '$2'";
-  case Diagnostics::ET_RegistryNonNodeMatcher:
-    return "Matcher not a node matcher: $0";
   case Diagnostics::ET_RegistryMatcherNoWithSupport:
     return "Matcher does not support with call.";
 
@@ -127,7 +122,7 @@ static StringRef errorTypeToFormatString(Diagnostics::ErrorType Type) {
   case Diagnostics::ET_ParserMalformedBindExpr:
     return "Malformed bind() expression.";
   case Diagnostics::ET_ParserTrailingCode:
-    return "Expected end of code.";
+    return "Unexpected end of code.";
   case Diagnostics::ET_ParserNumberError:
     return "Error parsing numeric literal: <$0>";
   case Diagnostics::ET_ParserOverloadedType:

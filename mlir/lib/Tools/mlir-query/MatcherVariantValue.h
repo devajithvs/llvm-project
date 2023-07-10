@@ -1,12 +1,10 @@
-//===--- MatcherVariantValue.h - Polymorphic value type -------------------===//
+//===--- MatcherVariantValue.h --------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// Polymorphic value type.
 //
 // Supports all the types required for dynamic Matcher construction.
 // Used by the registry to construct matchers in a generic way.
@@ -100,30 +98,18 @@ public:
   VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp,
                           ArrayRef<VariantMatcher> Args);
 
-  /// \brief Makes the matcher the "null" matcher.
+  /// Makes the matcher the "null" matcher.
   void reset();
 
-  /// \brief Whether the matcher is null.
+  /// Checks if the matcher is null.
   bool isNull() const { return !Value; }
 
-  /// \brief Return a single matcher, if there is no ambiguity.
+  /// Returns a single matcher, if there is no ambiguity.
   ///
-  /// \returns the matcher, if there is only one matcher. An empty Optional, if
-  /// the underlying matcher is a polymorphic matcher with more than one
-  /// representation.
+  /// Returns the matcher, if there is only one matcher.
   std::optional<DynMatcher> getSingleMatcher() const;
 
   std::optional<DynMatcher> getDynMatcher() const;
-
-  /// \brief Return this matcher as a \c DynMatcher.
-  ///
-  /// Handles the different types (Single, Polymorphic) accordingly.
-  // TODO: Remove
-  bool hasTypedMatcher() const {
-    if (!Value)
-      return false;
-    return Value->getDynMatcher().has_value();
-  }
 
   /// \brief String representation of the type of the value.
   ///
@@ -136,7 +122,6 @@ private:
       : Value(std::move(Value)) {}
 
   class SinglePayload;
-  class PolymorphicPayload;
   class VariadicOpPayload;
 
   std::shared_ptr<const Payload> Value;

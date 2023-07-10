@@ -364,8 +364,8 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *Value) {
     // Parse as a named value.
     const VariantValue NamedValue =
         NamedValues ? NamedValues->lookup(NameToken.Text) : VariantValue();
-    // TODO: Work on it
-    if (NamedValue.getTypeAsString() == "Nothing") {
+    // TODO: Remove string comparison
+    if (NamedValue.getTypeAsString() != "Nothing") {
 
       if (Tokenizer->nextTokenKind() != TokenInfo::TK_Period) {
         *Value = NamedValue;

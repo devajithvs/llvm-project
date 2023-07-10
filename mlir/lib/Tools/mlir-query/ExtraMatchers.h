@@ -128,9 +128,6 @@ struct DefinitionsMatcher {
 
 const matcher::VariadicOperatorMatcherFunc<1,
                                            std::numeric_limits<unsigned>::max()>
-    eachOf = {matcher::DynMatcher::VO_EachOf};
-const matcher::VariadicOperatorMatcherFunc<1,
-                                           std::numeric_limits<unsigned>::max()>
     anyOf = {matcher::DynMatcher::VO_AnyOf};
 const matcher::VariadicOperatorMatcherFunc<1,
                                            std::numeric_limits<unsigned>::max()>
