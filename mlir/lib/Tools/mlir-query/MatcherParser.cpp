@@ -673,6 +673,7 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &NameToken,
     TokenInfo ChainCallToken = Tokenizer->consumeNextToken();
     if (ChainCallToken.Kind == TokenInfo::TK_CodeCompletion) {
       addCompletion(ChainCallToken, MatcherCompletion("bind(\"", "bind"));
+      addCompletion(ChainCallToken, MatcherCompletion("extract(\"", "extract"));
       return false;
     }
 
