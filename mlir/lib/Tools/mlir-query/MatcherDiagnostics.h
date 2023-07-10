@@ -48,35 +48,33 @@ struct ParserValue {
 class Diagnostics {
 public:
   // Parser context types.
-  enum ContextType { CT_MatcherArg = 0, CT_MatcherConstruct = 1 };
+  enum ContextType { CT_MatcherArg, CT_MatcherConstruct };
 
   // All errors from the system.
   enum ErrorType {
-    ET_None = 0,
+    ET_None,
 
-    ET_RegistryMatcherNotFound = 1,
-    ET_RegistryWrongArgCount = 2,
-    ET_RegistryWrongArgType = 3,
-    ET_RegistryNotBindable = 4,
-    ET_RegistryAmbiguousOverload = 5,
-    ET_RegistryValueNotFound = 6,
-    ET_RegistryUnknownEnumWithReplace = 7,
-    ET_RegistryNonNodeMatcher = 8,
-    ET_RegistryMatcherNoWithSupport = 9,
+    ET_RegistryMatcherNotFound,
+    ET_RegistryWrongArgCount,
+    ET_RegistryWrongArgType,
+    ET_RegistryNotBindable,
+    ET_RegistryValueNotFound,
+    ET_RegistryUnknownEnumWithReplace,
+    ET_RegistryMatcherNoWithSupport,
 
-    ET_ParserStringError = 100,
-    ET_ParserNoOpenParen = 101,
-    ET_ParserNoCloseParen = 102,
-    ET_ParserNoComma = 103,
-    ET_ParserNoCode = 104,
-    ET_ParserNotAMatcher = 105,
-    ET_ParserInvalidToken = 106,
-    ET_ParserMalformedBindExpr = 107,
-    ET_ParserTrailingCode = 108,
-    ET_ParserNumberError = 109,
-    ET_ParserOverloadedType = 110,
-    ET_ParserMalformedChainedExpr = 111,
-    ET_ParserFailedToBuildMatcher = 112
+    ET_ParserStringError,
+    ET_ParserNoOpenParen,
+    ET_ParserNoCloseParen,
+    ET_ParserNoComma,
+    ET_ParserNoCode,
+    ET_ParserNotAMatcher,
+    ET_ParserInvalidToken,
+    ET_ParserMalformedBindExpr,
+    ET_ParserTrailingCode,
+    ET_ParserNumberError,
+    ET_ParserOverloadedType,
+    ET_ParserMalformedChainedExpr,
+    ET_ParserFailedToBuildMatcher
   };
 
   // Helper stream class.

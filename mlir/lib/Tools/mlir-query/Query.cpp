@@ -94,10 +94,9 @@ Operation *extractFunction(std::vector<Operation *> &ops, OpBuilder builder,
   for (const auto &arg : llvm::enumerate(values))
     mapper.map(arg.value(), funcOp.getArgument(arg.index()));
 
-  // TODO: FIX assiging lastOp every iteration.
-  Operation *lastOp;
+  std::vector<Operation *> clonedOps;
   for (Operation *slicedOp : slice)
-    lastOp = builder.clone(*slicedOp, mapper);
+    clonedOps.push_back(builder.clone(*slicedOp, mapper));
 
   // Remove func arguments that are not used.
   unsigned currentIndex = 0;
@@ -111,7 +110,7 @@ Operation *extractFunction(std::vector<Operation *> &ops, OpBuilder builder,
 
   // Add an extra return operation with the result of the final operation
   if (!hasReturn) {
-    builder.create<func::ReturnOp>(loc, lastOp->getResults());
+    builder.create<func::ReturnOp>(loc, clonedOps.back()->getResults());
   }
 
   return funcOp;

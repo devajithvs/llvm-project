@@ -62,10 +62,6 @@ void RegistryMaps::registerMatcher(
 // Generate a registry map with all the known matchers.
 RegistryMaps::RegistryMaps() {
 
-  // TODO: This list is not complete. It only has non-templated matchers,
-  // which are the simplest to add to the system. Templated matchers require
-  // more supporting code that was omitted from the first revision for
-  // simplicitly of code review.
   using internal::makeMatcherAutoMarshall;
 
   // Define a template function to register operation matchers
@@ -209,19 +205,12 @@ VariantMatcher Registry::constructMatcherWrapper(
     MatcherCtor Ctor, SourceRange NameRange, bool ExtractFunction,
     StringRef FunctionName, ArrayRef<ParserValue> Args, Diagnostics *Error) {
 
-  LLVM_DEBUG(DBGS() << "pre constructMatcher"
-                    << "\n");
   VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
-  LLVM_DEBUG(DBGS() << "post constructMatcher"
-                    << "\n");
   if (Out.isNull())
     return Out;
 
-  LLVM_DEBUG(DBGS() << "pre getSingleMatcher"
-                    << "\n");
   std::optional<DynMatcher> Result = Out.getSingleMatcher();
-  LLVM_DEBUG(DBGS() << "post getSingleMatcher"
-                    << "\n");
+
   if (Result.has_value()) {
     Result->setExtract(ExtractFunction);
     Result->setFunctionName(FunctionName);
@@ -245,7 +234,7 @@ VariantMatcher Registry::constructBoundMatcher(MatcherCtor Ctor,
 
   std::optional<DynMatcher> Result = Out.getSingleMatcher();
   if (Result.has_value()) {
-    // FIXME
+    // TODO: FIXME
     // std::optional<DynMatcher> Bound = Result->tryBind(BindID);
     // if (Bound.has_value()) {
     return VariantMatcher::SingleMatcher(*Result);

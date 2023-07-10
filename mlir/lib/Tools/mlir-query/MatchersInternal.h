@@ -46,13 +46,12 @@ public:
   virtual bool match(Operation *op) = 0;
 };
 
-// TODO: Rename singleMatcher to MatcherFnImpl
-// SingleMatcher takes a matcher function object and implements
+// MatcherFnImpl takes a matcher function object and implements
 // MatcherInterface.
 template <typename MatcherFn>
-class SingleMatcher : public MatcherInterface {
+class MatcherFnImpl : public MatcherInterface {
 public:
-  SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
+  MatcherFnImpl(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
   bool match(Operation *op) override { return matcherFn.match(op); }
 
 private:
@@ -61,7 +60,6 @@ private:
 
 class DynMatcher;
 
-// TODO: Use a polymorphic matcher instead for this usecase
 // VariadicMatcher takes a vector of Matchers and returns true if any Matchers
 // match the given operation.
 using VariadicOperatorFunction = bool (*)(Operation *op,
@@ -98,8 +96,6 @@ private:
 
 static bool AllOfVariadicOperator(Operation *op,
                                   ArrayRef<DynMatcher> InnerMatchers);
-static bool EachOfVariadicOperator(Operation *op,
-                                   ArrayRef<DynMatcher> InnerMatchers);
 static bool AnyOfVariadicOperator(Operation *op,
                                   ArrayRef<DynMatcher> InnerMatchers);
 
@@ -118,11 +114,7 @@ public:
 
     /// Matches nodes for which at least one of the provided matchers
     /// matches.
-    VO_AnyOf,
-
-    /// Matches nodes for which at least one of the provided matchers
-    /// matches, but doesn't stop at the first match.
-    VO_EachOf
+    VO_AnyOf
   };
 
   /// \c MatcherIDType supports operator< and provides strict weak ordering.
@@ -142,16 +134,13 @@ public:
     case VO_AnyOf:
       return new DynMatcher(
           new VariadicMatcher<AnyOfVariadicOperator>(std::move(InnerMatchers)));
-    case VO_EachOf:
-      return new DynMatcher(new VariadicMatcher<EachOfVariadicOperator>(
-          std::move(InnerMatchers)));
     }
     llvm_unreachable("Invalid Op value.");
   };
 
   template <typename MatcherFn>
   static DynMatcher *constructDynMatcherFromMatcherFn(MatcherFn &matcherFn) {
-    auto impl = new SingleMatcher<MatcherFn>(matcherFn);
+    auto impl = new MatcherFnImpl<MatcherFn>(matcherFn);
     return new DynMatcher(impl);
   };
 
@@ -180,14 +169,6 @@ private:
 };
 
 /// VariadicOperatorMatcher related types.
-/// @{
-
-/// Polymorphic matcher object that uses a \c
-/// DynMatcher::VariadicOperator operator.
-///
-/// Input matchers can have any type (including other polymorphic matcher
-/// types), and the actual Matcher<T> is generated on demand with an implicit
-/// conversion operator.
 template <typename... Ps>
 class VariadicOperatorMatcher {
 public:
@@ -278,26 +259,10 @@ static bool AllOfVariadicOperator(Operation *op,
   return true;
 }
 
-static bool EachOfVariadicOperator(Operation *op,
-                                   ArrayRef<DynMatcher> InnerMatchers) {
-  bool Matched = false;
-  for (const DynMatcher &InnerMatcher : InnerMatchers) {
-    if (InnerMatcher.match(op)) {
-      Matched = true;
-      // TODO
-      // Add match to result
-      // Result.addMatch
-    }
-  }
-  // Set builder to result
-  return Matched;
-}
-
 static bool AnyOfVariadicOperator(Operation *op,
                                   ArrayRef<DynMatcher> InnerMatchers) {
   for (const DynMatcher &InnerMatcher : InnerMatchers) {
     if (InnerMatcher.match(op)) {
-      // TODO: Add match to results.
       return true;
     }
   }

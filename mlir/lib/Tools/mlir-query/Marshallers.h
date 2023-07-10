@@ -153,8 +153,6 @@ public:
 
   /// Given that the matcher is being converted to type \p ThisKind, append the
   /// set of argument types accepted for argument \p ArgNo to \p ArgKinds.
-  // FIXME: We should provide the ability to constrain the output of this
-  // function based on the types of other matcher arguments.
   virtual void getArgKinds(unsigned ArgNo,
                            std::vector<ArgKind> &ArgKinds) const = 0;
 };
@@ -195,16 +193,6 @@ private:
   const std::vector<ArgKind> ArgKinds;
 };
 
-// Helper methods to extract and merge all possible typed matchers
-/// out of the polymorphic object.
-template <class PolyMatcher>
-static void mergePolyMatchers(const PolyMatcher &Poly,
-                              std::vector<DynMatcher> &Out) {
-
-  Out.push_back(DynMatcher(Poly));
-  mergePolyMatchers(Poly, Out);
-}
-
 // Convert the return values of the functions into a VariantMatcher.
 //
 // There are 2 cases right now: The return value is a Matcher<T> or is a
@@ -213,14 +201,6 @@ static void mergePolyMatchers(const PolyMatcher &Poly,
 // matcher.
 inline VariantMatcher outvalueToVariantMatcher(DynMatcher Matcher) {
   return VariantMatcher::SingleMatcher(Matcher);
-}
-
-template <typename T>
-static VariantMatcher outvalueToVariantMatcher(const T &PolyMatcher) {
-  // TODO: Refractor
-  std::vector<DynMatcher> Matchers = {DynMatcher(PolyMatcher)};
-  VariantMatcher Out = VariantMatcher::PolymorphicMatcher(std::move(Matchers));
-  return Out;
 }
 
 /// Variadic marshaller function.
@@ -266,7 +246,8 @@ variadicMatcherDescriptor(StringRef MatcherName, SourceRange NameRange,
     InnerArgs.emplace_back(ArgTraits::get(Value));
     InnerArgsPtr[i] = &InnerArgs[i];
   }
-  return outvalueToVariantMatcher(Func(InnerArgsPtr));
+  return outvalueToVariantMatcher(
+      *DynMatcher::constructDynMatcherFromMatcherFn(Func(InnerArgsPtr)));
 }
 
 /// Matcher descriptor for variadic functions.
@@ -382,12 +363,8 @@ public:
   VariantMatcher create(SourceRange NameRange, ArrayRef<ParserValue> Args,
                         Diagnostics *Error) const override {
     if (Args.size() < MinCount || MaxCount < Args.size()) {
-      // TODO
-      // const std::string MaxStr =
-      //     (MaxCount == std::numeric_limits<unsigned>::max() ? "" :
-      //     Twine(MaxCount));
-      // Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
-      //     << ("(" + Twine(MinCount) + ", " + MaxStr + ")") << Args.size();
+      Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
+          << Args.size();
       return VariantMatcher();
     }
 

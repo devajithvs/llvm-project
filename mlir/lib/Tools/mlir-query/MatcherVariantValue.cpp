@@ -1,4 +1,4 @@
-//===--- MatcherVariantValue.cpp - Polymorphic value type -----------------===//
+//===--- MatcherVariantValue.cpp ------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Polymorphic value type.
 //
 //===----------------------------------------------------------------------===//
 
@@ -67,31 +66,6 @@ private:
   DynMatcher Matcher;
 };
 
-class VariantMatcher::PolymorphicPayload : public VariantMatcher::Payload {
-public:
-  PolymorphicPayload(std::vector<DynMatcher> MatchersIn)
-      : Matchers(std::move(MatchersIn)) {}
-
-  ~PolymorphicPayload() override {}
-
-  std::optional<DynMatcher> getSingleMatcher() const override {
-    if (Matchers.size() != 1)
-      return std::optional<DynMatcher>();
-    return Matchers[0];
-  }
-
-  // TODO: Remove poly
-  std::optional<DynMatcher> getDynMatcher() const override {
-    if (Matchers.size() != 1)
-      return std::optional<DynMatcher>();
-    return Matchers[0];
-  }
-
-  std::string getTypeAsString() const override { return "Matcher"; }
-
-  const std::vector<DynMatcher> Matchers;
-};
-
 class VariantMatcher::VariadicOpPayload : public VariantMatcher::Payload {
 public:
   VariadicOpPayload(DynMatcher::VariadicOperator Op,
@@ -124,12 +98,6 @@ VariantMatcher::VariantMatcher() {}
 
 VariantMatcher VariantMatcher::SingleMatcher(DynMatcher Matcher) {
   return VariantMatcher(std::make_shared<SinglePayload>(Matcher));
-}
-
-VariantMatcher
-VariantMatcher::PolymorphicMatcher(ArrayRef<DynMatcher> Matchers) {
-  return VariantMatcher(
-      std::make_shared<PolymorphicPayload>(std::move(Matchers)));
 }
 
 VariantMatcher
