@@ -16,8 +16,8 @@
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/ManagedStatic.h"
-#include <utility>
 #include <set>
+#include <utility>
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
@@ -128,12 +128,13 @@ std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
   // Starting with the above seed of acceptable top-level matcher types, compute
   // the acceptable type set for the argument indicated by each context element.
   std::set<ArgKind> typeSet;
-    typeSet.insert(ArgKind(ArgKind::AK_Matcher));
+  typeSet.insert(ArgKind(ArgKind::AK_Matcher));
   for (const auto &CtxEntry : Context) {
     MatcherCtor Ctor = CtxEntry.first;
     unsigned ArgNumber = CtxEntry.second;
     std::vector<ArgKind> NextTypeSet;
-    if ((Ctor->isVariadic() || ArgNumber < Ctor->getNumArgs())) Ctor->getArgKinds(ArgNumber, NextTypeSet);
+    if ((Ctor->isVariadic() || ArgNumber < Ctor->getNumArgs()))
+      Ctor->getArgKinds(ArgNumber, NextTypeSet);
     typeSet.insert(NextTypeSet.begin(), NextTypeSet.end());
   }
   return std::vector<ArgKind>(typeSet.begin(), typeSet.end());
@@ -145,36 +146,36 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
 
   // Search the registry for acceptable matchers.
   for (const auto &M : RegistryData->constructors()) {
-    const MatcherDescriptor& Matcher = *M.getValue();
+    const MatcherDescriptor &Matcher = *M.getValue();
     StringRef Name = M.getKey();
 
     unsigned NumArgs = Matcher.isVariadic() ? 1 : Matcher.getNumArgs();
     std::vector<std::vector<ArgKind>> ArgsKinds(NumArgs);
-    for (const ArgKind& Kind : AcceptedTypes) {
+    for (const ArgKind &Kind : AcceptedTypes) {
       if (Kind.getArgKind() != Kind.AK_Matcher) {
         continue;
       }
 
-          for (unsigned Arg = 0; Arg != NumArgs; ++Arg)
-            Matcher.getArgKinds(Arg, ArgsKinds[Arg]);
+      for (unsigned Arg = 0; Arg != NumArgs; ++Arg)
+        Matcher.getArgKinds(Arg, ArgsKinds[Arg]);
     }
 
-      std::string Decl;
-      llvm::raw_string_ostream OS(Decl);
+    std::string Decl;
+    llvm::raw_string_ostream OS(Decl);
 
-      std::string TypedText = std::string(Name);
-          
-        if (Matcher.isVariadic())
-          OS << "...";
-        OS << ")";
+    std::string TypedText = std::string(Name);
 
-        TypedText += "(";
-        if (ArgsKinds.empty())
-          TypedText += ")";
-        else if (ArgsKinds[0][0].getArgKind() == ArgKind::AK_String)
-          TypedText += "\"";
+    if (Matcher.isVariadic())
+      OS << "...";
+    OS << ")";
 
-      Completions.emplace_back(TypedText, OS.str());
+    TypedText += "(";
+    if (ArgsKinds.empty())
+      TypedText += ")";
+    else if (ArgsKinds[0][0].getArgKind() == ArgKind::AK_String)
+      TypedText += "\"";
+
+    Completions.emplace_back(TypedText, OS.str());
   }
 
   return Completions;
@@ -182,9 +183,9 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
 
 // static
 VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
-                                       SourceRange NameRange,
-                                       ArrayRef<ParserValue> Args,
-                                       Diagnostics *Error) {
+                                          SourceRange NameRange,
+                                          ArrayRef<ParserValue> Args,
+                                          Diagnostics *Error) {
   return Ctor->create(NameRange, Args, Error);
 }
 
@@ -192,14 +193,15 @@ VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
 VariantMatcher Registry::constructMatcherWrapper(
     MatcherCtor Ctor, SourceRange NameRange, bool ExtractFunction,
     StringRef FunctionName, ArrayRef<ParserValue> Args, Diagnostics *Error) {
-  
+
   LLVM_DEBUG(DBGS() << "pre constructMatcher"
                     << "\n");
   VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
   LLVM_DEBUG(DBGS() << "post constructMatcher"
                     << "\n");
-  if (Out.isNull()) return Out;
-  
+  if (Out.isNull())
+    return Out;
+
   LLVM_DEBUG(DBGS() << "pre getSingleMatcher"
                     << "\n");
   std::optional<DynMatcher> Result = Out.getSingleMatcher();
@@ -223,14 +225,15 @@ VariantMatcher Registry::constructBoundMatcher(MatcherCtor Ctor,
                                                ArrayRef<ParserValue> Args,
                                                Diagnostics *Error) {
   VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
-  if (Out.isNull()) return Out;
+  if (Out.isNull())
+    return Out;
 
   std::optional<DynMatcher> Result = Out.getSingleMatcher();
   if (Result.has_value()) {
     // FIXME
     // std::optional<DynMatcher> Bound = Result->tryBind(BindID);
     // if (Bound.has_value()) {
-      return VariantMatcher::SingleMatcher(*Result);
+    return VariantMatcher::SingleMatcher(*Result);
     // }
   }
   Error->addError(NameRange, Error->ET_RegistryNotBindable);

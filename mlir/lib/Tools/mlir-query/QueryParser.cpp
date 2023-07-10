@@ -169,8 +169,7 @@ QueryRef QueryParser::doParse() {
     matcher::Diagnostics Diag;
     auto MatchExpr = Line.ltrim();
 
-    auto matcher =
-        matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
+    auto matcher = matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
 
     if (!matcher.has_value()) {
       return makeInvalidQueryFromDiagnostics(Diag);

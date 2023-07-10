@@ -25,25 +25,17 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-  /// Kind identifier.
+/// Kind identifier.
 ///
 /// It supports all types that VariantValue can contain.
 class ArgKind {
- public:
-  enum Kind {
-    AK_Matcher,
-    AK_Boolean,
-    AK_Double,
-    AK_Unsigned,
-    AK_String
-  };
+public:
+  enum Kind { AK_Matcher, AK_Boolean, AK_Double, AK_Unsigned, AK_String };
   ArgKind(Kind K) : K(K) {}
 
   Kind getArgKind() const { return K; }
 
-  bool operator<(const ArgKind &Other) const {
-    return K < Other.K;
-  }
+  bool operator<(const ArgKind &Other) const { return K < Other.K; }
 
   /// To the requested destination type.
   /// String representation of the type.
@@ -70,12 +62,12 @@ class VariantMatcher {
   /// \brief Methods that depend on T from hasTypedMatcher/getTypedMatcher.
   class MatcherOps {
   public:
-
     /// Constructs a variadic typed matcher from \p InnerMatchers.
     /// Will try to convert each inner matcher to the destination type and
     /// return std::nullopt if it fails to do so.
     std::optional<DynMatcher>
-    constructVariadicOperator(DynMatcher::VariadicOperator Op, ArrayRef<VariantMatcher> InnerMatchers) const;
+    constructVariadicOperator(DynMatcher::VariadicOperator Op,
+                              ArrayRef<VariantMatcher> InnerMatchers) const;
   };
 
   /// \brief Payload interface to be specialized by each matcher type.
@@ -104,7 +96,9 @@ public:
   /// \brief Creates a 'variadic' operator matcher.
   ///
   /// It will bind to the appropriate type on getTypedMatcher<T>().
-  static VariantMatcher VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp, ArrayRef<VariantMatcher> Args);
+  static VariantMatcher
+  VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp,
+                          ArrayRef<VariantMatcher> Args);
 
   /// \brief Makes the matcher the "null" matcher.
   void reset();
@@ -126,7 +120,8 @@ public:
   /// Handles the different types (Single, Polymorphic) accordingly.
   // TODO: Remove
   bool hasTypedMatcher() const {
-    if (!Value) return false;
+    if (!Value)
+      return false;
     return Value->getDynMatcher().has_value();
   }
 
@@ -200,9 +195,10 @@ public:
   bool isMatcher() const;
   const VariantMatcher &getMatcher() const;
   void setMatcher(const VariantMatcher &Matcher);
-  
+
   /// \brief String representation of the type of the value.
   std::string getTypeAsString() const;
+
 private:
   void reset();
 
