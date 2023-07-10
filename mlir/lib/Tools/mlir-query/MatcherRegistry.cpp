@@ -165,6 +165,21 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
 
     std::string TypedText = std::string(Name);
 
+    OS << "Matcher: " << Name << "(";
+    for (const std::vector<ArgKind> &Arg : ArgsKinds) {
+      if (&Arg != &ArgsKinds[0])
+        OS << ", ";
+
+      bool FirstArgKind = true;
+      // Two steps. First all non-matchers, then matchers only.
+      for (const ArgKind &AK : Arg) {
+        if (!FirstArgKind)
+          OS << "|";
+        FirstArgKind = false;
+        OS << AK.asString();
+      }
+    }
+
     if (Matcher.isVariadic())
       OS << "...";
     OS << ")";

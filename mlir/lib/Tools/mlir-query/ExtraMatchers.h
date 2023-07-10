@@ -104,7 +104,6 @@ struct DefinitionsMatcher {
 
   bool recursiveMatch(Operation *op, unsigned tempHops) const {
     if (tempHops == 0) {
-
       return innerMatcher.match(op);
     }
     if (inclusive) {
