@@ -53,7 +53,6 @@ class SingleMatcher : public MatcherInterface {
 public:
   SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
   bool match(Operation *op) override { 
-    llvm::errs() << "singleMatcher working?\n";
     return matcherFn.match(op); }
 
 private:
@@ -151,8 +150,6 @@ public:
   template <typename MatcherFn>
   static DynMatcher *constructDynMatcherFromMatcherFn(MatcherFn &matcherFn) {
     auto impl = new SingleMatcher<MatcherFn>(matcherFn);
-    llvm::errs() << "Implementation static: " << (int*)impl << "\n";
-
     return new DynMatcher(impl);
   };
 
@@ -166,7 +163,6 @@ public:
   }
 
   bool match(Operation *op) const { 
-    llvm::errs() << "DynMatcher match working\n";
     return Implementation->match(op); 
   }
 
@@ -310,14 +306,12 @@ public:
   // Returns all operations that match the given matcher.
   std::vector<Operation *> getMatches(Operation *root, DynMatcher matcher) {
     std::vector<Operation *> matches;
-    llvm::errs() << "pre walk\n";
     matcher.match(root);
 
     root->walk([&](Operation *subOp) {
       if (matcher.match(subOp))
         matches.push_back(subOp);
     });
-    llvm::errs() << "post walk\n";
 
     for (auto op: matches) {
       op->dump();

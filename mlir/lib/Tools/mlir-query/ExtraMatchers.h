@@ -121,8 +121,6 @@ struct DefinitionsMatcher {
   }
 
   bool match(Operation *op) const { 
-       llvm::errs() << "DefinitionsMatcher working\n";
-    
     return recursiveMatch(op, hops); }
   Matcher innerMatcher;
   unsigned hops;
@@ -166,14 +164,11 @@ inline detail::DefinitionsMatcher<matcher::DynMatcher> definedBy(matcher::DynMat
 
 inline detail::DefinitionsMatcher<matcher::DynMatcher>
 getDefinitions(matcher::DynMatcher innerMatcher, unsigned hops) {
-  //  m getAllDefinitions(hasOpName("test.coo"), 2)
-  llvm::errs() << "getDefinitions working\n";
   return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, hops, false);
 }
 
 inline detail::DefinitionsMatcher<matcher::DynMatcher>
 getAllDefinitions(matcher::DynMatcher innerMatcher, unsigned hops) {
-  llvm::errs() << "getAllDefinitions working\n";
   return detail::DefinitionsMatcher<matcher::DynMatcher>(innerMatcher, hops, true);
 }
 

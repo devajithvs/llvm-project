@@ -215,7 +215,6 @@ static void mergePolyMatchers(const PolyMatcher &Poly,
                               std::vector<DynMatcher> &Out) {
   
   Out.push_back(DynMatcher(Poly));
-  llvm::errs() << "recursice merge PolyMatcher begin" << "\n";
   mergePolyMatchers(Poly, Out);
 }
 
@@ -226,15 +225,12 @@ static void mergePolyMatchers(const PolyMatcher &Poly,
 // For the latter, we instantiate all the possible Matcher<T> of the poly
 // matcher.
 inline VariantMatcher outvalueToVariantMatcher(DynMatcher Matcher) {
-    llvm::errs() << "outvalueToVariantMatcher" << "\n";
-
   return VariantMatcher::SingleMatcher(Matcher);
 }
 
 template <typename T>
 static VariantMatcher outvalueToVariantMatcher(const T &PolyMatcher) {
   // TODO: Refractor
-    llvm::errs() << "outvalueToVariantMatcher PolyMatcher" << "\n";
   std::vector<DynMatcher> Matchers = {DynMatcher(PolyMatcher)};
   VariantMatcher Out = VariantMatcher::PolymorphicMatcher(std::move(Matchers));
   return Out;
@@ -355,7 +351,6 @@ static VariantMatcher matcherMarshall1(void (*Func)(), StringRef MatcherName,
     return VariantMatcher();
   }
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(ArgTypeTraits<ArgType1>::get(Args[0].Value));
-  llvm::errs() << "Post cast 1-arg marshaller function\n";
   return outvalueToVariantMatcher(*DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
