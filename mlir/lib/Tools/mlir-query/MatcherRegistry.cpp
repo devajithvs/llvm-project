@@ -17,6 +17,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/ManagedStatic.h"
 #include <utility>
+#include <set>
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;
@@ -30,7 +31,8 @@ namespace matcher {
 namespace {
 
 using internal::MatcherDescriptor;
-using ConstructorMap = llvm::StringMap<const MatcherDescriptor *>;
+using ConstructorMap =
+    llvm::StringMap<std::unique_ptr<const MatcherDescriptor>>;
 
 using constantFnType = detail::constant_op_matcher();
 using attrFnType = detail::AttrOpMatcher(StringRef);
@@ -44,14 +46,17 @@ public:
   const ConstructorMap &constructors() const { return Constructors; }
 
 private:
-  void registerMatcher(StringRef MatcherName, MatcherDescriptor *Callback);
+  void registerMatcher(StringRef MatcherName,
+                       std::unique_ptr<MatcherDescriptor> Callback);
   ConstructorMap Constructors;
 };
 
-void RegistryMaps::registerMatcher(StringRef MatcherName,
-                                   MatcherDescriptor *Callback) {
-  assert(Constructors.find(MatcherName) == Constructors.end());
-  Constructors[MatcherName] = Callback;
+} // namespace
+
+void RegistryMaps::registerMatcher(
+    StringRef MatcherName, std::unique_ptr<MatcherDescriptor> Callback) {
+  assert(!Constructors.contains(MatcherName));
+  Constructors[MatcherName] = std::move(Callback);
 }
 
 // Generate a registry map with all the known matchers.
@@ -92,37 +97,92 @@ RegistryMaps::RegistryMaps() {
   registerOpMatcher("m_One", m_One);
 }
 
-RegistryMaps::~RegistryMaps() {
-  for (ConstructorMap::iterator it = Constructors.begin(),
-                                end = Constructors.end();
-       it != end; ++it) {
-        // TODO
-    // delete it->second;
-  }
-}
+RegistryMaps::~RegistryMaps() = default;
 
 static llvm::ManagedStatic<RegistryMaps> RegistryData;
 
-} // anonymous namespace
+internal::MatcherDescriptorPtr::MatcherDescriptorPtr(MatcherDescriptor *Ptr)
+    : Ptr(Ptr) {}
 
-std::optional<MatcherCtor>
-Registry::lookupMatcherCtor(StringRef MatcherName, const SourceRange &NameRange,
-                            Diagnostics *Error) {
-  llvm::errs() << "registry lookupMatcherCtor" << "\n";
-  ConstructorMap::const_iterator it =
-      RegistryData->constructors().find(MatcherName);
-  llvm::errs() << "registry lookupMatcherCtor found" << "\n";
-  if (it == RegistryData->constructors().end()) {
-    Error->addError(NameRange, Error->ET_RegistryMatcherNotFound) << MatcherName;
-    return std::optional<MatcherCtor>();
+internal::MatcherDescriptorPtr::~MatcherDescriptorPtr() { delete Ptr; }
+
+bool Registry::isBuilderMatcher(MatcherCtor Ctor) {
+  return Ctor->isBuilderMatcher();
+}
+
+internal::MatcherDescriptorPtr
+Registry::buildMatcherCtor(MatcherCtor Ctor, SourceRange NameRange,
+                           ArrayRef<ParserValue> Args, Diagnostics *Error) {
+  return internal::MatcherDescriptorPtr(
+      Ctor->buildMatcherCtor(NameRange, Args, Error).release());
+}
+
+std::optional<MatcherCtor> Registry::lookupMatcherCtor(StringRef MatcherName) {
+  auto it = RegistryData->constructors().find(MatcherName);
+  return it == RegistryData->constructors().end() ? std::optional<MatcherCtor>()
+                                                  : it->second.get();
+}
+
+std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
+    ArrayRef<std::pair<MatcherCtor, unsigned>> Context) {
+  // Starting with the above seed of acceptable top-level matcher types, compute
+  // the acceptable type set for the argument indicated by each context element.
+  std::set<ArgKind> typeSet;
+    typeSet.insert(ArgKind(ArgKind::AK_Matcher));
+  for (const auto &CtxEntry : Context) {
+    MatcherCtor Ctor = CtxEntry.first;
+    unsigned ArgNumber = CtxEntry.second;
+    std::vector<ArgKind> NextTypeSet;
+    if ((Ctor->isVariadic() || ArgNumber < Ctor->getNumArgs())) Ctor->getArgKinds(ArgNumber, NextTypeSet);
+    typeSet.insert(NextTypeSet.begin(), NextTypeSet.end());
   }
-  llvm::errs() << "registry lookupMatcherCtor: " << it->first() << ": " << (int*)it->second << "\n";
-  return it->second;
+  return std::vector<ArgKind>(typeSet.begin(), typeSet.end());
+}
+
+std::vector<MatcherCompletion>
+Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
+  std::vector<MatcherCompletion> Completions;
+
+  // Search the registry for acceptable matchers.
+  for (const auto &M : RegistryData->constructors()) {
+    const MatcherDescriptor& Matcher = *M.getValue();
+    StringRef Name = M.getKey();
+
+    unsigned NumArgs = Matcher.isVariadic() ? 1 : Matcher.getNumArgs();
+    std::vector<std::vector<ArgKind>> ArgsKinds(NumArgs);
+    for (const ArgKind& Kind : AcceptedTypes) {
+      if (Kind.getArgKind() != Kind.AK_Matcher) {
+        continue;
+      }
+
+          for (unsigned Arg = 0; Arg != NumArgs; ++Arg)
+            Matcher.getArgKinds(Arg, ArgsKinds[Arg]);
+    }
+
+      std::string Decl;
+      llvm::raw_string_ostream OS(Decl);
+
+      std::string TypedText = std::string(Name);
+          
+        if (Matcher.isVariadic())
+          OS << "...";
+        OS << ")";
+
+        TypedText += "(";
+        if (ArgsKinds.empty())
+          TypedText += ")";
+        else if (ArgsKinds[0][0].getArgKind() == ArgKind::AK_String)
+          TypedText += "\"";
+
+      Completions.emplace_back(TypedText, OS.str());
+  }
+
+  return Completions;
 }
 
 // static
 VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
-                                       const SourceRange &NameRange,
+                                       SourceRange NameRange,
                                        ArrayRef<ParserValue> Args,
                                        Diagnostics *Error) {
   llvm::errs() << "Ctor->create()"  << "\n";
@@ -131,7 +191,7 @@ VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
 
 // static
 VariantMatcher Registry::constructMatcherWrapper(
-    MatcherCtor Ctor, const SourceRange &NameRange, bool ExtractFunction,
+    MatcherCtor Ctor, SourceRange NameRange, bool ExtractFunction,
     StringRef FunctionName, ArrayRef<ParserValue> Args, Diagnostics *Error) {
   
   LLVM_DEBUG(DBGS() << "pre constructMatcher"
@@ -162,7 +222,7 @@ VariantMatcher Registry::constructMatcherWrapper(
 
 // static
 VariantMatcher Registry::constructBoundMatcher(MatcherCtor Ctor,
-                                               const SourceRange &NameRange,
+                                               SourceRange NameRange,
                                                StringRef BindID,
                                                ArrayRef<ParserValue> Args,
                                                Diagnostics *Error) {

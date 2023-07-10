@@ -28,21 +28,83 @@ namespace matcher {
 
 namespace internal {
 class MatcherDescriptor;
+
+/// A smart (owning) pointer for MatcherDescriptor. We can't use unique_ptr
+/// because MatcherDescriptor is forward declared
+class MatcherDescriptorPtr {
+public:
+  explicit MatcherDescriptorPtr(MatcherDescriptor *);
+  ~MatcherDescriptorPtr();
+  MatcherDescriptorPtr(MatcherDescriptorPtr &&) = default;
+  MatcherDescriptorPtr &operator=(MatcherDescriptorPtr &&) = default;
+  MatcherDescriptorPtr(const MatcherDescriptorPtr &) = delete;
+  MatcherDescriptorPtr &operator=(const MatcherDescriptorPtr &) = delete;
+
+  MatcherDescriptor *get() { return Ptr; }
+
+private:
+  MatcherDescriptor *Ptr;
+};
+
 } // namespace internal
 
-typedef const internal::MatcherDescriptor *MatcherCtor;
+using MatcherCtor = const internal::MatcherDescriptor *;
+
+struct MatcherCompletion {
+  MatcherCompletion() = default;
+  MatcherCompletion(StringRef TypedText, StringRef MatcherDecl)
+      : TypedText(TypedText), MatcherDecl(MatcherDecl) {}
+
+  bool operator==(const MatcherCompletion &Other) const {
+    return TypedText == Other.TypedText && MatcherDecl == Other.MatcherDecl;
+  }
+
+  /// The text to type to select this matcher.
+  std::string TypedText;
+
+  /// The "declaration" of the matcher, with type information.
+  std::string MatcherDecl;
+};
 
 class Registry {
 public:
+  Registry() = delete;
+
+  static internal::MatcherDescriptorPtr
+  buildMatcherCtor(MatcherCtor, SourceRange NameRange,
+                   ArrayRef<ParserValue> Args, Diagnostics *Error);
+  
+  static bool isBuilderMatcher(MatcherCtor Ctor);
+  
   // Look up a matcher in the registry by name,
-  // Consult the registry of known matchers and construct the appropriate
-  // matcher by name.
-  // return An opaque value which may be used to refer to the matcher
-  // constructor, or optional<MatcherCtor>() if not found.  In that case
-  // Error will contain the description of the error.
-  static std::optional<MatcherCtor>
-  lookupMatcherCtor(StringRef MatcherName, const SourceRange &NameRange,
-                    Diagnostics *Error);
+  /// \return An opaque value which may be used to refer to the matcher
+  /// constructor, or std::optional<MatcherCtor>() if not found.
+  static std::optional<MatcherCtor> lookupMatcherCtor(StringRef MatcherName);
+
+  /// Compute the list of completion types for \p Context.
+  ///
+  /// Each element of \p Context represents a matcher invocation, going from
+  /// outermost to innermost. Elements are pairs consisting of a reference to
+  /// the matcher constructor and the index of the next element in the
+  /// argument list of that matcher (or for the last element, the index of
+  /// the completion point in the argument list). An empty list requests
+  /// completion for the root matcher.
+  static std::vector<ArgKind> getAcceptedCompletionTypes(
+      llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> Context);
+
+  /// Compute the list of completions that match any of
+  /// \p AcceptedTypes.
+  ///
+  /// \param AcceptedTypes All types accepted for this completion.
+  ///
+  /// \return All completions for the specified types.
+  /// Completions should be valid when used in \c lookupMatcherCtor().
+  /// The matcher constructed from the return of \c lookupMatcherCtor()
+  /// should be convertible to some type in \p AcceptedTypes.
+  static std::vector<MatcherCompletion>
+  getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes);
+
+  /// Construct a matcher from the registry.
 
   // Construct a matcher from the registry.
   // Ctor The matcher constructor to instantiate.
@@ -57,23 +119,23 @@ public:
   // of the error.
   // TODO: Cleanup - Remove one of these
   static VariantMatcher constructMatcher(MatcherCtor Ctor,
-                                      const SourceRange &NameRange,
+                                      SourceRange NameRange,
                                       ArrayRef<ParserValue> Args,
                                       Diagnostics *Error);
 
-  static VariantMatcher constructMatcherWrapper(MatcherCtor Ctor, const SourceRange &NameRange,
+  static VariantMatcher constructMatcherWrapper(MatcherCtor Ctor, SourceRange NameRange,
                           bool ExtractFunction, StringRef FunctionName,
                           ArrayRef<ParserValue> Args, Diagnostics *Error);
   
   // TODO: FIX COMMENT
-  /// \brief Construct a matcher from the registry and bind it.
+  /// Construct a matcher from the registry and bind it.
   ///
   /// Similar the \c constructMatcher() above, but it then tries to bind the
   /// matcher to the specified \c BindID.
   /// If the matcher is not bindable, it sets an error in \c Error and returns
   /// a null matcher.
   static VariantMatcher constructBoundMatcher(MatcherCtor Ctor,
-                                              const SourceRange &NameRange,
+                                              SourceRange NameRange,
                                               StringRef BindID,
                                               ArrayRef<ParserValue> Args,
                                               Diagnostics *Error);

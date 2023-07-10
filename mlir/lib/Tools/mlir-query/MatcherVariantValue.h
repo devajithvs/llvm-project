@@ -25,7 +25,35 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-/// \brief A variant matcher object.
+  /// Kind identifier.
+///
+/// It supports all types that VariantValue can contain.
+class ArgKind {
+ public:
+  enum Kind {
+    AK_Matcher,
+    AK_Boolean,
+    AK_Double,
+    AK_Unsigned,
+    AK_String
+  };
+  ArgKind(Kind K) : K(K) {}
+
+  Kind getArgKind() const { return K; }
+
+  bool operator<(const ArgKind &Other) const {
+    return K < Other.K;
+  }
+
+  /// To the requested destination type.
+  /// String representation of the type.
+  std::string asString() const;
+
+private:
+  Kind K;
+};
+
+/// A variant matcher object.
 ///
 /// The purpose of this object is to abstract simple and polymorphic matchers
 /// into a single object type.
@@ -42,27 +70,27 @@ class VariantMatcher {
   /// \brief Methods that depend on T from hasTypedMatcher/getTypedMatcher.
   class MatcherOps {
   public:
-    virtual ~MatcherOps();
-    virtual bool canConstructFrom(DynMatcher Matcher) const = 0;
-    virtual void constructFrom(DynMatcher Matcher) = 0;
-    // TODO: Rename Func
-    virtual void constructVariadicOperator(DynMatcher::VariadicOperator Func, ArrayRef<VariantMatcher> InnerMatchers) = 0;
+
+    /// Constructs a variadic typed matcher from \p InnerMatchers.
+    /// Will try to convert each inner matcher to the destination type and
+    /// return std::nullopt if it fails to do so.
+    std::optional<DynMatcher>
+    constructVariadicOperator(DynMatcher::VariadicOperator Op, ArrayRef<VariantMatcher> InnerMatchers) const;
   };
 
   /// \brief Payload interface to be specialized by each matcher type.
   ///
   /// It follows a similar interface as VariantMatcher itself.
-  class Payload : public llvm::RefCountedBase<Payload> {
+  class Payload {
   public:
     virtual ~Payload();
     virtual std::optional<DynMatcher> getSingleMatcher() const = 0;
     virtual std::optional<DynMatcher> getDynMatcher() const = 0;
     virtual std::string getTypeAsString() const = 0;
-    virtual void makeTypedMatcher(MatcherOps &Ops) const = 0;
   };
 
 public:
-  /// \brief A null matcher.
+  /// A null matcher.
   VariantMatcher();
 
   /// \brief Clones the provided matcher.
@@ -96,11 +124,10 @@ public:
   /// \brief Return this matcher as a \c DynMatcher.
   ///
   /// Handles the different types (Single, Polymorphic) accordingly.
-  DynMatcher getTypedMatcher() const {
-    TypedMatcherOps Ops;
-    Value->makeTypedMatcher(Ops);
-    assert(Ops.hasMatcher() && "hasMatcher() == false");
-    return Ops.matcher();
+  // TODO: Remove
+  bool hasTypedMatcher() const {
+    if (!Value) return false;
+    return Value->getDynMatcher().has_value();
   }
 
   /// \brief String representation of the type of the value.
@@ -110,36 +137,14 @@ public:
   std::string getTypeAsString() const;
 
 private:
-  explicit VariantMatcher(Payload *Value) : Value(Value) {}
+  explicit VariantMatcher(std::shared_ptr<Payload> Value)
+      : Value(std::move(Value)) {}
 
   class SinglePayload;
   class PolymorphicPayload;
   class VariadicOpPayload;
 
-  class TypedMatcherOps : public MatcherOps {
-  public:
-    // TODO: Cleanup
-    bool canConstructFrom(DynMatcher Matcher) const override {
-      return true;
-    }
-
-    void constructFrom(DynMatcher Matcher) override {
-      Out.reset(&Matcher);
-    }
-    // TODO: Rename Func
-    void constructVariadicOperator(DynMatcher::VariadicOperator Func, ArrayRef<VariantMatcher> InnerMatchers) override {
-      // TODO: REMOVE
-      Out.reset(VariadicOperatorMatcher(Func, InnerMatchers).getTypedMatcher().clone());
-    }
-
-    bool hasMatcher() const { return Out.get() != nullptr; }
-    DynMatcher &matcher() const { return *Out; }
-
-  private:
-    std::shared_ptr<DynMatcher> Out;
-  };
-
-  llvm::IntrusiveRefCntPtr<const Payload> Value;
+  std::shared_ptr<const Payload> Value;
 };
 
 // Variant value class.
@@ -168,7 +173,7 @@ public:
   VariantValue(bool Boolean);
   VariantValue(double Double);
   VariantValue(unsigned Unsigned);
-  VariantValue(const StringRef &String);
+  VariantValue(const StringRef String);
   VariantValue(const VariantMatcher &Matcher);
 
   // Boolean value functions.
