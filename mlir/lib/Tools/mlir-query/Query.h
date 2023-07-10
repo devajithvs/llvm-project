@@ -74,11 +74,13 @@ struct HelpQuery : Query {
 
 // Query for "match MATCHER".
 struct MatchQuery : Query {
-  MatchQuery(const matcher::DynMatcher &Matcher)
-      : Query(QK_Match), matcher(Matcher) {}
+  MatchQuery(StringRef Source, const matcher::DynMatcher &Matcher)
+      : Query(QK_Match), matcher(Matcher), Source(Source) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
   const matcher::DynMatcher matcher;
+
+  StringRef Source;
 
   static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
 };
