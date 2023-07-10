@@ -38,7 +38,7 @@ namespace query {
 namespace matcher {
 
 // Generic interface for matchers on an MLIR operation.
-class MatcherInterface : public llvm::RefCountedBase<MatcherInterface> {
+class MatcherInterface : public llvm::ThreadSafeRefCountedBase<MatcherInterface> {
 public:
   virtual ~MatcherInterface() = default;
 
@@ -51,9 +51,7 @@ public:
 template <typename MatcherFn>
 class SingleMatcher : public MatcherInterface {
 public:
-  SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {
-    llvm::errs() << "Setting matcher function: " << (int*)&matcherFn << ":impl: " << (int*) this << "\n";
-  }
+  SingleMatcher(MatcherFn &matcherFn) : matcherFn(matcherFn) {}
   bool match(Operation *op) override { 
     llvm::errs() << "singleMatcher working?\n";
     return matcherFn.match(op); }
@@ -84,6 +82,25 @@ private:
   std::vector<DynMatcher> matchers;
 };
 
+
+class IdMatcher : public MatcherInterface {
+public:
+  IdMatcher(StringRef ID,
+                llvm::IntrusiveRefCntPtr<MatcherInterface> InnerMatcher)
+      : ID(ID), InnerMatcher(std::move(InnerMatcher)) {}
+
+  bool match(Operation *op) override {
+    bool result = InnerMatcher->match(op);
+    // TODO: Set binding
+    // if (result) // setBinding(ID, op);
+    return result;
+  }
+
+private:
+  const std::string ID;
+  const  llvm::IntrusiveRefCntPtr<MatcherInterface> InnerMatcher;
+};
+
 static bool AllOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers);
 static bool EachOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers);
 static bool AnyOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers);
@@ -95,8 +112,6 @@ public:
   // Takes ownership of the provided implementation pointer.
   DynMatcher(MatcherInterface *Implementation)
       : Implementation(Implementation), ExtractFunction(false) {
-        llvm::errs() << "Implementation init: " << (int*)Implementation << "\n";
-
       }
 
     /// Construct from a variadic function.
@@ -110,18 +125,16 @@ public:
 
     /// Matches nodes for which at least one of the provided matchers
     /// matches, but doesn't stop at the first match.
-    VO_EachOf,
-
-    /// Matches any node but executes all inner matchers to find result
-    /// bindings.
-    VO_Optionally,
-
-    /// Matches nodes that do not match the provided matcher.
-    ///
-    /// Uses the variadic matcher interface, but fails if
-    /// InnerMatchers.size() != 1.
-    VO_UnaryNot
+    VO_EachOf
   };
+
+  /// \c MatcherIDType supports operator< and provides strict weak ordering.
+  using MatcherIDType = uint64_t;
+  MatcherIDType getID() const {
+    /// FIXME: Document the requirements this imposes on matcher
+    /// implementations (no new() implementation_ during a Matches()).
+    return reinterpret_cast<uint64_t>(Implementation.get());
+  }
 
   static DynMatcher *constructVariadic(VariadicOperator Op, std::vector<DynMatcher> InnerMatchers) {
     switch (Op) {
@@ -143,9 +156,17 @@ public:
     return new DynMatcher(impl);
   };
 
+  std::optional<DynMatcher> tryBind(StringRef ID) const {
+      // if (!AllowBind)
+  //   return std::nullopt;
+    auto Result = *this;
+    Result.Implementation =
+        new IdMatcher(ID, std::move(Result.Implementation));
+    return std::move(Result);
+  }
+
   bool match(Operation *op) const { 
     llvm::errs() << "DynMatcher match working\n";
-    llvm::errs() << "Implementation match: " << (int*)Implementation << "\n";
     return Implementation->match(op); 
   }
 
@@ -158,7 +179,7 @@ public:
   StringRef getFunctionName() const { return FunctionName; };
 
 private:
-  MatcherInterface *Implementation;
+   llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
   bool ExtractFunction;
   StringRef FunctionName;
 };
@@ -252,8 +273,8 @@ static bool AllOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatch
   // allOf leads to one matcher for each alternative in the first
   // matcher combined with each alternative in the second matcher.
   // Thus, we can reuse the same Builder.
-  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
-    if (!InnerMatchers[i].match(op))
+  for (const DynMatcher &InnerMatcher : InnerMatchers) {
+    if (!InnerMatcher.match(op))
       return false;
   }
   return true;
@@ -261,8 +282,8 @@ static bool AllOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatch
 
 static bool EachOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
   bool Matched = false;
-  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
-    if (InnerMatchers[i].match(op)) {
+  for (const DynMatcher &InnerMatcher : InnerMatchers) {
+    if (InnerMatcher.match(op)) {
       Matched = true;
       // TODO
       // Add match to result
@@ -274,48 +295,14 @@ static bool EachOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatc
 }
 
 static bool AnyOfVariadicOperator(Operation *op, ArrayRef<DynMatcher> InnerMatchers) {
-  for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
-    if (InnerMatchers[i].match(op)) {
+  for (const DynMatcher &InnerMatcher : InnerMatchers) {
+    if (InnerMatcher.match(op)) {
       // TODO: Add match to results. 
       return true;
     }
   }
   return false;
 }
-
-// \brief \c MatcherInterface<T> implementation for an variadic operator.
-// class VariadicOperatorMatcherInterface : public MatcherInterface {
-// public:
-//   VariadicOperatorMatcherInterface(DynMatcher::VariadicOperator Func,
-//                                    ArrayRef<DynMatcher> InnerMatchers)
-//     : Func(Func), InnerMatchers(InnerMatchers) {}
-//   bool match(Operation *op) override {
-//     return Func(op, InnerMatchers);
-//   }
-// private:
-//   const DynMatcher::VariadicOperator Func;
-//   const std::vector<DynMatcher> InnerMatchers;
-// };
-
-
-// /// \brief Creates a DynMatcher that matches if all inner matchers match.
-// DynMatcher makeAllOfComposite(ArrayRef<DynMatcher> InnerMatchers) {
-//   std::vector<DynMatcher> DynMatchers;
-//   for (size_t i = 0, e = InnerMatchers.size(); i != e; ++i) {
-//     DynMatchers.push_back(InnerMatchers[i]);
-//   }
-//   return DynMatcher(new VariadicOperatorMatcherInterface(AllOfVariadicOperator, DynMatchers));
-// }
-
-// const VariadicOperatorMatcherFunc<
-//     2, std::numeric_limits<unsigned>::max()>
-//     eachOf = {DynMatcher::VO_EachOf};
-// const VariadicOperatorMatcherFunc<
-//     2, std::numeric_limits<unsigned>::max()>
-//     anyOf = {DynMatcher::VO_AnyOf};
-// const VariadicOperatorMatcherFunc<
-//     2, std::numeric_limits<unsigned>::max()>
-//     allOf = {DynMatcher::VO_AllOf};
 
 // MatchFinder is used to find all operations that match a given matcher.
 class MatchFinder {
