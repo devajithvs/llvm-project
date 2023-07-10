@@ -90,10 +90,12 @@ struct QueryParser::LexOrCompleteWord {
     else if (CaseStr.size() != 0 && IsCompletion &&
              WordCompletionPos <= CaseStr.size() &&
              CaseStr.substr(0, WordCompletionPos) ==
-                 Word.substr(0, WordCompletionPos))
+                 Word.substr(0, WordCompletionPos)) {
+
       P->Completions.push_back(LineEditor::Completion(
           (CaseStr.substr(WordCompletionPos) + " ").str(),
           std::string(CaseStr)));
+    }
     return *this;
   }
 
@@ -131,6 +133,7 @@ enum MatcherKind {
 };
 enum ParsedQueryKind {
   PQK_Invalid,
+  PQK_Comment,
   PQK_NoOp,
   PQK_Help,
   PQK_Match,
@@ -144,17 +147,29 @@ QueryRef makeInvalidQueryFromDiagnostics(const matcher::Diagnostics &Diag) {
 }
 } // namespace
 
+QueryRef QueryParser::completeMatcherExpression() {
+  std::vector<matcher::MatcherCompletion> Comps =
+      matcher::Parser::completeExpression(Line, CompletionPos - Line.begin(),
+                                          nullptr, &QS.NamedValues);
+  for (auto I = Comps.begin(), E = Comps.end(); I != E; ++I) {
+    Completions.push_back(LineEditor::Completion(I->TypedText, I->MatcherDecl));
+  }
+  return QueryRef();
+}
+
 QueryRef QueryParser::doParse() {
 
   StringRef CommandStr;
   ParsedQueryKind QKind = LexOrCompleteWord<ParsedQueryKind>(this, CommandStr)
                               .Case("", PQK_NoOp)
+                              .Case("#", PQK_Comment, /*IsCompletion=*/false)
                               .Case("help", PQK_Help)
-                              .Case("m", PQK_Match)
+                              .Case("m", PQK_Match, /*IsCompletion=*/false)
                               .Case("match", PQK_Match)
                               .Default(PQK_Invalid);
 
   switch (QKind) {
+  case PQK_Comment:
   case PQK_NoOp:
     Line = Line.drop_until([](char c) { return c == '\n'; });
     Line = Line.drop_while([](char c) { return c == '\n'; });
@@ -166,16 +181,24 @@ QueryRef QueryParser::doParse() {
     return endQuery(new HelpQuery);
 
   case PQK_Match: {
-    matcher::Diagnostics Diag;
-    auto MatchExpr = Line.ltrim();
-
-    auto matcher = matcher::Parser::parseMatcherExpression(MatchExpr, &Diag);
-
-    if (!matcher.has_value()) {
-      return makeInvalidQueryFromDiagnostics(Diag);
+    if (CompletionPos) {
+      return completeMatcherExpression();
     }
 
-    return new MatchQuery(matcher.value());
+    matcher::Diagnostics Diag;
+    auto MatcherSource = Line.ltrim();
+    auto OrigMatcherSource = MatcherSource;
+    std::optional<matcher::DynMatcher> Matcher =
+        matcher::Parser::parseMatcherExpression(MatcherSource, nullptr,
+                                                &QS.NamedValues, &Diag);
+    if (!Matcher) {
+      return makeInvalidQueryFromDiagnostics(Diag);
+    }
+    auto ActualSource = OrigMatcherSource.slice(0, OrigMatcherSource.size() -
+                                                       MatcherSource.size());
+    auto *Q = new MatchQuery(ActualSource, *Matcher);
+    Q->RemainingContent = MatcherSource;
+    return Q;
   }
 
   case PQK_Invalid:

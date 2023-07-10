@@ -310,16 +310,11 @@ public:
   // Returns all operations that match the given matcher.
   std::vector<Operation *> getMatches(Operation *root, DynMatcher matcher) {
     std::vector<Operation *> matches;
-    matcher.match(root);
 
     root->walk([&](Operation *subOp) {
       if (matcher.match(subOp))
         matches.push_back(subOp);
     });
-
-    for (auto op : matches) {
-      op->dump();
-    }
 
     return matches;
   }

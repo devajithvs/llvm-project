@@ -35,6 +35,7 @@ public:
   OutputKind OutKind;
   bool BindRoot;
   bool Terminate;
+  llvm::StringMap<matcher::VariantValue> NamedValues;
 };
 
 } // namespace query
