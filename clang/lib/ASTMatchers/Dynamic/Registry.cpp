@@ -101,8 +101,6 @@ RegistryMaps::RegistryMaps() {
   //
   // Other:
   // equalsNode
-   static_cast< ::clang::ast_matchers::hasPrefix_Type0>(                        \
-      ::clang::ast_matchers::hasPrefix)
 
   registerMatcher("mapAnyOf",
                   std::make_unique<internal::MapAnyOfBuilderDescriptor>());
