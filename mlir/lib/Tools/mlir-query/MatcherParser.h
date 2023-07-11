@@ -156,7 +156,8 @@ public:
   parseMatcherExpression(StringRef &matcherCode, Sema *sema,
                          const NamedValueMap *namedValues, Diagnostics *error);
   static std::optional<DynMatcher>
-  parseMatcherExpression(StringRef &matcherCode, Sema *sema, Diagnostics *error) {
+  parseMatcherExpression(StringRef &matcherCode, Sema *sema,
+                         Diagnostics *error) {
     return parseMatcherExpression(matcherCode, sema, nullptr, error);
   }
   static std::optional<DynMatcher>

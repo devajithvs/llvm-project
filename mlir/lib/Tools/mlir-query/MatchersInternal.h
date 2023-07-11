@@ -156,9 +156,7 @@ public:
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
 
-  void setFunctionName(StringRef fnName) {
-    functionName = fnName.str();
-  };
+  void setFunctionName(StringRef fnName) { functionName = fnName.str(); };
 
   bool isExtract() const { return !functionName.empty(); };
   StringRef getFunctionName() const { return functionName; };
@@ -172,8 +170,7 @@ private:
 template <typename... Ps>
 class VariadicOperatorMatcher {
 public:
-  VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp,
-                          Ps &&...params)
+  VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp, Ps &&...params)
       : varOp(varOp), params(std::forward<Ps>(params)...) {}
 
   operator DynMatcher() const & {

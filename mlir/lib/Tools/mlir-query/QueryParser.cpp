@@ -71,10 +71,11 @@ struct QueryParser::LexOrCompleteWord {
   // that can be used like a llvm::StringSwitch<T>, but adds cases as possible
   // completions if the lexed word contains the completion point.
   LexOrCompleteWord(QueryParser *queryParser, StringRef &outWord)
-      : word(queryParser->lexWord()), stringSwitch(word), queryParser(queryParser),
-        wordCompletionPos(StringRef::npos) {
+      : word(queryParser->lexWord()), stringSwitch(word),
+        queryParser(queryParser), wordCompletionPos(StringRef::npos) {
     outWord = word;
-    if (queryParser->completionPos && queryParser->completionPos <= word.data() + word.size()) {
+    if (queryParser->completionPos &&
+        queryParser->completionPos <= word.data() + word.size()) {
       if (queryParser->completionPos < word.data())
         wordCompletionPos = 0;
       else

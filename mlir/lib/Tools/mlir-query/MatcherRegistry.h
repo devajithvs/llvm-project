@@ -131,7 +131,6 @@ public:
 
   // TODO: FIX ALL COMMENTS
   // TODO: FIX PRINT
-  // TODO: Convert to camelCase
   /// Construct a matcher from the registry and bind it.
   ///
   /// Similar the \c constructMatcher() above, but it then tries to bind the

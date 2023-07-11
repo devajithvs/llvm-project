@@ -36,7 +36,8 @@ std::optional<DynMatcher> VariantMatcher::MatcherOps::constructVariadicOperator(
     ArrayRef<VariantMatcher> innerMatchers) const {
   std::vector<DynMatcher> dynMatchers;
   for (const auto &innerMatcher : innerMatchers) {
-    if (!innerMatcher.value) return std::nullopt;
+    if (!innerMatcher.value)
+      return std::nullopt;
     std::optional<DynMatcher> inner = innerMatcher.value->getDynMatcher();
     if (!inner)
       return std::nullopt;

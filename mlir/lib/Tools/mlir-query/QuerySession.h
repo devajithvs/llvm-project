@@ -21,7 +21,8 @@ namespace query {
 // Represents the state for a particular clang-query session.
 class QuerySession {
 public:
-  QuerySession(Operation *rootOp, const std::shared_ptr<llvm::SourceMgr> &sourceMgr)
+  QuerySession(Operation *rootOp,
+               const std::shared_ptr<llvm::SourceMgr> &sourceMgr)
       : rootOp(rootOp), sourceMgr(sourceMgr), outKind(OK_Diag), bindRoot(true),
         terminate(false) {}
 

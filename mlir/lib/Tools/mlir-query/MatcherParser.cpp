@@ -872,8 +872,8 @@ bool Parser::parseExpression(StringRef &code, Sema *sema,
 }
 
 std::vector<MatcherCompletion>
-Parser::completeExpression(StringRef &code, unsigned completionOffset, Sema *sema,
-                           const NamedValueMap *namedValues) {
+Parser::completeExpression(StringRef &code, unsigned completionOffset,
+                           Sema *sema, const NamedValueMap *namedValues) {
   Diagnostics error;
   CodeTokenizer tokenizer(code, &error, completionOffset);
   Parser P(&tokenizer, sema, namedValues, &error);

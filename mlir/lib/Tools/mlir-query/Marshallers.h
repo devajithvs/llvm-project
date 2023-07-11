@@ -164,7 +164,9 @@ public:
                                             ArrayRef<ParserValue> args,
                                             Diagnostics *error);
 
-  // Marshaller Function to unpack the arguments and call Func. Func is the Matcher construct function. This is the function that the matcher expressions would use to create the matcher.
+  // Marshaller Function to unpack the arguments and call Func. Func is the
+  // Matcher construct function. This is the function that the matcher
+  // expressions would use to create the matcher.
   FixedArgCountMatcherDescriptor(MarshallerType marshaller, void (*func)(),
                                  StringRef matcherName,
                                  ArrayRef<ArgKind> argKinds)
