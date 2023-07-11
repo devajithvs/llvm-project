@@ -120,7 +120,7 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   Operation *rootOp = QS.Op;
   auto matches = getMatches(rootOp, matcher);
 
-  if (matcher.getExtract()) {
+  if (matcher.isExtract()) {
     auto functionName = matcher.getFunctionName();
     MLIRContext context;
     context.loadDialect<func::FuncDialect>();

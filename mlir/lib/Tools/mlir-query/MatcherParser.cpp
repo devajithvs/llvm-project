@@ -38,6 +38,7 @@ struct Parser::TokenInfo {
     TK_Comma,
     TK_Period,
     TK_Literal,
+    // TODO: Remove this
     TK_Ident,
     TK_InvalidChar,
     TK_CodeCompletion,
@@ -389,6 +390,7 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *Value) {
                         Error->ET_ParserMalformedChainedExpr);
         return false;
       }
+      // TODO
       if (ChainCallToken.Text == TokenInfo::ID_Extract) {
 
         Diagnostics::Context Ctx(Diagnostics::Context::ConstructMatcher, Error,
@@ -398,7 +400,7 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *Value) {
                         Error->ET_RegistryMatcherNoWithSupport);
         return false;
       }
-      if (!parseBindID(BindID))
+      if (!parseID(BindID))
         return false;
 
       assert(NamedValue.isMatcher());
@@ -451,8 +453,8 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *Value) {
   return parseMatcherExpressionImpl(NameToken, OpenToken, Ctor, Value);
 }
 
-bool Parser::parseBindID(std::string &BindID) {
-  // Parse the parenthesized argument to .bind("foo")
+bool Parser::parseID(std::string &ID) {
+  // Parse the parenthesized argument to .bind("foo")/.extract("foo")
   const TokenInfo OpenToken = Tokenizer->consumeNextToken();
   const TokenInfo IDToken = Tokenizer->consumeNextTokenIgnoreNewlines();
   const TokenInfo CloseToken = Tokenizer->consumeNextTokenIgnoreNewlines();
@@ -471,7 +473,7 @@ bool Parser::parseBindID(std::string &BindID) {
     Error->addError(CloseToken.Range, Error->ET_ParserMalformedBindExpr);
     return false;
   }
-  BindID = IDToken.Value.getString();
+  ID = IDToken.Value.getString();
   return true;
 }
 
@@ -556,6 +558,7 @@ bool Parser::parseMatcherBuilder(MatcherCtor Ctor, const TokenInfo &NameToken,
   }
 
   std::string BindID;
+  std::string FunctionName;
   if (Tokenizer->peekNextToken().Kind == TokenInfo::TK_Period) {
     Tokenizer->consumeNextToken();
     TokenInfo ChainCallToken = Tokenizer->consumeNextToken();
@@ -571,23 +574,23 @@ bool Parser::parseMatcherBuilder(MatcherCtor Ctor, const TokenInfo &NameToken,
                       Error->ET_ParserMalformedChainedExpr);
       return false;
     }
-    if (ChainCallToken.Text == TokenInfo::ID_Bind) {
-      if (!parseBindID(BindID))
+    if (ChainCallToken.Text == TokenInfo::ID_Bind ||
+        ChainCallToken.Text == TokenInfo::ID_Extract) {
+      if (ChainCallToken.Text == TokenInfo::ID_Bind && !parseID(BindID))
+        return false;
+      if (ChainCallToken.Text == TokenInfo::ID_Extract &&
+          !parseID(FunctionName))
         return false;
       Diagnostics::Context Ctx(Diagnostics::Context::ConstructMatcher, Error,
                                NameToken.Text, NameToken.Range);
       SourceRange MatcherRange = NameToken.Range;
       MatcherRange.End = ChainCallToken.Range.End;
-      VariantMatcher Result =
-          S->actOnMatcherExpression(BuiltCtor.get(), MatcherRange, false,
-                                    std::string(), BindID, {}, Error);
+      VariantMatcher Result = S->actOnMatcherExpression(
+          BuiltCtor.get(), MatcherRange, FunctionName, BindID, {}, Error);
       if (Result.isNull())
         return false;
 
       *Value = Result;
-      return true;
-    } else if (ChainCallToken.Text == TokenInfo::ID_Extract) {
-      // TODO: FIXME;
       return true;
     }
   }
@@ -597,7 +600,7 @@ bool Parser::parseMatcherBuilder(MatcherCtor Ctor, const TokenInfo &NameToken,
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
   VariantMatcher Result = S->actOnMatcherExpression(
-      BuiltCtor.get(), MatcherRange, false, std::string(), BindID, {}, Error);
+      BuiltCtor.get(), MatcherRange, FunctionName, BindID, {}, Error);
   if (Result.isNull())
     return false;
 
@@ -668,6 +671,7 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &NameToken,
   }
 
   std::string BindID;
+  std::string FunctionName;
   if (Tokenizer->peekNextToken().Kind == TokenInfo::TK_Period) {
     Tokenizer->consumeNextToken();
     TokenInfo ChainCallToken = Tokenizer->consumeNextToken();
@@ -682,22 +686,18 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &NameToken,
                       Error->ET_ParserMalformedChainedExpr);
       return false;
     }
-    if (ChainCallToken.Text == TokenInfo::ID_Extract) {
-      // TODO
 
-      Diagnostics::Context Ctx(Diagnostics::Context::ConstructMatcher, Error,
-                               NameToken.Text, NameToken.Range);
-
-      Error->addError(ChainCallToken.Range,
-                      Error->ET_RegistryMatcherNoWithSupport);
-      return false;
-    }
-    if (ChainCallToken.Text != TokenInfo::ID_Bind) {
+    if (ChainCallToken.Text != TokenInfo::ID_Bind &&
+        ChainCallToken.Text != TokenInfo::ID_Extract) {
       Error->addError(ChainCallToken.Range,
                       Error->ET_ParserMalformedChainedExpr);
       return false;
     }
-    if (!parseBindID(BindID))
+
+    if (ChainCallToken.Text == TokenInfo::ID_Bind && !parseID(BindID))
+      return false;
+
+    if (ChainCallToken.Text == TokenInfo::ID_Extract && !parseID(FunctionName))
       return false;
   }
 
@@ -709,7 +709,7 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &NameToken,
   SourceRange MatcherRange = NameToken.Range;
   MatcherRange.End = EndToken.Range.End;
   VariantMatcher Result = S->actOnMatcherExpression(
-      *Ctor, MatcherRange, false, std::string(), BindID, Args, Error);
+      *Ctor, MatcherRange, FunctionName, BindID, Args, Error);
   if (Result.isNull())
     return false;
   *Value = Result;
@@ -823,12 +823,13 @@ Parser::RegistrySema::lookupMatcherCtor(StringRef MatcherName) {
 }
 
 VariantMatcher Parser::RegistrySema::actOnMatcherExpression(
-    MatcherCtor Ctor, SourceRange NameRange, bool ExtractFunction,
-    StringRef FunctionName, StringRef BindID, ArrayRef<ParserValue> Args,
-    Diagnostics *Error) {
-  if (BindID.empty()) {
-    return Registry::constructMatcherWrapper(Ctor, NameRange, ExtractFunction,
-                                             FunctionName, Args, Error);
+    MatcherCtor Ctor, SourceRange NameRange, StringRef FunctionName,
+    StringRef BindID, ArrayRef<ParserValue> Args, Diagnostics *Error) {
+  if (BindID.empty() && FunctionName.empty()) {
+    return Registry::constructMatcher(Ctor, NameRange, Args, Error);
+  } else if (!FunctionName.empty()) {
+    return Registry::constructFunctionMatcher(Ctor, NameRange, FunctionName,
+                                              Args, Error);
   } else {
     return Registry::constructBoundMatcher(Ctor, NameRange, BindID, Args,
                                            Error);

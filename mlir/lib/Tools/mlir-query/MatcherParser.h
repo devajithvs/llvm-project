@@ -63,9 +63,8 @@ public:
     // The caller takes ownership of the Matcher object returned.
     virtual VariantMatcher
     actOnMatcherExpression(MatcherCtor Ctor, SourceRange NameRange,
-                           bool ExtractFunction, StringRef FunctionName,
-                           StringRef BindID, ArrayRef<ParserValue> Args,
-                           Diagnostics *Error) = 0;
+                           StringRef FunctionName, StringRef BindID,
+                           ArrayRef<ParserValue> Args, Diagnostics *Error) = 0;
 
     // Look up a matcher by name in the matcher name found by the parser.
     // NameRange is the location of the name in the matcher source, useful for
@@ -114,11 +113,12 @@ public:
     std::optional<MatcherCtor>
     lookupMatcherCtor(StringRef MatcherName) override;
 
-    VariantMatcher
-    actOnMatcherExpression(MatcherCtor Ctor, SourceRange NameRange,
-                           bool ExtractFunction, StringRef FunctionName,
-                           StringRef BindID, ArrayRef<ParserValue> Args,
-                           Diagnostics *Error) override;
+    VariantMatcher actOnMatcherExpression(MatcherCtor Ctor,
+                                          SourceRange NameRange,
+                                          StringRef FunctionName,
+                                          StringRef BindID,
+                                          ArrayRef<ParserValue> Args,
+                                          Diagnostics *Error) override;
 
     bool isBuilderMatcher(MatcherCtor Ctor) const override;
 
@@ -219,7 +219,7 @@ private:
   Parser(CodeTokenizer *Tokenizer, Sema *S, const NamedValueMap *NamedValues,
          Diagnostics *Error);
 
-  bool parseBindID(std::string &BindID);
+  bool parseID(std::string &ID);
 
   bool parseExpressionImpl(VariantValue *Value);
 
