@@ -117,7 +117,6 @@ public:
   // found, or if the number of arguments or argument types do not
   // match the signature. In that case error will contain the description
   // of the error.
-  // TODO: Cleanup - Remove one of these
   static VariantMatcher constructMatcher(MatcherCtor ctor,
                                          SourceRange nameRange,
                                          ArrayRef<ParserValue> args,
@@ -130,7 +129,6 @@ public:
                                                  Diagnostics *error);
 
   // TODO: FIX ALL COMMENTS
-  // TODO: FIX PRINT
   /// Construct a matcher from the registry and bind it.
   ///
   /// Similar the \c constructMatcher() above, but it then tries to bind the

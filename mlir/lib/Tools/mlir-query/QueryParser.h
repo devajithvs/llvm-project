@@ -9,8 +9,11 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERYPARSER_H
 #define MLIR_TOOLS_MLIRQUERY_QUERYPARSER_H
 
+#include "MatcherDiagnostics.h"
+#include "MatcherParser.h"
 #include "Query.h"
 #include "QuerySession.h"
+
 #include "mlir/IR/Matchers.h"
 #include "llvm/LineEditor/LineEditor.h"
 #include <cstddef>

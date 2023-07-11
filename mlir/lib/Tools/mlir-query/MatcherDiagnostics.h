@@ -13,7 +13,6 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERDIAGNOSTICS_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERDIAGNOSTICS_H
 
-#include "MatcherVariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -34,14 +33,6 @@ struct SourceLocation {
 struct SourceRange {
   SourceLocation start;
   SourceLocation end;
-};
-
-// A VariantValue instance annotated with its parser context.
-struct ParserValue {
-  ParserValue() {}
-  StringRef text;
-  SourceRange range;
-  VariantValue value;
 };
 
 // Helper class to manage error messages.
@@ -85,9 +76,9 @@ public:
     ArgStream(std::vector<std::string> *out) : out(out) {}
     template <class T>
     ArgStream &operator<<(const T &arg) {
-      return operator<<(Twine(arg));
+      return operator<<(llvm::Twine(arg));
     }
-    ArgStream &operator<<(const Twine &arg);
+    ArgStream &operator<<(const llvm::Twine &arg);
 
   private:
     std::vector<std::string> *out;
@@ -102,11 +93,11 @@ public:
   public:
     // About to call the constructor for a matcher.
     enum ConstructMatcherEnum { ConstructMatcher };
-    Context(ConstructMatcherEnum, Diagnostics *error, StringRef matcherName,
-            SourceRange matcherRange);
+    Context(ConstructMatcherEnum, Diagnostics *error,
+            llvm::StringRef matcherName, SourceRange matcherRange);
     // About to recurse into parsing one argument for a matcher.
     enum MatcherArgEnum { MatcherArg };
-    Context(MatcherArgEnum, Diagnostics *error, StringRef matcherName,
+    Context(MatcherArgEnum, Diagnostics *error, llvm::StringRef matcherName,
             SourceRange matcherRange, unsigned argNumber);
     ~Context();
 
@@ -153,7 +144,7 @@ public:
     };
     std::vector<Message> messages;
   };
-  ArrayRef<ErrorContent> errors() const { return errorValues; }
+  llvm::ArrayRef<ErrorContent> errors() const { return errorValues; }
 
   // Returns a simple string representation of each error.
   // Each error only shows the error message without any context.

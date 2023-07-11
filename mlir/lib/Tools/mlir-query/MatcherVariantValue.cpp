@@ -78,14 +78,13 @@ public:
     std::vector<DynMatcher> dynMatchers;
     for (auto variantMatcher : args) {
       std::optional<DynMatcher> dynMatcher = variantMatcher.getDynMatcher();
-      // TODO: FIX
-      dynMatchers.push_back(dynMatcher.value());
+      if (dynMatcher)
+        dynMatchers.push_back(dynMatcher.value());
     }
     auto result = DynMatcher::constructVariadic(varOp, dynMatchers);
     return *result;
   }
 
-  // TODO: Remove
   std::string getTypeAsString() const override { return "VariadicOp"; }
 
 private:
@@ -116,7 +115,6 @@ std::optional<DynMatcher> VariantMatcher::getDynMatcher() const {
 
 void VariantMatcher::reset() { value.reset(); }
 
-// TODO: Remove
 std::string VariantMatcher::getTypeAsString() const { return "<Nothing>"; }
 
 VariantValue::VariantValue(const VariantValue &other) : type(VT_Nothing) {

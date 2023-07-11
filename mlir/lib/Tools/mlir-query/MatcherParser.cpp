@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "MatcherParser.h"
-#include "MatcherRegistry.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/ManagedStatic.h"
 #include <string>

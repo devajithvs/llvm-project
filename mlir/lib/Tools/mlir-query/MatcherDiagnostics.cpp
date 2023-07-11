@@ -28,14 +28,15 @@ Diagnostics::ArgStream Diagnostics::pushContextFrame(ContextType type,
 }
 
 Diagnostics::Context::Context(ConstructMatcherEnum, Diagnostics *error,
-                              StringRef matcherName, SourceRange matcherRange)
+                              llvm::StringRef matcherName,
+                              SourceRange matcherRange)
     : error(error) {
   error->pushContextFrame(CT_MatcherConstruct, matcherRange) << matcherName;
 }
 
 Diagnostics::Context::Context(MatcherArgEnum, Diagnostics *error,
-                              StringRef matcherName, SourceRange matcherRange,
-                              unsigned argnumber)
+                              llvm::StringRef matcherName,
+                              SourceRange matcherRange, unsigned argnumber)
     : error(error) {
   error->pushContextFrame(CT_MatcherArg, matcherRange)
       << argnumber << matcherName;
@@ -62,7 +63,8 @@ void Diagnostics::OverloadContext::revertErrors() {
   error->errorValues.resize(beginIndex);
 }
 
-Diagnostics::ArgStream &Diagnostics::ArgStream::operator<<(const Twine &arg) {
+Diagnostics::ArgStream &
+Diagnostics::ArgStream::operator<<(const llvm::Twine &arg) {
   out->push_back(arg.str());
   return *this;
 }
@@ -78,7 +80,8 @@ Diagnostics::ArgStream Diagnostics::addError(SourceRange range,
   return ArgStream(&last.messages.back().args);
 }
 
-static StringRef contextTypeToFormatString(Diagnostics::ContextType type) {
+static llvm::StringRef
+contextTypeToFormatString(Diagnostics::ContextType type) {
   switch (type) {
   case Diagnostics::CT_MatcherConstruct:
     return "Error building matcher $0.";
@@ -88,7 +91,7 @@ static StringRef contextTypeToFormatString(Diagnostics::ContextType type) {
   llvm_unreachable("Unknown ContextType value.");
 }
 
-static StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
+static llvm::StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
   switch (type) {
   case Diagnostics::ET_RegistryMatcherNotFound:
     return "Matcher not found: $0";
@@ -142,11 +145,12 @@ static StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
   llvm_unreachable("Unknown ErrorType value.");
 }
 
-static void formatErrorString(StringRef formatString,
-                              ArrayRef<std::string> args,
+static void formatErrorString(llvm::StringRef formatString,
+                              llvm::ArrayRef<std::string> args,
                               llvm::raw_ostream &OS) {
   while (!formatString.empty()) {
-    std::pair<StringRef, StringRef> pieces = formatString.split("$");
+    std::pair<llvm::StringRef, llvm::StringRef> pieces =
+        formatString.split("$");
     OS << pieces.first.str();
     if (pieces.second.empty())
       break;
@@ -178,7 +182,7 @@ static void printContextFrameToStream(const Diagnostics::ContextFrame &frame,
 
 static void
 printMessageToStream(const Diagnostics::ErrorContent::Message &message,
-                     const Twine Prefix, llvm::raw_ostream &OS) {
+                     const llvm::Twine Prefix, llvm::raw_ostream &OS) {
   maybeAddLineAndColumn(message.range, OS);
   OS << Prefix;
   formatErrorString(errorTypeToFormatString(message.type), message.args, OS);
@@ -193,7 +197,7 @@ static void printErrorContentToStream(const Diagnostics::ErrorContent &content,
       if (i != 0)
         OS << "\n";
       printMessageToStream(content.messages[i],
-                           "Candidate " + Twine(i + 1) + ": ", OS);
+                           "Candidate " + llvm::Twine(i + 1) + ": ", OS);
     }
   }
 }

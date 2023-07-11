@@ -14,6 +14,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERVARIANTVALUE_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERVARIANTVALUE_H
 
+#include "MatcherDiagnostics.h"
 #include "MatchersInternal.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/Twine.h"
@@ -208,6 +209,14 @@ private:
 
   ValueType type;
   AllValues value;
+};
+
+// A VariantValue instance annotated with its parser context.
+struct ParserValue {
+  ParserValue() {}
+  llvm::StringRef text;
+  SourceRange range;
+  VariantValue value;
 };
 
 } // end namespace matcher

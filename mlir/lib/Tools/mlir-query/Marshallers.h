@@ -125,6 +125,11 @@ struct ArgTypeTraits<unsigned> {
   }
 };
 
+// Convert the return values of the functions into a VariantMatcher.
+static VariantMatcher outvalueToVariantMatcher(const DynMatcher &matcher) {
+  return VariantMatcher::SingleMatcher(matcher);
+}
+
 // Interface for generic matcher descriptor.
 // Offers a create() method that constructs the matcher from the provided
 // arguments.
@@ -146,7 +151,7 @@ public:
   // If the matcher is variadic, it can take any number of arguments.
   virtual bool isVariadic() const = 0;
 
-  // Returns the number of arguments accepted by the matcher if it's not
+  // Returns the number of arguments accepted by the matcher if it is not
   // variadic.
   virtual unsigned getNumArgs() const = 0;
 
@@ -191,11 +196,6 @@ private:
   const StringRef matcherName;
   const std::vector<ArgKind> argKinds;
 };
-
-// Convert the return values of the functions into a VariantMatcher.
-inline VariantMatcher outvalueToVariantMatcher(DynMatcher matcher) {
-  return VariantMatcher::SingleMatcher(matcher);
-}
 
 /// Variadic marshaller function.
 template <typename ResultT, typename ArgT,
