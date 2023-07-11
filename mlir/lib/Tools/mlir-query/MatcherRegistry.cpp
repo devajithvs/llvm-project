@@ -201,9 +201,11 @@ VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
 }
 
 // static
-VariantMatcher Registry::constructMatcherWrapper(
-    MatcherCtor Ctor, SourceRange NameRange, bool ExtractFunction,
-    StringRef FunctionName, ArrayRef<ParserValue> Args, Diagnostics *Error) {
+VariantMatcher Registry::constructFunctionMatcher(MatcherCtor Ctor,
+                                                  SourceRange NameRange,
+                                                  StringRef FunctionName,
+                                                  ArrayRef<ParserValue> Args,
+                                                  Diagnostics *Error) {
 
   VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
   if (Out.isNull())
@@ -212,7 +214,6 @@ VariantMatcher Registry::constructMatcherWrapper(
   std::optional<DynMatcher> Result = Out.getSingleMatcher();
 
   if (Result.has_value()) {
-    Result->setExtract(ExtractFunction);
     Result->setFunctionName(FunctionName);
     if (Result.has_value()) {
       return VariantMatcher::SingleMatcher(*Result);

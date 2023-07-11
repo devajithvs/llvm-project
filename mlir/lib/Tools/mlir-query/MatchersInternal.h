@@ -105,7 +105,7 @@ class DynMatcher {
 public:
   // Takes ownership of the provided implementation pointer.
   DynMatcher(MatcherInterface *Implementation)
-      : Implementation(Implementation), ExtractFunction(false) {}
+      : Implementation(Implementation) {}
 
   /// Construct from a variadic function.
   enum VariadicOperator {
@@ -156,16 +156,16 @@ public:
 
   DynMatcher *clone() const { return new DynMatcher(*this); }
 
-  void setExtract(bool extractFunction) { ExtractFunction = extractFunction; };
-  void setFunctionName(StringRef functionName) { FunctionName = functionName; };
+  void setFunctionName(StringRef functionName) {
+    FunctionName = functionName.str();
+  };
 
-  bool getExtract() const { return ExtractFunction; };
+  bool isExtract() const { return !FunctionName.empty(); };
   StringRef getFunctionName() const { return FunctionName; };
 
 private:
   llvm::IntrusiveRefCntPtr<MatcherInterface> Implementation;
-  bool ExtractFunction;
-  StringRef FunctionName;
+  std::string FunctionName;
 };
 
 /// VariadicOperatorMatcher related types.

@@ -123,10 +123,11 @@ public:
                                          ArrayRef<ParserValue> Args,
                                          Diagnostics *Error);
 
-  static VariantMatcher
-  constructMatcherWrapper(MatcherCtor Ctor, SourceRange NameRange,
-                          bool ExtractFunction, StringRef FunctionName,
-                          ArrayRef<ParserValue> Args, Diagnostics *Error);
+  static VariantMatcher constructFunctionMatcher(MatcherCtor Ctor,
+                                                 SourceRange NameRange,
+                                                 StringRef FunctionName,
+                                                 ArrayRef<ParserValue> Args,
+                                                 Diagnostics *Error);
 
   // TODO: FIX ALL COMMENTS
   // TODO: FIX PRINT
