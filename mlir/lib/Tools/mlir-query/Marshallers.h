@@ -284,17 +284,38 @@ private:
   const ArgKind ArgsKind;
 };
 
+// Helper function to check if argument count matches expected count
+inline bool checkArgCount(SourceRange NameRange, size_t expectedArgCount,
+                          ArrayRef<ParserValue> Args, Diagnostics *Error) {
+  if (Args.size() != expectedArgCount) {
+    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
+        << expectedArgCount << Args.size();
+    return false;
+  }
+  return true;
+}
+
+// Helper function to check if argument type is correct
+template <typename ArgType>
+inline bool checkArgType(int index, StringRef MatcherName,
+                         ArrayRef<ParserValue> Args, Diagnostics *Error) {
+  if (!ArgTypeTraits<ArgType>::hasCorrectType(Args[index].Value)) {
+    Error->addError(Args[index].Range, Error->ET_RegistryWrongArgType)
+        << MatcherName << index + 1;
+    return false;
+  }
+  return true;
+}
+
 // 0-arg marshaller function.
 template <typename ReturnType>
 static VariantMatcher
 matcherMarshall0(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
                  ArrayRef<ParserValue> Args, Diagnostics *Error) {
   using FuncType = ReturnType (*)();
-  if (Args.size() != 0) {
-    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
-        << 0 << Args.size();
+  if (!checkArgCount(NameRange, 0, Args, Error))
     return VariantMatcher();
-  }
+
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)();
   return outvalueToVariantMatcher(
       *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
@@ -306,44 +327,27 @@ static VariantMatcher
 matcherMarshall1(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
                  ArrayRef<ParserValue> Args, Diagnostics *Error) {
   using FuncType = ReturnType (*)(ArgType1);
-  // TODO: Extract this into a separate function.
-  if (Args.size() != 1) {
-    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
-        << 1 << Args.size();
+  if (!checkArgCount(NameRange, 1, Args, Error) ||
+      !checkArgType<ArgType1>(0, MatcherName, Args, Error))
     return VariantMatcher();
-  }
-  if (!ArgTypeTraits<ArgType1>::hasCorrectType(Args[0].Value)) {
-    Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
-        << MatcherName << 1;
-    return VariantMatcher();
-  }
+
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
       ArgTypeTraits<ArgType1>::get(Args[0].Value));
   return outvalueToVariantMatcher(
       *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
 }
 
-/// \brief 2-arg marshaller function.
+// 2-arg marshaller function.
 template <typename ReturnType, typename ArgType1, typename ArgType2>
 static VariantMatcher
 matcherMarshall2(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
                  ArrayRef<ParserValue> Args, Diagnostics *Error) {
   using FuncType = ReturnType (*)(ArgType1, ArgType2);
-  if (Args.size() != 2) {
-    Error->addError(NameRange, Error->ET_RegistryWrongArgCount)
-        << 1 << Args.size();
+  if (!checkArgCount(NameRange, 2, Args, Error) ||
+      !checkArgType<ArgType1>(0, MatcherName, Args, Error) ||
+      !checkArgType<ArgType2>(1, MatcherName, Args, Error))
     return VariantMatcher();
-  }
-  if (!ArgTypeTraits<ArgType1>::hasCorrectType(Args[0].Value)) {
-    Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
-        << MatcherName << 1;
-    return VariantMatcher();
-  }
-  if (!ArgTypeTraits<ArgType2>::hasCorrectType(Args[1].Value)) {
-    Error->addError(Args[1].Range, Error->ET_RegistryWrongArgType)
-        << MatcherName << 1;
-    return VariantMatcher();
-  }
+
   ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
       ArgTypeTraits<ArgType1>::get(Args[0].Value),
       ArgTypeTraits<ArgType2>::get(Args[1].Value));
