@@ -120,24 +120,30 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   Operation *rootOp = QS.rootOp;
   auto matches = getMatches(rootOp, matcher);
 
+  MLIRContext *context = rootOp->getContext();
+  context->printOpOnDiagnostic(false);
+  SourceMgrDiagnosticHandler sourceMgrHandler(*QS.sourceMgr, context);
+
   if (matcher.isExtract()) {
     auto functionName = matcher.getFunctionName();
-    MLIRContext context;
-    context.loadDialect<func::FuncDialect>();
-    OpBuilder builder(&context);
+    context->loadDialect<func::FuncDialect>();
+    OpBuilder builder(context);
     Operation *function = extractFunction(matches, builder, functionName);
     OS << "\n\n" << *function << "\n\n\n";
   } else {
     unsigned matchCount = 0;
+    OS << "\n";
     for (auto *op : matches) {
-      auto opLoc = op->getLoc().cast<FileLineColLoc>();
-      OS << "\nMatch #" << ++matchCount << ":\n\n";
-      OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
-         << opLoc.getColumn() << ": note: \"root\" binds here\n"
-         << *op << "\n";
+      OS << "Match #" << ++matchCount << ":\n\n";
+      // Placeholder "root" binding for the initial draft.
+      op->emitRemark("\"root\" binds here");
+
+      // auto opLoc = op->getLoc().cast<FileLineColLoc>();
+      // OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
+      //    << opLoc.getColumn() << ": note: \"root\" binds here\n"
+      //    << *op << "\n";
     }
-    OS << "\n"
-       << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
+    OS << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
   }
 
   return true;
