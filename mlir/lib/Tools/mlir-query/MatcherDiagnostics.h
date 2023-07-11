@@ -26,22 +26,22 @@ namespace query {
 namespace matcher {
 
 struct SourceLocation {
-  SourceLocation() : Line(), Column() {}
-  unsigned Line;
-  unsigned Column;
+  SourceLocation() : line(), column() {}
+  unsigned line;
+  unsigned column;
 };
 
 struct SourceRange {
-  SourceLocation Start;
-  SourceLocation End;
+  SourceLocation start;
+  SourceLocation end;
 };
 
 // A VariantValue instance annotated with its parser context.
 struct ParserValue {
   ParserValue() {}
-  StringRef Text;
-  SourceRange Range;
-  VariantValue Value;
+  StringRef text;
+  SourceRange range;
+  VariantValue value;
 };
 
 // Helper class to manage error messages.
@@ -80,15 +80,15 @@ public:
   // Helper stream class.
   class ArgStream {
   public:
-    ArgStream(std::vector<std::string> *Out) : Out(Out) {}
+    ArgStream(std::vector<std::string> *out) : out(out) {}
     template <class T>
-    ArgStream &operator<<(const T &Arg) {
-      return operator<<(Twine(Arg));
+    ArgStream &operator<<(const T &arg) {
+      return operator<<(Twine(arg));
     }
-    ArgStream &operator<<(const Twine &Arg);
+    ArgStream &operator<<(const Twine &arg);
 
   private:
-    std::vector<std::string> *Out;
+    std::vector<std::string> *out;
   };
 
   // Class defining a parser context.
@@ -100,16 +100,16 @@ public:
   public:
     // About to call the constructor for a matcher.
     enum ConstructMatcherEnum { ConstructMatcher };
-    Context(ConstructMatcherEnum, Diagnostics *Error, StringRef MatcherName,
-            SourceRange MatcherRange);
+    Context(ConstructMatcherEnum, Diagnostics *error, StringRef matcherName,
+            SourceRange matcherRange);
     // About to recurse into parsing one argument for a matcher.
     enum MatcherArgEnum { MatcherArg };
-    Context(MatcherArgEnum, Diagnostics *Error, StringRef MatcherName,
-            SourceRange MatcherRange, unsigned ArgNumber);
+    Context(MatcherArgEnum, Diagnostics *error, StringRef matcherName,
+            SourceRange matcherRange, unsigned argNumber);
     ~Context();
 
   private:
-    Diagnostics *const Error;
+    Diagnostics *const error;
   };
 
   // Context for overloaded matcher construction.
@@ -117,41 +117,41 @@ public:
   // as "candidate" overloads for the same matcher.
   struct OverloadContext {
   public:
-    OverloadContext(Diagnostics *Error);
+    OverloadContext(Diagnostics *error);
     ~OverloadContext();
 
     // Revert all errors that happened within this context.
     void revertErrors();
 
   private:
-    Diagnostics *const Error;
-    unsigned BeginIndex;
+    Diagnostics *const error;
+    unsigned beginIndex;
   };
 
   // Add an error to the diagnostics.
   // All the context information will be kept on the error message.
   // Returns a helper class to allow the caller to pass the arguments for the
   // error message, using the << operator.
-  ArgStream addError(SourceRange Range, ErrorType Error);
+  ArgStream addError(SourceRange range, ErrorType error);
 
   // Information stored for one frame of the context.
   struct ContextFrame {
-    ContextType Type;
-    SourceRange Range;
-    std::vector<std::string> Args;
+    ContextType type;
+    SourceRange range;
+    std::vector<std::string> args;
   };
 
   // Information stored for each error found.
   struct ErrorContent {
-    std::vector<ContextFrame> ContextStack;
+    std::vector<ContextFrame> contextStack;
     struct Message {
-      SourceRange Range;
-      ErrorType Type;
-      std::vector<std::string> Args;
+      SourceRange range;
+      ErrorType type;
+      std::vector<std::string> args;
     };
-    std::vector<Message> Messages;
+    std::vector<Message> messages;
   };
-  ArrayRef<ErrorContent> errors() const { return Errors; }
+  ArrayRef<ErrorContent> errors() const { return errorValues; }
 
   // Returns a simple string representation of each error.
   // Each error only shows the error message without any context.
@@ -165,10 +165,10 @@ public:
 
 private:
   // Helper function used by the constructors of ContextFrame.
-  ArgStream pushContextFrame(ContextType Type, SourceRange Range);
+  ArgStream pushContextFrame(ContextType type, SourceRange range);
 
-  std::vector<ContextFrame> ContextStack;
-  std::vector<ErrorContent> Errors;
+  std::vector<ContextFrame> contextStack;
+  std::vector<ErrorContent> errorValues;
 };
 
 } // namespace matcher

@@ -26,17 +26,17 @@ class QueryParser {
 public:
   // Parse Line as a query and return a QueryRef representing the query, which
   // may be an InvalidQuery.
-  static QueryRef parse(StringRef Line, const QuerySession &QS);
+  static QueryRef parse(StringRef line, const QuerySession &QS);
 
   // Compute a list of completions for Line assuming a cursor at
   // Pos is the characters past the start of Line, ordered from most
   // likely to least likely and returns a vector of completions for Line.
   static std::vector<llvm::LineEditor::Completion>
-  complete(StringRef Line, size_t Pos, const QuerySession &QS);
+  complete(StringRef line, size_t pos, const QuerySession &QS);
 
 private:
-  QueryParser(StringRef Line, const QuerySession &QS)
-      : Line(Line), CompletionPos(nullptr), QS(QS) {}
+  QueryParser(StringRef line, const QuerySession &QS)
+      : line(line), completionPos(nullptr), QS(QS) {}
 
   StringRef lexWord();
 
@@ -54,10 +54,10 @@ private:
   // which may be an InvalidQuery if a parse error occurs.
   QueryRef doParse();
 
-  StringRef Line;
+  StringRef line;
 
-  const char *CompletionPos;
-  std::vector<llvm::LineEditor::Completion> Completions;
+  const char *completionPos;
+  std::vector<llvm::LineEditor::Completion> completions;
 
   const QuerySession &QS;
 };

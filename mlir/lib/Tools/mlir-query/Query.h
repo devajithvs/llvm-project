@@ -32,28 +32,28 @@ enum QueryKind {
 class QuerySession;
 
 struct Query : llvm::RefCountedBase<Query> {
-  Query(QueryKind Kind) : Kind(Kind) {}
+  Query(QueryKind kind) : kind(kind) {}
   virtual ~Query();
 
   // Perform the query on QS and print output to OS.
   // Return false if an error occurs, otherwise return true.
   virtual bool run(llvm::raw_ostream &OS, QuerySession &QS) const = 0;
 
-  llvm::StringRef RemainingContent;
-  const QueryKind Kind;
+  llvm::StringRef remainingContent;
+  const QueryKind kind;
 };
 
 typedef llvm::IntrusiveRefCntPtr<Query> QueryRef;
 
 // Any query which resulted in a parse error. The error message is in ErrStr.
 struct InvalidQuery : Query {
-  InvalidQuery(const llvm::Twine &ErrStr)
-      : Query(QK_Invalid), ErrStr(ErrStr.str()) {}
+  InvalidQuery(const llvm::Twine &errStr)
+      : Query(QK_Invalid), errStr(errStr.str()) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  std::string ErrStr;
+  std::string errStr;
 
-  static bool classof(const Query *Q) { return Q->Kind == QK_Invalid; }
+  static bool classof(const Query *Q) { return Q->kind == QK_Invalid; }
 };
 
 // No-op query (i.e. a blank line).
@@ -61,7 +61,7 @@ struct NoOpQuery : Query {
   NoOpQuery() : Query(QK_NoOp) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  static bool classof(const Query *Q) { return Q->Kind == QK_NoOp; }
+  static bool classof(const Query *Q) { return Q->kind == QK_NoOp; }
 };
 
 // Query for "help".
@@ -69,20 +69,20 @@ struct HelpQuery : Query {
   HelpQuery() : Query(QK_Help) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  static bool classof(const Query *Q) { return Q->Kind == QK_Help; }
+  static bool classof(const Query *Q) { return Q->kind == QK_Help; }
 };
 
 // Query for "match MATCHER".
 struct MatchQuery : Query {
-  MatchQuery(StringRef Source, const matcher::DynMatcher &Matcher)
-      : Query(QK_Match), matcher(Matcher), Source(Source) {}
+  MatchQuery(StringRef source, const matcher::DynMatcher &matcher)
+      : Query(QK_Match), matcher(matcher), source(source) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
   const matcher::DynMatcher matcher;
 
-  StringRef Source;
+  StringRef source;
 
-  static bool classof(const Query *Q) { return Q->Kind == QK_Match; }
+  static bool classof(const Query *Q) { return Q->kind == QK_Match; }
 };
 
 template <typename T>
@@ -101,19 +101,19 @@ struct SetQueryKind<OutputKind> {
 // Query for "set VAR VALUE".
 template <typename T>
 struct SetQuery : Query {
-  SetQuery(T QuerySession::*Var, T Value)
-      : Query(SetQueryKind<T>::value), Var(Var), Value(Value) {}
+  SetQuery(T QuerySession::*var, T value)
+      : Query(SetQueryKind<T>::value), var(var), value(value) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override {
-    QS.*Var = Value;
+    QS.*var = value;
     return true;
   }
 
   static bool classof(const Query *Q) {
-    return Q->Kind == SetQueryKind<T>::value;
+    return Q->kind == SetQueryKind<T>::value;
   }
 
-  T QuerySession::*Var;
-  T Value;
+  T QuerySession::*var;
+  T value;
 };
 
 } // namespace query

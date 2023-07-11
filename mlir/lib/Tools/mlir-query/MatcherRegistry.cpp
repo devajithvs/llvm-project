@@ -43,20 +43,20 @@ public:
   RegistryMaps();
   ~RegistryMaps();
 
-  const ConstructorMap &constructors() const { return Constructors; }
+  const ConstructorMap &constructors() const { return constructorMap; }
 
 private:
-  void registerMatcher(StringRef MatcherName,
-                       std::unique_ptr<MatcherDescriptor> Callback);
-  ConstructorMap Constructors;
+  void registerMatcher(StringRef matcherName,
+                       std::unique_ptr<MatcherDescriptor> callback);
+  ConstructorMap constructorMap;
 };
 
 } // namespace
 
 void RegistryMaps::registerMatcher(
-    StringRef MatcherName, std::unique_ptr<MatcherDescriptor> Callback) {
-  assert(!Constructors.contains(MatcherName));
-  Constructors[MatcherName] = std::move(Callback);
+    StringRef matcherName, std::unique_ptr<MatcherDescriptor> callback) {
+  assert(!constructorMap.contains(matcherName));
+  constructorMap[matcherName] = std::move(callback);
 }
 
 // Generate a registry map with all the known matchers.
@@ -70,15 +70,15 @@ RegistryMaps::RegistryMaps() {
   };
 
   // Register matchers using the template function
-  registerOpMatcher("allOf", extramatcher::allOf);
-  registerOpMatcher("anyOf", extramatcher::anyOf);
-  registerOpMatcher("hasArgument", extramatcher::hasArgument);
-  registerOpMatcher("definedBy", extramatcher::definedBy);
-  registerOpMatcher("getDefinitions", extramatcher::getDefinitions);
-  registerOpMatcher("getAllDefinitions", extramatcher::getAllDefinitions);
-  registerOpMatcher("uses", extramatcher::uses);
-  registerOpMatcher("getUses", extramatcher::getUses);
-  registerOpMatcher("getAllUses", extramatcher::getAllUses);
+  registerOpMatcher("allOf", extramatchers::allOf);
+  registerOpMatcher("anyOf", extramatchers::anyOf);
+  registerOpMatcher("hasArgument", extramatchers::hasArgument);
+  registerOpMatcher("definedBy", extramatchers::definedBy);
+  registerOpMatcher("getDefinitions", extramatchers::getDefinitions);
+  registerOpMatcher("getAllDefinitions", extramatchers::getAllDefinitions);
+  registerOpMatcher("uses", extramatchers::uses);
+  registerOpMatcher("getUses", extramatchers::getUses);
+  registerOpMatcher("getAllUses", extramatchers::getAllUses);
   registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
   registerOpMatcher("hasOpAttrName", static_cast<attrFnType *>(m_Attr));
   registerOpMatcher("hasOpName", static_cast<opFnType *>(m_Op));
@@ -95,153 +95,153 @@ RegistryMaps::RegistryMaps() {
 
 RegistryMaps::~RegistryMaps() = default;
 
-static llvm::ManagedStatic<RegistryMaps> RegistryData;
+static llvm::ManagedStatic<RegistryMaps> registryData;
 
-internal::MatcherDescriptorPtr::MatcherDescriptorPtr(MatcherDescriptor *Ptr)
-    : Ptr(Ptr) {}
+internal::MatcherDescriptorPtr::MatcherDescriptorPtr(MatcherDescriptor *ptr)
+    : ptr(ptr) {}
 
-internal::MatcherDescriptorPtr::~MatcherDescriptorPtr() { delete Ptr; }
+internal::MatcherDescriptorPtr::~MatcherDescriptorPtr() { delete ptr; }
 
-bool Registry::isBuilderMatcher(MatcherCtor Ctor) {
-  return Ctor->isBuilderMatcher();
+bool Registry::isBuilderMatcher(MatcherCtor ctor) {
+  return ctor->isBuilderMatcher();
 }
 
 internal::MatcherDescriptorPtr
-Registry::buildMatcherCtor(MatcherCtor Ctor, SourceRange NameRange,
-                           ArrayRef<ParserValue> Args, Diagnostics *Error) {
+Registry::buildMatcherCtor(MatcherCtor ctor, SourceRange nameRange,
+                           ArrayRef<ParserValue> args, Diagnostics *error) {
   return internal::MatcherDescriptorPtr(
-      Ctor->buildMatcherCtor(NameRange, Args, Error).release());
+      ctor->buildMatcherCtor(nameRange, args, error).release());
 }
 
-std::optional<MatcherCtor> Registry::lookupMatcherCtor(StringRef MatcherName) {
-  auto it = RegistryData->constructors().find(MatcherName);
-  return it == RegistryData->constructors().end() ? std::optional<MatcherCtor>()
+std::optional<MatcherCtor> Registry::lookupMatcherCtor(StringRef matcherName) {
+  auto it = registryData->constructors().find(matcherName);
+  return it == registryData->constructors().end() ? std::optional<MatcherCtor>()
                                                   : it->second.get();
 }
 
 std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
-    ArrayRef<std::pair<MatcherCtor, unsigned>> Context) {
+    ArrayRef<std::pair<MatcherCtor, unsigned>> context) {
   // Starting with the above seed of acceptable top-level matcher types, compute
   // the acceptable type set for the argument indicated by each context element.
   std::set<ArgKind> typeSet;
   typeSet.insert(ArgKind(ArgKind::AK_Matcher));
-  for (const auto &CtxEntry : Context) {
-    MatcherCtor Ctor = CtxEntry.first;
-    unsigned ArgNumber = CtxEntry.second;
-    std::vector<ArgKind> NextTypeSet;
-    if ((Ctor->isVariadic() || ArgNumber < Ctor->getNumArgs()))
-      Ctor->getArgKinds(ArgNumber, NextTypeSet);
-    typeSet.insert(NextTypeSet.begin(), NextTypeSet.end());
+  for (const auto &ctxEntry : context) {
+    MatcherCtor ctor = ctxEntry.first;
+    unsigned argNumber = ctxEntry.second;
+    std::vector<ArgKind> nextTypeSet;
+    if ((ctor->isVariadic() || argNumber < ctor->getNumArgs()))
+      ctor->getArgKinds(argNumber, nextTypeSet);
+    typeSet.insert(nextTypeSet.begin(), nextTypeSet.end());
   }
   return std::vector<ArgKind>(typeSet.begin(), typeSet.end());
 }
 
 std::vector<MatcherCompletion>
-Registry::getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes) {
-  std::vector<MatcherCompletion> Completions;
+Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
+  std::vector<MatcherCompletion> completions;
 
   // Search the registry for acceptable matchers.
-  for (const auto &M : RegistryData->constructors()) {
-    const MatcherDescriptor &Matcher = *M.getValue();
-    StringRef Name = M.getKey();
+  for (const auto &m : registryData->constructors()) {
+    const MatcherDescriptor &matcher = *m.getValue();
+    StringRef name = m.getKey();
 
-    unsigned NumArgs = Matcher.isVariadic() ? 1 : Matcher.getNumArgs();
-    std::vector<std::vector<ArgKind>> ArgsKinds(NumArgs);
-    for (const ArgKind &Kind : AcceptedTypes) {
-      if (Kind.getArgKind() != Kind.AK_Matcher) {
+    unsigned numArgs = matcher.isVariadic() ? 1 : matcher.getNumArgs();
+    std::vector<std::vector<ArgKind>> argKinds(numArgs);
+    for (const ArgKind &kind : acceptedTypes) {
+      if (kind.getArgKind() != kind.AK_Matcher) {
         continue;
       }
 
-      for (unsigned Arg = 0; Arg != NumArgs; ++Arg)
-        Matcher.getArgKinds(Arg, ArgsKinds[Arg]);
+      for (unsigned arg = 0; arg != numArgs; ++arg)
+        matcher.getArgKinds(arg, argKinds[arg]);
     }
 
-    std::string Decl;
-    llvm::raw_string_ostream OS(Decl);
+    std::string decl;
+    llvm::raw_string_ostream OS(decl);
 
-    std::string TypedText = std::string(Name);
+    std::string typedText = std::string(name);
 
-    OS << "Matcher: " << Name << "(";
-    for (const std::vector<ArgKind> &Arg : ArgsKinds) {
-      if (&Arg != &ArgsKinds[0])
+    OS << "Matcher: " << name << "(";
+    for (const std::vector<ArgKind> &arg : argKinds) {
+      if (&arg != &argKinds[0])
         OS << ", ";
 
-      bool FirstArgKind = true;
+      bool firstArgKind = true;
       // Two steps. First all non-matchers, then matchers only.
-      for (const ArgKind &AK : Arg) {
-        if (!FirstArgKind)
+      for (const ArgKind &argKind : arg) {
+        if (!firstArgKind)
           OS << "|";
-        FirstArgKind = false;
-        OS << AK.asString();
+        firstArgKind = false;
+        OS << argKind.asString();
       }
     }
 
-    if (Matcher.isVariadic())
+    if (matcher.isVariadic())
       OS << "...";
     OS << ")";
 
-    TypedText += "(";
-    if (ArgsKinds.empty())
-      TypedText += ")";
-    else if (ArgsKinds[0][0].getArgKind() == ArgKind::AK_String)
-      TypedText += "\"";
+    typedText += "(";
+    if (argKinds.empty())
+      typedText += ")";
+    else if (argKinds[0][0].getArgKind() == ArgKind::AK_String)
+      typedText += "\"";
 
-    Completions.emplace_back(TypedText, OS.str());
+    completions.emplace_back(typedText, OS.str());
   }
 
-  return Completions;
+  return completions;
 }
 
 // static
-VariantMatcher Registry::constructMatcher(MatcherCtor Ctor,
-                                          SourceRange NameRange,
-                                          ArrayRef<ParserValue> Args,
-                                          Diagnostics *Error) {
-  return Ctor->create(NameRange, Args, Error);
+VariantMatcher Registry::constructMatcher(MatcherCtor ctor,
+                                          SourceRange nameRange,
+                                          ArrayRef<ParserValue> args,
+                                          Diagnostics *error) {
+  return ctor->create(nameRange, args, error);
 }
 
 // static
-VariantMatcher Registry::constructFunctionMatcher(MatcherCtor Ctor,
-                                                  SourceRange NameRange,
+VariantMatcher Registry::constructFunctionMatcher(MatcherCtor ctor,
+                                                  SourceRange nameRange,
                                                   StringRef FunctionName,
-                                                  ArrayRef<ParserValue> Args,
-                                                  Diagnostics *Error) {
+                                                  ArrayRef<ParserValue> args,
+                                                  Diagnostics *error) {
 
-  VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
-  if (Out.isNull())
-    return Out;
+  VariantMatcher out = constructMatcher(ctor, nameRange, args, error);
+  if (out.isNull())
+    return out;
 
-  std::optional<DynMatcher> Result = Out.getSingleMatcher();
+  std::optional<DynMatcher> result = out.getSingleMatcher();
 
-  if (Result.has_value()) {
-    Result->setFunctionName(FunctionName);
-    if (Result.has_value()) {
-      return VariantMatcher::SingleMatcher(*Result);
+  if (result.has_value()) {
+    result->setFunctionName(FunctionName);
+    if (result.has_value()) {
+      return VariantMatcher::SingleMatcher(*result);
     }
   }
-  Error->addError(NameRange, Error->ET_RegistryNotBindable);
-  return Out;
+  error->addError(nameRange, error->ET_RegistryNotBindable);
+  return out;
 }
 
 // static
-VariantMatcher Registry::constructBoundMatcher(MatcherCtor Ctor,
-                                               SourceRange NameRange,
-                                               StringRef BindID,
-                                               ArrayRef<ParserValue> Args,
-                                               Diagnostics *Error) {
-  VariantMatcher Out = constructMatcher(Ctor, NameRange, Args, Error);
-  if (Out.isNull())
-    return Out;
+VariantMatcher Registry::constructBoundMatcher(MatcherCtor ctor,
+                                               SourceRange nameRange,
+                                               StringRef bindId,
+                                               ArrayRef<ParserValue> args,
+                                               Diagnostics *error) {
+  VariantMatcher out = constructMatcher(ctor, nameRange, args, error);
+  if (out.isNull())
+    return out;
 
-  std::optional<DynMatcher> Result = Out.getSingleMatcher();
-  if (Result.has_value()) {
+  std::optional<DynMatcher> result = out.getSingleMatcher();
+  if (result.has_value()) {
     // TODO: FIXME
-    // std::optional<DynMatcher> Bound = Result->tryBind(BindID);
+    // std::optional<DynMatcher> Bound = result->tryBind(BindID);
     // if (Bound.has_value()) {
-    return VariantMatcher::SingleMatcher(*Result);
+    return VariantMatcher::SingleMatcher(*result);
     // }
   }
-  Error->addError(NameRange, Error->ET_RegistryNotBindable);
+  error->addError(nameRange, error->ET_RegistryNotBindable);
   return VariantMatcher();
 }
 

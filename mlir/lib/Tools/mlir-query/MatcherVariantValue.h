@@ -29,18 +29,18 @@ namespace matcher {
 class ArgKind {
 public:
   enum Kind { AK_Matcher, AK_Boolean, AK_Double, AK_Unsigned, AK_String };
-  ArgKind(Kind K) : K(K) {}
+  ArgKind(Kind k) : k(k) {}
 
-  Kind getArgKind() const { return K; }
+  Kind getArgKind() const { return k; }
 
-  bool operator<(const ArgKind &Other) const { return K < Other.K; }
+  bool operator<(const ArgKind &other) const { return k < other.k; }
 
   /// To the requested destination type.
   /// String representation of the type.
   std::string asString() const;
 
 private:
-  Kind K;
+  Kind k;
 };
 
 /// A variant matcher object.
@@ -60,12 +60,12 @@ class VariantMatcher {
   /// \brief Methods that depend on T from hasTypedMatcher/getTypedMatcher.
   class MatcherOps {
   public:
-    /// Constructs a variadic typed matcher from \p InnerMatchers.
+    /// Constructs a variadic typed matcher from \p innerMatchers.
     /// Will try to convert each inner matcher to the destination type and
     /// return std::nullopt if it fails to do so.
     std::optional<DynMatcher>
-    constructVariadicOperator(DynMatcher::VariadicOperator Op,
-                              ArrayRef<VariantMatcher> InnerMatchers) const;
+    constructVariadicOperator(DynMatcher::VariadicOperator varOp,
+                              ArrayRef<VariantMatcher> innerMatchers) const;
   };
 
   /// \brief Payload interface to be specialized by each matcher type.
@@ -84,25 +84,25 @@ public:
   VariantMatcher();
 
   /// \brief Clones the provided matcher.
-  static VariantMatcher SingleMatcher(DynMatcher Matcher);
+  static VariantMatcher SingleMatcher(DynMatcher matcher);
 
   /// \brief Clones the provided matchers.
   ///
   /// They should be the result of a polymorphic matcher.
-  static VariantMatcher PolymorphicMatcher(ArrayRef<DynMatcher> Matchers);
+  static VariantMatcher PolymorphicMatcher(ArrayRef<DynMatcher> matchers);
 
   /// \brief Creates a 'variadic' operator matcher.
   ///
   /// It will bind to the appropriate type on getTypedMatcher<T>().
   static VariantMatcher
   VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp,
-                          ArrayRef<VariantMatcher> Args);
+                          ArrayRef<VariantMatcher> args);
 
   /// Makes the matcher the "null" matcher.
   void reset();
 
   /// Checks if the matcher is null.
-  bool isNull() const { return !Value; }
+  bool isNull() const { return !value; }
 
   /// Returns a single matcher, if there is no ambiguity.
   ///
@@ -118,13 +118,13 @@ public:
   std::string getTypeAsString() const;
 
 private:
-  explicit VariantMatcher(std::shared_ptr<Payload> Value)
-      : Value(std::move(Value)) {}
+  explicit VariantMatcher(std::shared_ptr<Payload> value)
+      : value(std::move(value)) {}
 
   class SinglePayload;
   class VariadicOpPayload;
 
-  std::shared_ptr<const Payload> Value;
+  std::shared_ptr<const Payload> value;
 };
 
 // Variant value class.
@@ -143,11 +143,11 @@ private:
 //  - VariantMatcher
 class VariantValue {
 public:
-  VariantValue() : Type(VT_Nothing) {}
+  VariantValue() : type(VT_Nothing) {}
 
-  VariantValue(const VariantValue &Other);
+  VariantValue(const VariantValue &other);
   ~VariantValue();
-  VariantValue &operator=(const VariantValue &Other);
+  VariantValue &operator=(const VariantValue &other);
 
   // Specific constructors for each supported type.
   VariantValue(bool Boolean);
@@ -206,8 +206,8 @@ private:
     VariantMatcher *Matcher;
   };
 
-  ValueType Type;
-  AllValues Value;
+  ValueType type;
+  AllValues value;
 };
 
 } // end namespace matcher

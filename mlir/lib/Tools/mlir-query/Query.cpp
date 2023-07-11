@@ -30,7 +30,7 @@ namespace query {
 Query::~Query() {}
 
 bool InvalidQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  OS << ErrStr << "\n";
+  OS << errStr << "\n";
   return false;
 }
 
@@ -117,7 +117,7 @@ Operation *extractFunction(std::vector<Operation *> &ops, OpBuilder builder,
 }
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  Operation *rootOp = QS.Op;
+  Operation *rootOp = QS.rootOp;
   auto matches = getMatches(rootOp, matcher);
 
   if (matcher.isExtract()) {
@@ -128,16 +128,16 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
     Operation *function = extractFunction(matches, builder, functionName);
     OS << "\n\n" << *function << "\n\n\n";
   } else {
-    unsigned MatchCount = 0;
+    unsigned matchCount = 0;
     for (auto *op : matches) {
       auto opLoc = op->getLoc().cast<FileLineColLoc>();
-      OS << "\nMatch #" << ++MatchCount << ":\n\n";
+      OS << "\nMatch #" << ++matchCount << ":\n\n";
       OS << opLoc.getFilename().getValue() << ":" << opLoc.getLine() << ":"
          << opLoc.getColumn() << ": note: \"root\" binds here\n"
          << *op << "\n";
     }
     OS << "\n"
-       << MatchCount << (MatchCount == 1 ? " match.\n\n" : " matches.\n\n");
+       << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
   }
 
   return true;

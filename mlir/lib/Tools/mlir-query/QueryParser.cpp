@@ -30,96 +30,96 @@ namespace query {
 // is found before End, return StringRef().  Begin is adjusted to exclude the
 // lexed region.
 StringRef QueryParser::lexWord() {
-  Line = Line.drop_while([](char c) {
+  line = line.drop_while([](char c) {
     // Don't trim newlines.
     return StringRef(" \t\v\f\r").contains(c);
   });
 
-  if (Line.empty())
-    // Even though the Line is empty, it contains a pointer and
+  if (line.empty())
+    // Even though the line is empty, it contains a pointer and
     // a (zero) length. The pointer is used in the LexOrCompleteWord
     // code completion.
-    return Line;
+    return line;
 
-  StringRef Word;
-  if (Line.front() == '#') {
-    Word = Line.substr(0, 1);
+  StringRef word;
+  if (line.front() == '#') {
+    word = line.substr(0, 1);
   } else {
-    Word = Line.take_until([](char c) {
+    word = line.take_until([](char c) {
       // Don't trim newlines.
       return StringRef(" \t\v\f\r").contains(c);
     });
   }
 
-  Line = Line.drop_front(Word.size());
-  return Word;
+  line = line.drop_front(word.size());
+  return word;
 }
 
 // This is the StringSwitch-alike used by lexOrCompleteWord below. See that
 // function for details.
 template <typename T>
 struct QueryParser::LexOrCompleteWord {
-  StringRef Word;
-  StringSwitch<T> Switch;
+  StringRef word;
+  StringSwitch<T> stringSwitch;
 
-  QueryParser *P;
-  // Set to the completion point offset in Word, or StringRef::npos if
-  // completion point not in Word.
-  size_t WordCompletionPos;
+  QueryParser *queryParser;
+  // Set to the completion point offset in word, or StringRef::npos if
+  // completion point not in word.
+  size_t wordCompletionPos;
 
-  // Lexes a word and stores it in Word. Returns a LexOrCompleteWord<T> object
+  // Lexes a word and stores it in word. Returns a LexOrCompleteword<T> object
   // that can be used like a llvm::StringSwitch<T>, but adds cases as possible
   // completions if the lexed word contains the completion point.
-  LexOrCompleteWord(QueryParser *P, StringRef &OutWord)
-      : Word(P->lexWord()), Switch(Word), P(P),
-        WordCompletionPos(StringRef::npos) {
-    OutWord = Word;
-    if (P->CompletionPos && P->CompletionPos <= Word.data() + Word.size()) {
-      if (P->CompletionPos < Word.data())
-        WordCompletionPos = 0;
+  LexOrCompleteWord(QueryParser *queryParser, StringRef &outWord)
+      : word(queryParser->lexWord()), stringSwitch(word), queryParser(queryParser),
+        wordCompletionPos(StringRef::npos) {
+    outWord = word;
+    if (queryParser->completionPos && queryParser->completionPos <= word.data() + word.size()) {
+      if (queryParser->completionPos < word.data())
+        wordCompletionPos = 0;
       else
-        WordCompletionPos = P->CompletionPos - Word.data();
+        wordCompletionPos = queryParser->completionPos - word.data();
     }
   }
 
-  LexOrCompleteWord &Case(llvm::StringLiteral CaseStr, const T &Value,
-                          bool IsCompletion = true) {
+  LexOrCompleteWord &Case(llvm::StringLiteral caseStr, const T &value,
+                          bool isCompletion = true) {
 
-    if (WordCompletionPos == StringRef::npos)
-      Switch.Case(CaseStr, Value);
-    else if (CaseStr.size() != 0 && IsCompletion &&
-             WordCompletionPos <= CaseStr.size() &&
-             CaseStr.substr(0, WordCompletionPos) ==
-                 Word.substr(0, WordCompletionPos)) {
+    if (wordCompletionPos == StringRef::npos)
+      stringSwitch.Case(caseStr, value);
+    else if (caseStr.size() != 0 && isCompletion &&
+             wordCompletionPos <= caseStr.size() &&
+             caseStr.substr(0, wordCompletionPos) ==
+                 word.substr(0, wordCompletionPos)) {
 
-      P->Completions.push_back(LineEditor::Completion(
-          (CaseStr.substr(WordCompletionPos) + " ").str(),
-          std::string(CaseStr)));
+      queryParser->completions.push_back(LineEditor::Completion(
+          (caseStr.substr(wordCompletionPos) + " ").str(),
+          std::string(caseStr)));
     }
     return *this;
   }
 
-  T Default(T Value) { return Switch.Default(Value); }
+  T Default(T value) { return stringSwitch.Default(value); }
 };
 
 QueryRef QueryParser::endQuery(QueryRef Q) {
-  StringRef Extra = Line;
-  StringRef ExtraTrimmed = Extra.drop_while(
+  StringRef extra = line;
+  StringRef extraTrimmed = extra.drop_while(
       [](char c) { return StringRef(" \t\v\f\r").contains(c); });
 
-  if ((!ExtraTrimmed.empty() && ExtraTrimmed[0] == '\n') ||
-      (ExtraTrimmed.size() >= 2 && ExtraTrimmed[0] == '\r' &&
-       ExtraTrimmed[1] == '\n'))
-    Q->RemainingContent = Extra;
+  if ((!extraTrimmed.empty() && extraTrimmed[0] == '\n') ||
+      (extraTrimmed.size() >= 2 && extraTrimmed[0] == '\r' &&
+       extraTrimmed[1] == '\n'))
+    Q->remainingContent = extra;
   else {
-    StringRef TrailingWord = lexWord();
-    if (!TrailingWord.empty() && TrailingWord.front() == '#') {
-      Line = Line.drop_until([](char c) { return c == '\n'; });
-      Line = Line.drop_while([](char c) { return c == '\n'; });
+    StringRef trailingWord = lexWord();
+    if (!trailingWord.empty() && trailingWord.front() == '#') {
+      line = line.drop_until([](char c) { return c == '\n'; });
+      line = line.drop_while([](char c) { return c == '\n'; });
       return endQuery(Q);
     }
-    if (!TrailingWord.empty()) {
-      return new InvalidQuery("unexpected extra input: '" + Extra + "'");
+    if (!trailingWord.empty()) {
+      return new InvalidQuery("unexpected extra input: '" + extra + "'");
     }
   }
   return Q;
@@ -139,28 +139,28 @@ enum ParsedQueryKind {
   PQK_Match,
 };
 
-QueryRef makeInvalidQueryFromDiagnostics(const matcher::Diagnostics &Diag) {
+QueryRef makeInvalidQueryFromDiagnostics(const matcher::Diagnostics &diag) {
   std::string ErrStr;
   llvm::raw_string_ostream OS(ErrStr);
-  Diag.printToStreamFull(OS);
+  diag.printToStreamFull(OS);
   return new InvalidQuery(OS.str());
 }
 } // namespace
 
 QueryRef QueryParser::completeMatcherExpression() {
-  std::vector<matcher::MatcherCompletion> Comps =
-      matcher::Parser::completeExpression(Line, CompletionPos - Line.begin(),
-                                          nullptr, &QS.NamedValues);
-  for (auto I = Comps.begin(), E = Comps.end(); I != E; ++I) {
-    Completions.push_back(LineEditor::Completion(I->TypedText, I->MatcherDecl));
+  std::vector<matcher::MatcherCompletion> comps =
+      matcher::Parser::completeExpression(line, completionPos - line.begin(),
+                                          nullptr, &QS.namedValues);
+  for (auto I = comps.begin(), E = comps.end(); I != E; ++I) {
+    completions.push_back(LineEditor::Completion(I->typedText, I->matcherDecl));
   }
   return QueryRef();
 }
 
 QueryRef QueryParser::doParse() {
 
-  StringRef CommandStr;
-  ParsedQueryKind QKind = LexOrCompleteWord<ParsedQueryKind>(this, CommandStr)
+  StringRef commandStr;
+  ParsedQueryKind qKind = LexOrCompleteWord<ParsedQueryKind>(this, commandStr)
                               .Case("", PQK_NoOp)
                               .Case("#", PQK_Comment, /*IsCompletion=*/false)
                               .Case("help", PQK_Help)
@@ -168,12 +168,12 @@ QueryRef QueryParser::doParse() {
                               .Case("match", PQK_Match)
                               .Default(PQK_Invalid);
 
-  switch (QKind) {
+  switch (qKind) {
   case PQK_Comment:
   case PQK_NoOp:
-    Line = Line.drop_until([](char c) { return c == '\n'; });
-    Line = Line.drop_while([](char c) { return c == '\n'; });
-    if (Line.empty())
+    line = line.drop_until([](char c) { return c == '\n'; });
+    line = line.drop_while([](char c) { return c == '\n'; });
+    if (line.empty())
       return new NoOpQuery;
     return doParse();
 
@@ -181,44 +181,44 @@ QueryRef QueryParser::doParse() {
     return endQuery(new HelpQuery);
 
   case PQK_Match: {
-    if (CompletionPos) {
+    if (completionPos) {
       return completeMatcherExpression();
     }
 
-    matcher::Diagnostics Diag;
-    auto MatcherSource = Line.ltrim();
-    auto OrigMatcherSource = MatcherSource;
-    std::optional<matcher::DynMatcher> Matcher =
-        matcher::Parser::parseMatcherExpression(MatcherSource, nullptr,
-                                                &QS.NamedValues, &Diag);
-    if (!Matcher) {
-      return makeInvalidQueryFromDiagnostics(Diag);
+    matcher::Diagnostics diag;
+    auto matcherSource = line.ltrim();
+    auto origMatcherSource = matcherSource;
+    std::optional<matcher::DynMatcher> matcher =
+        matcher::Parser::parseMatcherExpression(matcherSource, nullptr,
+                                                &QS.namedValues, &diag);
+    if (!matcher) {
+      return makeInvalidQueryFromDiagnostics(diag);
     }
-    auto ActualSource = OrigMatcherSource.slice(0, OrigMatcherSource.size() -
-                                                       MatcherSource.size());
-    auto *Q = new MatchQuery(ActualSource, *Matcher);
-    Q->RemainingContent = MatcherSource;
+    auto actualSource = origMatcherSource.slice(0, origMatcherSource.size() -
+                                                       matcherSource.size());
+    auto *Q = new MatchQuery(actualSource, *matcher);
+    Q->remainingContent = matcherSource;
     return Q;
   }
 
   case PQK_Invalid:
-    return new InvalidQuery("unknown command: " + CommandStr);
+    return new InvalidQuery("unknown command: " + commandStr);
   }
 
   llvm_unreachable("Invalid query kind");
 }
 
-QueryRef QueryParser::parse(StringRef Line, const QuerySession &QS) {
-  return QueryParser(Line, QS).doParse();
+QueryRef QueryParser::parse(StringRef line, const QuerySession &QS) {
+  return QueryParser(line, QS).doParse();
 }
 
 std::vector<LineEditor::Completion>
-QueryParser::complete(StringRef Line, size_t Pos, const QuerySession &QS) {
-  QueryParser P(Line, QS);
-  P.CompletionPos = Line.data() + Pos;
+QueryParser::complete(StringRef line, size_t pos, const QuerySession &QS) {
+  QueryParser queryParser(line, QS);
+  queryParser.completionPos = line.data() + pos;
 
-  P.doParse();
-  return P.Completions;
+  queryParser.doParse();
+  return queryParser.completions;
 }
 
 } // namespace query

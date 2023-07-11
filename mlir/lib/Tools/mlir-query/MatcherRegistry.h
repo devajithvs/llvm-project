@@ -40,10 +40,10 @@ public:
   MatcherDescriptorPtr(const MatcherDescriptorPtr &) = delete;
   MatcherDescriptorPtr &operator=(const MatcherDescriptorPtr &) = delete;
 
-  MatcherDescriptor *get() { return Ptr; }
+  MatcherDescriptor *get() { return ptr; }
 
 private:
-  MatcherDescriptor *Ptr;
+  MatcherDescriptor *ptr;
 };
 
 } // namespace internal
@@ -52,18 +52,18 @@ using MatcherCtor = const internal::MatcherDescriptor *;
 
 struct MatcherCompletion {
   MatcherCompletion() = default;
-  MatcherCompletion(StringRef TypedText, StringRef MatcherDecl)
-      : TypedText(TypedText), MatcherDecl(MatcherDecl) {}
+  MatcherCompletion(StringRef typedText, StringRef matcherDecl)
+      : typedText(typedText), matcherDecl(matcherDecl) {}
 
   bool operator==(const MatcherCompletion &Other) const {
-    return TypedText == Other.TypedText && MatcherDecl == Other.MatcherDecl;
+    return typedText == Other.typedText && matcherDecl == Other.matcherDecl;
   }
 
   /// The text to type to select this matcher.
-  std::string TypedText;
+  std::string typedText;
 
   /// The "declaration" of the matcher, with type information.
-  std::string MatcherDecl;
+  std::string matcherDecl;
 };
 
 class Registry {
@@ -71,10 +71,10 @@ public:
   Registry() = delete;
 
   static internal::MatcherDescriptorPtr
-  buildMatcherCtor(MatcherCtor, SourceRange NameRange,
-                   ArrayRef<ParserValue> Args, Diagnostics *Error);
+  buildMatcherCtor(MatcherCtor, SourceRange nameRange,
+                   ArrayRef<ParserValue> args, Diagnostics *error);
 
-  static bool isBuilderMatcher(MatcherCtor Ctor);
+  static bool isBuilderMatcher(MatcherCtor ctor);
 
   // Look up a matcher in the registry by name,
   /// \return An opaque value which may be used to refer to the matcher
@@ -107,27 +107,27 @@ public:
   /// Construct a matcher from the registry.
 
   // Construct a matcher from the registry.
-  // Ctor The matcher constructor to instantiate.
+  // ctor The matcher constructor to instantiate.
 
-  // Args is the argument list for the matcher. The number and types of the
+  // args is the argument list for the matcher. The number and types of the
   // values must be valid for the matcher requested. Otherwise, the function
   // will return an error.
 
   // Returns the matcher if no error was found. nullptr if the matcher is not
   // found, or if the number of arguments or argument types do not
-  // match the signature. In that case Error will contain the description
+  // match the signature. In that case error will contain the description
   // of the error.
   // TODO: Cleanup - Remove one of these
-  static VariantMatcher constructMatcher(MatcherCtor Ctor,
-                                         SourceRange NameRange,
-                                         ArrayRef<ParserValue> Args,
-                                         Diagnostics *Error);
+  static VariantMatcher constructMatcher(MatcherCtor ctor,
+                                         SourceRange nameRange,
+                                         ArrayRef<ParserValue> args,
+                                         Diagnostics *error);
 
-  static VariantMatcher constructFunctionMatcher(MatcherCtor Ctor,
-                                                 SourceRange NameRange,
+  static VariantMatcher constructFunctionMatcher(MatcherCtor ctor,
+                                                 SourceRange nameRange,
                                                  StringRef FunctionName,
-                                                 ArrayRef<ParserValue> Args,
-                                                 Diagnostics *Error);
+                                                 ArrayRef<ParserValue> args,
+                                                 Diagnostics *error);
 
   // TODO: FIX ALL COMMENTS
   // TODO: FIX PRINT
@@ -135,14 +135,14 @@ public:
   /// Construct a matcher from the registry and bind it.
   ///
   /// Similar the \c constructMatcher() above, but it then tries to bind the
-  /// matcher to the specified \c BindID.
-  /// If the matcher is not bindable, it sets an error in \c Error and returns
+  /// matcher to the specified \c bindId.
+  /// If the matcher is not bindable, it sets an error in \c error and returns
   /// a null matcher.
-  static VariantMatcher constructBoundMatcher(MatcherCtor Ctor,
-                                              SourceRange NameRange,
-                                              StringRef BindID,
-                                              ArrayRef<ParserValue> Args,
-                                              Diagnostics *Error);
+  static VariantMatcher constructBoundMatcher(MatcherCtor ctor,
+                                              SourceRange nameRange,
+                                              StringRef bindId,
+                                              ArrayRef<ParserValue> args,
+                                              Diagnostics *error);
 };
 
 } // namespace matcher

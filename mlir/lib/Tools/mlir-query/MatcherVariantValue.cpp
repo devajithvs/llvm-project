@@ -1,4 +1,4 @@
-//===--- MatcherVariantValue.cpp ------------------------------------------===//
+//===--- MatcherVariantvalue.cpp ------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -32,154 +32,152 @@ std::string ArgKind::asString() const {
 }
 
 std::optional<DynMatcher> VariantMatcher::MatcherOps::constructVariadicOperator(
-    DynMatcher::VariadicOperator Op,
-    ArrayRef<VariantMatcher> InnerMatchers) const {
-  std::vector<DynMatcher> DynMatchers;
-  for (const auto &InnerMatcher : InnerMatchers) {
-    // Abort if any of the inner matchers can't be converted to
-    // Matcher<T>.
-    if (!InnerMatcher.Value)
+    DynMatcher::VariadicOperator varOp,
+    ArrayRef<VariantMatcher> innerMatchers) const {
+  std::vector<DynMatcher> dynMatchers;
+  for (const auto &innerMatcher : innerMatchers) {
+    if (!innerMatcher.value) return std::nullopt;
+    std::optional<DynMatcher> inner = innerMatcher.value->getDynMatcher();
+    if (!inner)
       return std::nullopt;
-    std::optional<DynMatcher> Inner = InnerMatcher.Value->getDynMatcher();
-    if (!Inner)
-      return std::nullopt;
-    DynMatchers.push_back(*Inner);
+    dynMatchers.push_back(*inner);
   }
-  return *DynMatcher::constructVariadic(Op, DynMatchers);
+  return *DynMatcher::constructVariadic(varOp, dynMatchers);
 }
 
 VariantMatcher::Payload::~Payload() {}
 
 class VariantMatcher::SinglePayload : public VariantMatcher::Payload {
 public:
-  SinglePayload(DynMatcher Matcher) : Matcher(Matcher) {}
+  SinglePayload(DynMatcher matcher) : matcher(matcher) {}
 
   std::optional<DynMatcher> getSingleMatcher() const override {
-    return Matcher;
+    return matcher;
   }
 
-  std::optional<DynMatcher> getDynMatcher() const override { return Matcher; }
+  std::optional<DynMatcher> getDynMatcher() const override { return matcher; }
 
   std::string getTypeAsString() const override { return "Matcher"; }
 
 private:
-  DynMatcher Matcher;
+  DynMatcher matcher;
 };
 
 class VariantMatcher::VariadicOpPayload : public VariantMatcher::Payload {
 public:
-  VariadicOpPayload(DynMatcher::VariadicOperator Op,
-                    std::vector<VariantMatcher> Args)
-      : Op(Op), Args(std::move(Args)) {}
+  VariadicOpPayload(DynMatcher::VariadicOperator varOp,
+                    std::vector<VariantMatcher> args)
+      : varOp(varOp), args(std::move(args)) {}
 
   std::optional<DynMatcher> getSingleMatcher() const override {
     return std::nullopt;
   }
 
   std::optional<DynMatcher> getDynMatcher() const override {
-    std::vector<DynMatcher> DynMatchers;
-    for (auto variantMatcher : Args) {
+    std::vector<DynMatcher> dynMatchers;
+    for (auto variantMatcher : args) {
       std::optional<DynMatcher> dynMatcher = variantMatcher.getDynMatcher();
-      DynMatchers.push_back(dynMatcher.value());
+      // TODO: FIX
+      dynMatchers.push_back(dynMatcher.value());
     }
-    auto result = DynMatcher::constructVariadic(Op, DynMatchers);
+    auto result = DynMatcher::constructVariadic(varOp, dynMatchers);
     return *result;
   }
 
   // TODO: Remove
-  std::string getTypeAsString() const override { return "Op"; }
+  std::string getTypeAsString() const override { return "VariadicOp"; }
 
 private:
-  const DynMatcher::VariadicOperator Op;
-  const std::vector<VariantMatcher> Args;
+  const DynMatcher::VariadicOperator varOp;
+  const std::vector<VariantMatcher> args;
 };
 
 VariantMatcher::VariantMatcher() {}
 
-VariantMatcher VariantMatcher::SingleMatcher(DynMatcher Matcher) {
-  return VariantMatcher(std::make_shared<SinglePayload>(Matcher));
+VariantMatcher VariantMatcher::SingleMatcher(DynMatcher matcher) {
+  return VariantMatcher(std::make_shared<SinglePayload>(matcher));
 }
 
 VariantMatcher
 VariantMatcher::VariadicOperatorMatcher(DynMatcher::VariadicOperator varOp,
-                                        ArrayRef<VariantMatcher> Args) {
+                                        ArrayRef<VariantMatcher> args) {
   return VariantMatcher(
-      std::make_shared<VariadicOpPayload>(varOp, std::move(Args)));
+      std::make_shared<VariadicOpPayload>(varOp, std::move(args)));
 }
 
 std::optional<DynMatcher> VariantMatcher::getSingleMatcher() const {
-  return Value ? Value->getSingleMatcher() : std::optional<DynMatcher>();
+  return value ? value->getSingleMatcher() : std::nullopt;
 }
 
 std::optional<DynMatcher> VariantMatcher::getDynMatcher() const {
-  return Value ? Value->getDynMatcher() : std::optional<DynMatcher>();
+  return value ? value->getDynMatcher() : std::nullopt;
 }
 
-void VariantMatcher::reset() { Value.reset(); }
+void VariantMatcher::reset() { value.reset(); }
 
 // TODO: Remove
 std::string VariantMatcher::getTypeAsString() const { return "<Nothing>"; }
 
-VariantValue::VariantValue(const VariantValue &Other) : Type(VT_Nothing) {
-  *this = Other;
+VariantValue::VariantValue(const VariantValue &other) : type(VT_Nothing) {
+  *this = other;
 }
 
-VariantValue::VariantValue(bool Boolean) : Type(VT_Nothing) {
+VariantValue::VariantValue(bool Boolean) : type(VT_Nothing) {
   setBoolean(Boolean);
 }
 
-VariantValue::VariantValue(double Double) : Type(VT_Nothing) {
+VariantValue::VariantValue(double Double) : type(VT_Nothing) {
   setDouble(Double);
 }
 
-VariantValue::VariantValue(unsigned Unsigned) : Type(VT_Nothing) {
+VariantValue::VariantValue(unsigned Unsigned) : type(VT_Nothing) {
   setUnsigned(Unsigned);
 }
 
-VariantValue::VariantValue(const StringRef String) : Type(VT_Nothing) {
+VariantValue::VariantValue(const StringRef String) : type(VT_Nothing) {
   setString(String);
 }
 
-VariantValue::VariantValue(const VariantMatcher &Matcher) : Type(VT_Nothing) {
+VariantValue::VariantValue(const VariantMatcher &Matcher) : type(VT_Nothing) {
   setMatcher(Matcher);
 }
 
 VariantValue::~VariantValue() { reset(); }
 
-VariantValue &VariantValue::operator=(const VariantValue &Other) {
-  if (this == &Other)
+VariantValue &VariantValue::operator=(const VariantValue &other) {
+  if (this == &other)
     return *this;
   reset();
-  switch (Other.Type) {
+  switch (other.type) {
   case VT_Boolean:
-    setBoolean(Other.getBoolean());
+    setBoolean(other.getBoolean());
     break;
   case VT_Double:
-    setDouble(Other.getDouble());
+    setDouble(other.getDouble());
     break;
   case VT_Unsigned:
-    setUnsigned(Other.getUnsigned());
+    setUnsigned(other.getUnsigned());
     break;
   case VT_String:
-    setString(Other.getString());
+    setString(other.getString());
     break;
   case VT_Matcher:
-    setMatcher(Other.getMatcher());
+    setMatcher(other.getMatcher());
     break;
   case VT_Nothing:
-    Type = VT_Nothing;
+    type = VT_Nothing;
     break;
   }
   return *this;
 }
 
 void VariantValue::reset() {
-  switch (Type) {
+  switch (type) {
   case VT_String:
-    delete Value.String;
+    delete value.String;
     break;
   case VT_Matcher:
-    delete Value.Matcher;
+    delete value.Matcher;
     break;
   // Cases that do nothing.
   case VT_Boolean:
@@ -188,76 +186,76 @@ void VariantValue::reset() {
   case VT_Nothing:
     break;
   }
-  Type = VT_Nothing;
+  type = VT_Nothing;
 }
 
-bool VariantValue::isBoolean() const { return Type == VT_Boolean; }
+bool VariantValue::isBoolean() const { return type == VT_Boolean; }
 
 bool VariantValue::getBoolean() const {
   assert(isBoolean());
-  return Value.Boolean;
+  return value.Boolean;
 }
 
-void VariantValue::setBoolean(bool NewValue) {
+void VariantValue::setBoolean(bool newValue) {
   reset();
-  Type = VT_Boolean;
-  Value.Boolean = NewValue;
+  type = VT_Boolean;
+  value.Boolean = newValue;
 }
 
-bool VariantValue::isDouble() const { return Type == VT_Double; }
+bool VariantValue::isDouble() const { return type == VT_Double; }
 
 double VariantValue::getDouble() const {
   assert(isDouble());
-  return Value.Double;
+  return value.Double;
 }
 
-void VariantValue::setDouble(double NewValue) {
+void VariantValue::setDouble(double newValue) {
   reset();
-  Type = VT_Double;
-  Value.Double = NewValue;
+  type = VT_Double;
+  value.Double = newValue;
 }
 
-bool VariantValue::isUnsigned() const { return Type == VT_Unsigned; }
+bool VariantValue::isUnsigned() const { return type == VT_Unsigned; }
 
 unsigned VariantValue::getUnsigned() const {
   assert(isUnsigned());
-  return Value.Unsigned;
+  return value.Unsigned;
 }
 
-void VariantValue::setUnsigned(unsigned NewValue) {
+void VariantValue::setUnsigned(unsigned newValue) {
   reset();
-  Type = VT_Unsigned;
-  Value.Unsigned = NewValue;
+  type = VT_Unsigned;
+  value.Unsigned = newValue;
 }
 
-bool VariantValue::isString() const { return Type == VT_String; }
+bool VariantValue::isString() const { return type == VT_String; }
 
 const StringRef &VariantValue::getString() const {
   assert(isString());
-  return *Value.String;
+  return *value.String;
 }
 
-void VariantValue::setString(const StringRef &NewValue) {
+void VariantValue::setString(const StringRef &newValue) {
   reset();
-  Type = VT_String;
-  Value.String = new StringRef(NewValue);
+  type = VT_String;
+  value.String = new StringRef(newValue);
 }
 
-bool VariantValue::isMatcher() const { return Type == VT_Matcher; }
+bool VariantValue::isMatcher() const { return type == VT_Matcher; }
 
 const VariantMatcher &VariantValue::getMatcher() const {
   assert(isMatcher());
-  return *Value.Matcher;
+  return *value.Matcher;
 }
 
-void VariantValue::setMatcher(const VariantMatcher &NewValue) {
+void VariantValue::setMatcher(const VariantMatcher &newValue) {
   reset();
-  Type = VT_Matcher;
-  Value.Matcher = new VariantMatcher(NewValue);
+  type = VT_Matcher;
+  value.Matcher = new VariantMatcher(newValue);
 }
 
 std::string VariantValue::getTypeAsString() const {
-  switch (Type) {
+  switch (type) {
   case VT_String:
     return "String";
   case VT_Matcher:

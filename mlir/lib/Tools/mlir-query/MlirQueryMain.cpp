@@ -85,14 +85,14 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context) {
 
   QuerySession QS(opRef.get(), sourceMgr);
   LineEditor LE("mlir-query");
-  LE.setListCompleter([&QS](StringRef Line, size_t Pos) {
-    return QueryParser::complete(Line, Pos, QS);
+  LE.setListCompleter([&QS](StringRef line, size_t pos) {
+    return QueryParser::complete(line, pos, QS);
   });
-  while (std::optional<std::string> Line = LE.readLine()) {
-    QueryRef Q = QueryParser::parse(*Line, QS);
-    Q->run(llvm::outs(), QS);
+  while (std::optional<std::string> line = LE.readLine()) {
+    QueryRef queryRef = QueryParser::parse(*line, QS);
+    queryRef->run(llvm::outs(), QS);
     llvm::outs().flush();
-    if (QS.Terminate)
+    if (QS.terminate)
       break;
   }
 

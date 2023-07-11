@@ -18,68 +18,68 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
-Diagnostics::ArgStream Diagnostics::pushContextFrame(ContextType Type,
-                                                     SourceRange Range) {
-  ContextStack.emplace_back();
-  ContextFrame &data = ContextStack.back();
-  data.Type = Type;
-  data.Range = Range;
-  return ArgStream(&data.Args);
+Diagnostics::ArgStream Diagnostics::pushContextFrame(ContextType type,
+                                                     SourceRange range) {
+  contextStack.emplace_back();
+  ContextFrame &data = contextStack.back();
+  data.type = type;
+  data.range = range;
+  return ArgStream(&data.args);
 }
 
-Diagnostics::Context::Context(ConstructMatcherEnum, Diagnostics *Error,
-                              StringRef MatcherName, SourceRange MatcherRange)
-    : Error(Error) {
-  Error->pushContextFrame(CT_MatcherConstruct, MatcherRange) << MatcherName;
+Diagnostics::Context::Context(ConstructMatcherEnum, Diagnostics *error,
+                              StringRef matcherName, SourceRange matcherRange)
+    : error(error) {
+  error->pushContextFrame(CT_MatcherConstruct, matcherRange) << matcherName;
 }
 
-Diagnostics::Context::Context(MatcherArgEnum, Diagnostics *Error,
-                              StringRef MatcherName, SourceRange MatcherRange,
-                              unsigned ArgNumber)
-    : Error(Error) {
-  Error->pushContextFrame(CT_MatcherArg, MatcherRange)
-      << ArgNumber << MatcherName;
+Diagnostics::Context::Context(MatcherArgEnum, Diagnostics *error,
+                              StringRef matcherName, SourceRange matcherRange,
+                              unsigned argnumber)
+    : error(error) {
+  error->pushContextFrame(CT_MatcherArg, matcherRange)
+      << argnumber << matcherName;
 }
 
-Diagnostics::Context::~Context() { Error->ContextStack.pop_back(); }
+Diagnostics::Context::~Context() { error->contextStack.pop_back(); }
 
-Diagnostics::OverloadContext::OverloadContext(Diagnostics *Error)
-    : Error(Error), BeginIndex(Error->Errors.size()) {}
+Diagnostics::OverloadContext::OverloadContext(Diagnostics *error)
+    : error(error), beginIndex(error->errorValues.size()) {}
 
 Diagnostics::OverloadContext::~OverloadContext() {
   // Merge all errors that happened while in this context.
-  if (BeginIndex < Error->Errors.size()) {
-    Diagnostics::ErrorContent &Dest = Error->Errors[BeginIndex];
-    for (size_t i = BeginIndex + 1, e = Error->Errors.size(); i < e; ++i) {
-      Dest.Messages.push_back(Error->Errors[i].Messages[0]);
+  if (beginIndex < error->errorValues.size()) {
+    Diagnostics::ErrorContent &dest = error->errorValues[beginIndex];
+    for (size_t i = beginIndex + 1, e = error->errorValues.size(); i < e; ++i) {
+      dest.messages.push_back(error->errorValues[i].messages[0]);
     }
-    Error->Errors.resize(BeginIndex + 1);
+    error->errorValues.resize(beginIndex + 1);
   }
 }
 
 void Diagnostics::OverloadContext::revertErrors() {
   // Revert the errors.
-  Error->Errors.resize(BeginIndex);
+  error->errorValues.resize(beginIndex);
 }
 
-Diagnostics::ArgStream &Diagnostics::ArgStream::operator<<(const Twine &Arg) {
-  Out->push_back(Arg.str());
+Diagnostics::ArgStream &Diagnostics::ArgStream::operator<<(const Twine &arg) {
+  out->push_back(arg.str());
   return *this;
 }
 
-Diagnostics::ArgStream Diagnostics::addError(SourceRange Range,
-                                             ErrorType Error) {
-  Errors.emplace_back();
-  ErrorContent &Last = Errors.back();
-  Last.ContextStack = ContextStack;
-  Last.Messages.emplace_back();
-  Last.Messages.back().Range = Range;
-  Last.Messages.back().Type = Error;
-  return ArgStream(&Last.Messages.back().Args);
+Diagnostics::ArgStream Diagnostics::addError(SourceRange range,
+                                             ErrorType error) {
+  errorValues.emplace_back();
+  ErrorContent &last = errorValues.back();
+  last.contextStack = contextStack;
+  last.messages.emplace_back();
+  last.messages.back().range = range;
+  last.messages.back().type = error;
+  return ArgStream(&last.messages.back().args);
 }
 
-static StringRef contextTypeToFormatString(Diagnostics::ContextType Type) {
-  switch (Type) {
+static StringRef contextTypeToFormatString(Diagnostics::ContextType type) {
+  switch (type) {
   case Diagnostics::CT_MatcherConstruct:
     return "Error building matcher $0.";
   case Diagnostics::CT_MatcherArg:
@@ -88,8 +88,8 @@ static StringRef contextTypeToFormatString(Diagnostics::ContextType Type) {
   llvm_unreachable("Unknown ContextType value.");
 }
 
-static StringRef errorTypeToFormatString(Diagnostics::ErrorType Type) {
-  switch (Type) {
+static StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
+  switch (type) {
   case Diagnostics::ET_RegistryMatcherNotFound:
     return "Matcher not found: $0";
   case Diagnostics::ET_RegistryWrongArgCount:
@@ -138,21 +138,21 @@ static StringRef errorTypeToFormatString(Diagnostics::ErrorType Type) {
   llvm_unreachable("Unknown ErrorType value.");
 }
 
-static void formatErrorString(StringRef FormatString,
-                              ArrayRef<std::string> Args,
+static void formatErrorString(StringRef formatString,
+                              ArrayRef<std::string> args,
                               llvm::raw_ostream &OS) {
-  while (!FormatString.empty()) {
-    std::pair<StringRef, StringRef> Pieces = FormatString.split("$");
-    OS << Pieces.first.str();
-    if (Pieces.second.empty())
+  while (!formatString.empty()) {
+    std::pair<StringRef, StringRef> pieces = formatString.split("$");
+    OS << pieces.first.str();
+    if (pieces.second.empty())
       break;
 
-    const char Next = Pieces.second.front();
-    FormatString = Pieces.second.drop_front();
-    if (Next >= '0' && Next <= '9') {
-      const unsigned Index = Next - '0';
-      if (Index < Args.size()) {
-        OS << Args[Index];
+    const char next = pieces.second.front();
+    formatString = pieces.second.drop_front();
+    if (next >= '0' && next <= '9') {
+      const unsigned index = next - '0';
+      if (index < args.size()) {
+        OS << args[index];
       } else {
         OS << "<Argument_Not_Provided>";
       }
@@ -160,45 +160,45 @@ static void formatErrorString(StringRef FormatString,
   }
 }
 
-static void maybeAddLineAndColumn(SourceRange Range, llvm::raw_ostream &OS) {
-  if (Range.Start.Line > 0 && Range.Start.Column > 0) {
-    OS << Range.Start.Line << ":" << Range.Start.Column << ": ";
+static void maybeAddLineAndColumn(SourceRange range, llvm::raw_ostream &OS) {
+  if (range.start.line > 0 && range.start.column > 0) {
+    OS << range.start.line << ":" << range.start.column << ": ";
   }
 }
 
-static void printContextFrameToStream(const Diagnostics::ContextFrame &Frame,
+static void printContextFrameToStream(const Diagnostics::ContextFrame &frame,
                                       llvm::raw_ostream &OS) {
-  maybeAddLineAndColumn(Frame.Range, OS);
-  formatErrorString(contextTypeToFormatString(Frame.Type), Frame.Args, OS);
+  maybeAddLineAndColumn(frame.range, OS);
+  formatErrorString(contextTypeToFormatString(frame.type), frame.args, OS);
 }
 
 static void
-printMessageToStream(const Diagnostics::ErrorContent::Message &Message,
+printMessageToStream(const Diagnostics::ErrorContent::Message &message,
                      const Twine Prefix, llvm::raw_ostream &OS) {
-  maybeAddLineAndColumn(Message.Range, OS);
+  maybeAddLineAndColumn(message.range, OS);
   OS << Prefix;
-  formatErrorString(errorTypeToFormatString(Message.Type), Message.Args, OS);
+  formatErrorString(errorTypeToFormatString(message.type), message.args, OS);
 }
 
-static void printErrorContentToStream(const Diagnostics::ErrorContent &Content,
+static void printErrorContentToStream(const Diagnostics::ErrorContent &content,
                                       llvm::raw_ostream &OS) {
-  if (Content.Messages.size() == 1) {
-    printMessageToStream(Content.Messages[0], "", OS);
+  if (content.messages.size() == 1) {
+    printMessageToStream(content.messages[0], "", OS);
   } else {
-    for (size_t i = 0, e = Content.Messages.size(); i != e; ++i) {
+    for (size_t i = 0, e = content.messages.size(); i != e; ++i) {
       if (i != 0)
         OS << "\n";
-      printMessageToStream(Content.Messages[i],
+      printMessageToStream(content.messages[i],
                            "Candidate " + Twine(i + 1) + ": ", OS);
     }
   }
 }
 
 void Diagnostics::printToStream(llvm::raw_ostream &OS) const {
-  for (size_t i = 0, e = Errors.size(); i != e; ++i) {
+  for (size_t i = 0, e = errorValues.size(); i != e; ++i) {
     if (i != 0)
       OS << "\n";
-    printErrorContentToStream(Errors[i], OS);
+    printErrorContentToStream(errorValues[i], OS);
   }
 }
 
@@ -210,15 +210,15 @@ std::string Diagnostics::toString() const {
 }
 
 void Diagnostics::printToStreamFull(llvm::raw_ostream &OS) const {
-  for (size_t i = 0, e = Errors.size(); i != e; ++i) {
+  for (size_t i = 0, e = errorValues.size(); i != e; ++i) {
     if (i != 0)
       OS << "\n";
-    const ErrorContent &Error = Errors[i];
-    for (size_t i = 0, e = Error.ContextStack.size(); i != e; ++i) {
-      printContextFrameToStream(Error.ContextStack[i], OS);
+    const ErrorContent &error = errorValues[i];
+    for (size_t i = 0, e = error.contextStack.size(); i != e; ++i) {
+      printContextFrameToStream(error.contextStack[i], OS);
       OS << "\n";
     }
-    printErrorContentToStream(Error, OS);
+    printErrorContentToStream(error, OS);
   }
 }
 

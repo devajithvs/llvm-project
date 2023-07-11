@@ -9,7 +9,7 @@
 // Simple matcher expression parser.
 //
 // The parser understands matcher expressions of the form:
-//   MatcherName(Arg0, Arg1, ..., ArgN)
+//   matcherName(Arg0, Arg1, ..., ArgN)
 // as well as simple types like strings.
 // The parser does not know how to process the matchers. It delegates this task
 // to a Sema object received as an argument.
@@ -55,30 +55,30 @@ public:
 
     // Process a matcher expression.
     // All the arguments passed here have already been processed.
-    // Ctor is a matcher constructor looked up by lookupMatcherCtor.
-    // Args is the argument list for the matcher.
+    // ctor is a matcher constructor looked up by lookupMatcherCtor.
+    // args is the argument list for the matcher.
     // Returns the matcher object constructed by the processor, or nullptr
     // if an error occurred. In that case, Error will contain a
     // description of the error.
     // The caller takes ownership of the Matcher object returned.
     virtual VariantMatcher
-    actOnMatcherExpression(MatcherCtor Ctor, SourceRange NameRange,
-                           StringRef FunctionName, StringRef BindID,
-                           ArrayRef<ParserValue> Args, Diagnostics *Error) = 0;
+    actOnMatcherExpression(MatcherCtor ctor, SourceRange nameRange,
+                           StringRef functionName, StringRef bindId,
+                           ArrayRef<ParserValue> args, Diagnostics *error) = 0;
 
     // Look up a matcher by name in the matcher name found by the parser.
-    // NameRange is the location of the name in the matcher source, useful for
+    // nameRange is the location of the name in the matcher source, useful for
     // error reporting. Returns the matcher constructor, or
-    // optional<MatcherCtor>() if an error occurred. In that case, Error will
+    // optional<MatcherCtor>() if an error occurred. In that case, error will
     // contain a description of the error.
     virtual std::optional<MatcherCtor>
-    lookupMatcherCtor(StringRef MatcherName) = 0;
+    lookupMatcherCtor(StringRef matcherName) = 0;
 
     virtual bool isBuilderMatcher(MatcherCtor) const = 0;
 
     virtual internal::MatcherDescriptorPtr
-    buildMatcherCtor(MatcherCtor, SourceRange NameRange,
-                     ArrayRef<ParserValue> Args, Diagnostics *Error) const = 0;
+    buildMatcherCtor(MatcherCtor, SourceRange nameRange,
+                     ArrayRef<ParserValue> args, Diagnostics *error) const = 0;
 
     // Compute the list of completion types for \p Context.
     ///
@@ -92,16 +92,16 @@ public:
         llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> Context);
 
     /// Compute the list of completions that match any of
-    /// \p AcceptedTypes.
+    /// \p acceptedTypes.
     ///
-    /// \param AcceptedTypes All types accepted for this completion.
+    /// \param acceptedTypes All types accepted for this completion.
     ///
     /// \return All completions for the specified types.
     /// Completions should be valid when used in \c lookupMatcherCtor().
     /// The matcher constructed from the return of \c lookupMatcherCtor()
-    /// should be convertible to some type in \p AcceptedTypes.
+    /// should be convertible to some type in \p acceptedTypes.
     virtual std::vector<MatcherCompletion>
-    getMatcherCompletions(llvm::ArrayRef<ArgKind> AcceptedTypes);
+    getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes);
   };
 
   /// Sema implementation that uses the matcher registry to process the
@@ -111,57 +111,57 @@ public:
     ~RegistrySema() override;
 
     std::optional<MatcherCtor>
-    lookupMatcherCtor(StringRef MatcherName) override;
+    lookupMatcherCtor(StringRef matcherName) override;
 
-    VariantMatcher actOnMatcherExpression(MatcherCtor Ctor,
-                                          SourceRange NameRange,
-                                          StringRef FunctionName,
-                                          StringRef BindID,
-                                          ArrayRef<ParserValue> Args,
-                                          Diagnostics *Error) override;
+    VariantMatcher actOnMatcherExpression(MatcherCtor ctor,
+                                          SourceRange nameRange,
+                                          StringRef functionName,
+                                          StringRef bindId,
+                                          ArrayRef<ParserValue> args,
+                                          Diagnostics *error) override;
 
-    bool isBuilderMatcher(MatcherCtor Ctor) const override;
+    bool isBuilderMatcher(MatcherCtor ctor) const override;
 
     std::vector<ArgKind> getAcceptedCompletionTypes(
-        llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> Context) override;
+        llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context) override;
 
     internal::MatcherDescriptorPtr
-    buildMatcherCtor(MatcherCtor, SourceRange NameRange,
-                     ArrayRef<ParserValue> Args,
-                     Diagnostics *Error) const override;
+    buildMatcherCtor(MatcherCtor, SourceRange nameRange,
+                     ArrayRef<ParserValue> args,
+                     Diagnostics *error) const override;
 
     std::vector<MatcherCompletion>
-    getMatcherCompletions(llvm::ArrayRef<ArgKind> AcceptedTypes) override;
+    getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes) override;
   };
 
   using NamedValueMap = llvm::StringMap<VariantValue>;
 
   /// Parse a matcher expression.
   ///
-  /// \param MatcherCode The matcher expression to parse.
+  /// \param matcherCode The matcher expression to parse.
   ///
-  /// \param S The Sema instance that will help the parser
+  /// \param sema The Sema instance that will help the parser
   ///   construct the matchers. If null, it uses the default registry.
   ///
-  /// \param NamedValues A map of precomputed named values.  This provides
+  /// \param namedValues A map of precomputed named values.  This provides
   ///   the dictionary for the <NamedValue> rule of the grammar.
   ///   If null, it is ignored.
   ///
   /// \return The matcher object constructed by the processor, or an empty
-  ///   Optional if an error occurred. In that case, \c Error will contain a
+  ///   Optional if an error occurred. In that case, \c error will contain a
   ///   description of the error.
   ///   The caller takes ownership of the DynTypedMatcher object returned.
 
   static std::optional<DynMatcher>
-  parseMatcherExpression(StringRef &MatcherCode, Sema *S,
-                         const NamedValueMap *NamedValues, Diagnostics *Error);
+  parseMatcherExpression(StringRef &matcherCode, Sema *sema,
+                         const NamedValueMap *namedValues, Diagnostics *error);
   static std::optional<DynMatcher>
-  parseMatcherExpression(StringRef &MatcherCode, Sema *S, Diagnostics *Error) {
-    return parseMatcherExpression(MatcherCode, S, nullptr, Error);
+  parseMatcherExpression(StringRef &matcherCode, Sema *sema, Diagnostics *error) {
+    return parseMatcherExpression(matcherCode, sema, nullptr, error);
   }
   static std::optional<DynMatcher>
-  parseMatcherExpression(StringRef &MatcherCode, Diagnostics *Error) {
-    return parseMatcherExpression(MatcherCode, nullptr, Error);
+  parseMatcherExpression(StringRef &matcherCode, Diagnostics *error) {
+    return parseMatcherExpression(matcherCode, nullptr, error);
   }
   /// Parse an expression.
   ///
@@ -169,46 +169,46 @@ public:
   /// \c parseMatcherExpression function is a better approach to get a matcher
   /// object.
 
-  /// \param S The Sema instance that will help the parser
+  /// \param sema The Sema instance that will help the parser
   ///   construct the matchers. If null, it uses the default registry.
   ///
-  /// \param NamedValues A map of precomputed named values.  This provides
+  /// \param namedValues A map of precomputed named values.  This provides
   ///   the dictionary for the <NamedValue> rule of the grammar.
   ///   If null, it is ignored.
-  static bool parseExpression(StringRef &Code, Sema *S,
-                              const NamedValueMap *NamedValues,
-                              VariantValue *Value, Diagnostics *Error);
+  static bool parseExpression(StringRef &code, Sema *sema,
+                              const NamedValueMap *namedValues,
+                              VariantValue *value, Diagnostics *error);
 
-  static bool parseExpression(StringRef &Code, Sema *S, VariantValue *Value,
-                              Diagnostics *Error) {
-    return parseExpression(Code, S, nullptr, Value, Error);
+  static bool parseExpression(StringRef &code, Sema *sema, VariantValue *value,
+                              Diagnostics *error) {
+    return parseExpression(code, sema, nullptr, value, error);
   }
-  static bool parseExpression(StringRef &Code, VariantValue *Value,
-                              Diagnostics *Error) {
-    return parseExpression(Code, nullptr, Value, Error);
+  static bool parseExpression(StringRef &code, VariantValue *value,
+                              Diagnostics *error) {
+    return parseExpression(code, nullptr, value, error);
   }
 
   /// Complete an expression at the given offset.
   ///
-  /// \param S The Sema instance that will help the parser
+  /// \param sema The Sema instance that will help the parser
   ///   construct the matchers. If null, it uses the default registry.
   ///
-  /// \param NamedValues A map of precomputed named values.  This provides
+  /// \param namedValues A map of precomputed named values.  This provides
   ///   the dictionary for the <NamedValue> rule of the grammar.
   ///   If null, it is ignored.
   ///
   /// \return The list of completions, which may be empty if there are no
   /// available completions or if an error occurred.
   static std::vector<MatcherCompletion>
-  completeExpression(StringRef &Code, unsigned CompletionOffset, Sema *S,
-                     const NamedValueMap *NamedValues);
+  completeExpression(StringRef &code, unsigned completionOffset, Sema *sema,
+                     const NamedValueMap *namedValues);
   static std::vector<MatcherCompletion>
-  completeExpression(StringRef &Code, unsigned CompletionOffset, Sema *S) {
-    return completeExpression(Code, CompletionOffset, S, nullptr);
+  completeExpression(StringRef &code, unsigned completionOffset, Sema *sema) {
+    return completeExpression(code, completionOffset, sema, nullptr);
   }
   static std::vector<MatcherCompletion>
-  completeExpression(StringRef &Code, unsigned CompletionOffset) {
-    return completeExpression(Code, CompletionOffset, nullptr);
+  completeExpression(StringRef &code, unsigned completionOffset) {
+    return completeExpression(code, completionOffset, nullptr);
   }
 
 private:
@@ -216,37 +216,37 @@ private:
   struct ScopedContextEntry;
   struct TokenInfo;
 
-  Parser(CodeTokenizer *Tokenizer, Sema *S, const NamedValueMap *NamedValues,
-         Diagnostics *Error);
+  Parser(CodeTokenizer *tokenizer, Sema *sema, const NamedValueMap *namedValues,
+         Diagnostics *error);
 
-  bool parseID(std::string &ID);
+  bool parseID(std::string &id);
 
-  bool parseExpressionImpl(VariantValue *Value);
+  bool parseExpressionImpl(VariantValue *value);
 
-  bool parseMatcherBuilder(MatcherCtor Ctor, const TokenInfo &NameToken,
-                           const TokenInfo &OpenToken, VariantValue *Value);
-  bool parseMatcherExpressionImpl(const TokenInfo &NameToken,
-                                  const TokenInfo &OpenToken,
-                                  std::optional<MatcherCtor> Ctor,
-                                  VariantValue *Value);
-  bool parseIdentifierPrefixImpl(VariantValue *Value);
+  bool parseMatcherBuilder(MatcherCtor ctor, const TokenInfo &nameToken,
+                           const TokenInfo &openToken, VariantValue *value);
+  bool parseMatcherExpressionImpl(const TokenInfo &nameToken,
+                                  const TokenInfo &openToken,
+                                  std::optional<MatcherCtor> ctor,
+                                  VariantValue *value);
+  bool parseIdentifierPrefixImpl(VariantValue *value);
 
-  void addCompletion(const TokenInfo &CompToken,
-                     const MatcherCompletion &Completion);
+  void addCompletion(const TokenInfo &compToken,
+                     const MatcherCompletion &completion);
   void addExpressionCompletions();
 
   std::vector<MatcherCompletion>
-  getNamedValueCompletions(ArrayRef<ArgKind> AcceptedTypes);
+  getNamedValueCompletions(ArrayRef<ArgKind> acceptedTypes);
 
-  CodeTokenizer *const Tokenizer;
-  Sema *const S;
-  const NamedValueMap *const NamedValues;
-  Diagnostics *const Error;
+  CodeTokenizer *const tokenizer;
+  Sema *const sema;
+  const NamedValueMap *const namedValues;
+  Diagnostics *const error;
 
   using ContextStackTy = std::vector<std::pair<MatcherCtor, unsigned>>;
 
-  ContextStackTy ContextStack;
-  std::vector<MatcherCompletion> Completions;
+  ContextStackTy contextStack;
+  std::vector<MatcherCompletion> completions;
 };
 
 } // namespace matcher

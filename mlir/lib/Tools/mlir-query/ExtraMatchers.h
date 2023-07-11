@@ -17,11 +17,11 @@
 //
 // - usedBy(innerMatcher, hops, inclusive): Matches an operation that is used by
 // an operation that matches `innerMatcher` `hops` hops away. If `inclusive` is
-// true, also matches operations upto `hops` away.
+// true, also matches operations up to `hops` away.
 //
 // - definedBy(innerMatcher, hops, inclusive): Matches an operation that is
 // defined by an operation that matches `innerMatcher` `hops` hops away. If
-// `inclusive` is true, also matches operations upto `hops` away.
+// `inclusive` is true, also matches operations up to `hops` away.
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,7 +34,7 @@ namespace mlir {
 
 namespace query {
 
-namespace extramatcher {
+namespace extramatchers {
 
 namespace detail {
 
@@ -87,6 +87,7 @@ struct UsesMatcher {
       });
     }
   }
+
   bool match(Operation *op) const { return recursiveMatch(op, hops); }
   Matcher innerMatcher;
   unsigned hops;
@@ -171,7 +172,7 @@ getAllDefinitions(matcher::DynMatcher innerMatcher, unsigned hops) {
                                                          true);
 }
 
-} // namespace extramatcher
+} // namespace extramatchers
 
 } // namespace query
 

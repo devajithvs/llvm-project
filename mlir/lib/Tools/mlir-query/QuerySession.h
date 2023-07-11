@@ -21,21 +21,20 @@ namespace query {
 // Represents the state for a particular clang-query session.
 class QuerySession {
 public:
-  QuerySession(Operation *Op, const std::shared_ptr<llvm::SourceMgr> &SourceMgr)
-      : Op(Op), SourceMgr(SourceMgr), OutKind(OK_Diag), BindRoot(true),
-        Terminate(false) {}
+  QuerySession(Operation *rootOp, const std::shared_ptr<llvm::SourceMgr> &sourceMgr)
+      : rootOp(rootOp), sourceMgr(sourceMgr), outKind(OK_Diag), bindRoot(true),
+        terminate(false) {}
 
   const std::shared_ptr<llvm::SourceMgr> &getSourceManager() {
-    return SourceMgr;
+    return sourceMgr;
   }
 
-  Operation *Op;
-
-  const std::shared_ptr<llvm::SourceMgr> SourceMgr;
-  OutputKind OutKind;
-  bool BindRoot;
-  bool Terminate;
-  llvm::StringMap<matcher::VariantValue> NamedValues;
+  Operation *rootOp;
+  const std::shared_ptr<llvm::SourceMgr> sourceMgr;
+  OutputKind outKind;
+  bool bindRoot;
+  bool terminate;
+  llvm::StringMap<matcher::VariantValue> namedValues;
 };
 
 } // namespace query
