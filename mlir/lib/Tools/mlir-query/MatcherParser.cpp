@@ -364,56 +364,52 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
     // Parse as a named value.
     const VariantValue namedValue =
         namedValues ? namedValues->lookup(nameToken.text) : VariantValue();
-    // TODO: Remove string comparison
-    if (namedValue.getTypeAsString() != "Nothing") {
 
-      if (tokenizer->nextTokenKind() != TokenInfo::TK_Period) {
-        *value = namedValue;
-        return true;
-      }
+    if (tokenizer->nextTokenKind() != TokenInfo::TK_Period) {
+      *value = namedValue;
+      return true;
+    }
 
-      std::string bindId;
-      tokenizer->consumeNextToken();
-      TokenInfo chainCallToken = tokenizer->consumeNextToken();
-      if (chainCallToken.kind == TokenInfo::TK_CodeCompletion) {
-        addCompletion(chainCallToken, MatcherCompletion("bind(\"", "bind"));
-        addCompletion(chainCallToken,
-                      MatcherCompletion("extract(\"", "extract"));
-        return false;
-      }
-
-      if (chainCallToken.kind != TokenInfo::TK_Ident ||
-          (chainCallToken.text != TokenInfo::ID_Bind &&
-           chainCallToken.text != TokenInfo::ID_Extract)) {
-        error->addError(chainCallToken.range,
-                        error->ET_ParserMalformedChainedExpr);
-        return false;
-      }
-      // TODO
-      if (chainCallToken.text == TokenInfo::ID_Extract) {
-
-        Diagnostics::Context ctx(Diagnostics::Context::ConstructMatcher, error,
-                                 nameToken.text, nameToken.range);
-
-        error->addError(chainCallToken.range,
-                        error->ET_RegistryMatcherNoWithSupport);
-        return false;
-      }
-      if (!parseID(bindId))
-        return false;
-
-      assert(namedValue.isMatcher());
-      std::optional<DynMatcher> result =
-          namedValue.getMatcher().getSingleMatcher();
-      if (result) {
-        std::optional<DynMatcher> bound = result->tryBind(bindId);
-        if (bound) {
-          *value = VariantMatcher::SingleMatcher(*bound);
-          return true;
-        }
-      }
+    std::string bindId;
+    tokenizer->consumeNextToken();
+    TokenInfo chainCallToken = tokenizer->consumeNextToken();
+    if (chainCallToken.kind == TokenInfo::TK_CodeCompletion) {
+      addCompletion(chainCallToken, MatcherCompletion("bind(\"", "bind"));
+      addCompletion(chainCallToken, MatcherCompletion("extract(\"", "extract"));
       return false;
     }
+
+    if (chainCallToken.kind != TokenInfo::TK_Ident ||
+        (chainCallToken.text != TokenInfo::ID_Bind &&
+         chainCallToken.text != TokenInfo::ID_Extract)) {
+      error->addError(chainCallToken.range,
+                      error->ET_ParserMalformedChainedExpr);
+      return false;
+    }
+    // TODO
+    if (chainCallToken.text == TokenInfo::ID_Extract) {
+
+      Diagnostics::Context ctx(Diagnostics::Context::ConstructMatcher, error,
+                               nameToken.text, nameToken.range);
+
+      error->addError(chainCallToken.range,
+                      error->ET_RegistryMatcherNoWithSupport);
+      return false;
+    }
+    if (!parseID(bindId))
+      return false;
+
+    assert(namedValue.isMatcher());
+    std::optional<DynMatcher> result =
+        namedValue.getMatcher().getSingleMatcher();
+    if (result) {
+      std::optional<DynMatcher> bound = result->tryBind(bindId);
+      if (bound) {
+        *value = VariantMatcher::SingleMatcher(*bound);
+        return true;
+      }
+    }
+    return false;
 
     if (tokenizer->nextTokenKind() == TokenInfo::TK_NewLine) {
       error->addError(tokenizer->peekNextToken().range,
