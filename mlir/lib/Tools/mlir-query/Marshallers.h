@@ -295,64 +295,48 @@ inline bool checkArgCount(SourceRange NameRange, size_t expectedArgCount,
   return true;
 }
 
-// Helper function to check if argument type is correct
-template <typename ArgType>
-inline bool checkArgType(int index, StringRef MatcherName,
-                         ArrayRef<ParserValue> Args, Diagnostics *Error) {
-  if (!ArgTypeTraits<ArgType>::hasCorrectType(Args[index].Value)) {
-    Error->addError(Args[index].Range, Error->ET_RegistryWrongArgType)
-        << MatcherName << index + 1;
+// Helper function for checking argument type
+template <typename ArgType, size_t Index>
+inline bool checkArgTypeAtIndex(StringRef MatcherName,
+                                ArrayRef<ParserValue> Args,
+                                Diagnostics *Error) {
+  if (!ArgTypeTraits<ArgType>::hasCorrectType(Args[Index].Value)) {
+    Error->addError(Args[Index].Range, Error->ET_RegistryWrongArgType)
+        << MatcherName << Index + 1;
     return false;
   }
   return true;
 }
 
-// 0-arg marshaller function.
-template <typename ReturnType>
+// Marshaller function for fixed number of arguments
+template <typename ReturnType, typename... ArgTypes, size_t... Is>
 static VariantMatcher
-matcherMarshall0(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
-                 ArrayRef<ParserValue> Args, Diagnostics *Error) {
-  using FuncType = ReturnType (*)();
-  if (!checkArgCount(NameRange, 0, Args, Error))
+matcherMarshallFixedImpl(void (*Func)(), StringRef MatcherName,
+                         SourceRange NameRange, ArrayRef<ParserValue> Args,
+                         Diagnostics *Error, std::index_sequence<Is...>) {
+  using FuncType = ReturnType (*)(ArgTypes...);
+  if (!checkArgCount(NameRange, sizeof...(ArgTypes), Args, Error)) {
     return VariantMatcher();
+  }
 
-  ReturnType fnPointer = reinterpret_cast<FuncType>(Func)();
-  return outvalueToVariantMatcher(
-      *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
+  if ((... && checkArgTypeAtIndex<ArgTypes, Is>(MatcherName, Args, Error))) {
+    ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
+        ArgTypeTraits<ArgTypes>::get(Args[Is].Value)...);
+    return outvalueToVariantMatcher(
+        *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
+  } else {
+    return VariantMatcher();
+  }
 }
 
-// 1-arg marshaller function.
-template <typename ReturnType, typename ArgType1>
+template <typename ReturnType, typename... ArgTypes>
 static VariantMatcher
-matcherMarshall1(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
-                 ArrayRef<ParserValue> Args, Diagnostics *Error) {
-  using FuncType = ReturnType (*)(ArgType1);
-  if (!checkArgCount(NameRange, 1, Args, Error) ||
-      !checkArgType<ArgType1>(0, MatcherName, Args, Error))
-    return VariantMatcher();
-
-  ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
-      ArgTypeTraits<ArgType1>::get(Args[0].Value));
-  return outvalueToVariantMatcher(
-      *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
-}
-
-// 2-arg marshaller function.
-template <typename ReturnType, typename ArgType1, typename ArgType2>
-static VariantMatcher
-matcherMarshall2(void (*Func)(), StringRef MatcherName, SourceRange NameRange,
-                 ArrayRef<ParserValue> Args, Diagnostics *Error) {
-  using FuncType = ReturnType (*)(ArgType1, ArgType2);
-  if (!checkArgCount(NameRange, 2, Args, Error) ||
-      !checkArgType<ArgType1>(0, MatcherName, Args, Error) ||
-      !checkArgType<ArgType2>(1, MatcherName, Args, Error))
-    return VariantMatcher();
-
-  ReturnType fnPointer = reinterpret_cast<FuncType>(Func)(
-      ArgTypeTraits<ArgType1>::get(Args[0].Value),
-      ArgTypeTraits<ArgType2>::get(Args[1].Value));
-  return outvalueToVariantMatcher(
-      *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
+matcherMarshallFixed(void (*Func)(), StringRef MatcherName,
+                     SourceRange NameRange, ArrayRef<ParserValue> Args,
+                     Diagnostics *Error) {
+  return matcherMarshallFixedImpl<ReturnType, ArgTypes...>(
+      Func, MatcherName, NameRange, Args, Error,
+      std::index_sequence_for<ArgTypes...>{});
 }
 
 /// \brief Variadic operator marshaller function.
@@ -401,36 +385,16 @@ private:
 };
 
 // Helper functions to select the appropriate marshaller functions.
-// They detect the number of arguments, arguments types and return type.
+// They detect the number of arguments, arguments types, and return type.
 
-// 0-arg overload
-template <typename ReturnType>
+// Fixed number of arguments overload
+template <typename ReturnType, typename... ArgTypes>
 std::unique_ptr<MatcherDescriptor>
-makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
-  return std::make_unique<FixedArgCountMatcherDescriptor>(
-      matcherMarshall0<ReturnType>, reinterpret_cast<void (*)()>(Func),
-      MatcherName, std::nullopt);
-}
-
-// 1-arg overload
-template <typename ReturnType, typename ArgType1>
-std::unique_ptr<MatcherDescriptor>
-makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1), StringRef MatcherName) {
-  ArgKind AK = ArgTypeTraits<ArgType1>::getKind();
-  return std::make_unique<FixedArgCountMatcherDescriptor>(
-      matcherMarshall1<ReturnType, ArgType1>,
-      reinterpret_cast<void (*)()>(Func), MatcherName, AK);
-}
-
-// 2-arg overload
-template <typename ReturnType, typename ArgType1, typename ArgType2>
-std::unique_ptr<MatcherDescriptor>
-makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
+makeMatcherAutoMarshall(ReturnType (*Func)(ArgTypes...),
                         StringRef MatcherName) {
-  ArgKind AKs[] = {ArgTypeTraits<ArgType1>::getKind(),
-                   ArgTypeTraits<ArgType2>::getKind()};
+  std::vector<ArgKind> AKs = {ArgTypeTraits<ArgTypes>::getKind()...};
   return std::make_unique<FixedArgCountMatcherDescriptor>(
-      matcherMarshall2<ReturnType, ArgType1, ArgType2>,
+      matcherMarshallFixed<ReturnType, ArgTypes...>,
       reinterpret_cast<void (*)()>(Func), MatcherName, AKs);
 }
 
