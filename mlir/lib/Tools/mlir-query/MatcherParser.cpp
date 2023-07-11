@@ -458,18 +458,17 @@ bool Parser::parseID(std::string &ID) {
   const TokenInfo idToken = tokenizer->consumeNextTokenIgnoreNewlines();
   const TokenInfo closeToken = tokenizer->consumeNextTokenIgnoreNewlines();
 
-  // TODO: We could use different error codes for each/some to be more
-  //       explicit about the syntax error.
   if (openToken.kind != TokenInfo::TK_OpenParen) {
-    error->addError(openToken.range, error->ET_ParserMalformedBindExpr);
+    error->addError(openToken.range, error->ET_ParserMalformedExprNoOpenParen);
     return false;
   }
   if (idToken.kind != TokenInfo::TK_Literal || !idToken.value.isString()) {
-    error->addError(idToken.range, error->ET_ParserMalformedBindExpr);
+    error->addError(idToken.range, error->ET_ParserMalformedExprNoIdentifier);
     return false;
   }
   if (closeToken.kind != TokenInfo::TK_CloseParen) {
-    error->addError(closeToken.range, error->ET_ParserMalformedBindExpr);
+    error->addError(closeToken.range,
+                    error->ET_ParserMalformedExprNoCloseParen);
     return false;
   }
   ID = idToken.value.getString();

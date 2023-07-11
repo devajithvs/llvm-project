@@ -119,8 +119,12 @@ static StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
     return "Input value is not a matcher expression.";
   case Diagnostics::ET_ParserInvalidToken:
     return "Invalid token <$0> found when looking for a value.";
-  case Diagnostics::ET_ParserMalformedBindExpr:
-    return "Malformed bind() expression.";
+  case Diagnostics::ET_ParserMalformedExprNoOpenParen:
+    return "Malformed identifier expression. Missing '('.";
+  case Diagnostics::ET_ParserMalformedExprNoIdentifier:
+    return "Malformed identifier expression. Missing string identifier.";
+  case Diagnostics::ET_ParserMalformedExprNoCloseParen:
+    return "Malformed identifier expression. Missing ')'.";
   case Diagnostics::ET_ParserTrailingCode:
     return "Unexpected end of code.";
   case Diagnostics::ET_ParserNumberError:
