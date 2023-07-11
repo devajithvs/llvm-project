@@ -216,37 +216,6 @@ struct VariadicOperatorMatcherFunc {
   }
 };
 
-/// Variadic function object.
-///
-/// Most of the functions below that use VariadicFunction could be implemented
-/// using plain C++11 variadic functions, but the function object allows us to
-/// capture it on the dynamic matcher registry.
-template <typename ResultT, typename ArgT,
-          ResultT (*Func)(ArrayRef<const ArgT *>)>
-struct VariadicFunction {
-  ResultT operator()() const { return Func(std::nullopt); }
-
-  template <typename... ArgsT>
-  ResultT operator()(const ArgT &Arg1, const ArgsT &...Args) const {
-    return Execute(Arg1, static_cast<const ArgT &>(Args)...);
-  }
-
-  // We also allow calls with an already created array, in case the caller
-  // already had it.
-  ResultT operator()(ArrayRef<ArgT> Args) const {
-    return Func(llvm::to_vector<8>(llvm::make_pointer_range(Args)));
-  }
-
-private:
-  // Trampoline function to allow for implicit conversions to take place
-  // before we make the array.
-  template <typename... ArgsT>
-  ResultT Execute(const ArgsT &...Args) const {
-    const ArgT *const ArgsArray[] = {&Args...};
-    return Func(ArrayRef<const ArgT *>(ArgsArray, sizeof...(ArgsT)));
-  }
-};
-
 static bool AllOfVariadicOperator(Operation *op,
                                   ArrayRef<DynMatcher> InnerMatchers) {
   // allOf leads to one matcher for each alternative in the first

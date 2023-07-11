@@ -250,40 +250,6 @@ variadicMatcherDescriptor(StringRef MatcherName, SourceRange NameRange,
       *DynMatcher::constructDynMatcherFromMatcherFn(Func(InnerArgsPtr)));
 }
 
-/// Matcher descriptor for variadic functions.
-///
-/// This class simply wraps a VariadicFunction with the right signature to
-/// export it as a MatcherDescriptor. This allows us to have one implementation
-/// of the interface for as many free functions as we want, reducing the number
-/// of symbols and size of the object file.
-class VariadicFuncMatcherDescriptor : public MatcherDescriptor {
-public:
-  using RunFunc = VariantMatcher (*)(StringRef MatcherName,
-                                     SourceRange NameRange,
-                                     ArrayRef<ParserValue> Args,
-                                     Diagnostics *Error);
-
-  template <typename ResultT, typename ArgT,
-            ResultT (*F)(ArrayRef<const ArgT *>)>
-  VariadicFuncMatcherDescriptor(VariadicFunction<ResultT, ArgT, F> Func,
-                                StringRef MatcherName)
-      : Func(&variadicMatcherDescriptor<ResultT, ArgT, F>),
-        MatcherName(MatcherName), ArgsKind(ArgTypeTraits<ArgT>::getKind()) {}
-
-  VariantMatcher create(SourceRange NameRange, ArrayRef<ParserValue> Args,
-                        Diagnostics *Error) const override {
-    return Func(MatcherName, NameRange, Args, Error);
-  }
-
-  bool isVariadic() const override { return true; }
-  unsigned getNumArgs() const override { return 0; }
-
-private:
-  const RunFunc Func;
-  const StringRef MatcherName;
-  const ArgKind ArgsKind;
-};
-
 // Helper function to check if argument count matches expected count
 inline bool checkArgCount(SourceRange NameRange, size_t expectedArgCount,
                           ArrayRef<ParserValue> Args, Diagnostics *Error) {
@@ -396,15 +362,6 @@ makeMatcherAutoMarshall(ReturnType (*Func)(ArgTypes...),
   return std::make_unique<FixedArgCountMatcherDescriptor>(
       matcherMarshallFixed<ReturnType, ArgTypes...>,
       reinterpret_cast<void (*)()>(Func), MatcherName, AKs);
-}
-
-// Variadic overload.
-template <typename ResultT, typename ArgT,
-          ResultT (*Func)(ArrayRef<const ArgT *>)>
-std::unique_ptr<MatcherDescriptor>
-makeMatcherAutoMarshall(VariadicFunction<ResultT, ArgT, Func> VarFunc,
-                        StringRef MatcherName) {
-  return std::make_unique<VariadicFuncMatcherDescriptor>(VarFunc, MatcherName);
 }
 
 // Variadic operator overload.
