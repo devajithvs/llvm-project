@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "MatcherVariantValue.h"
+#include "VariantValue.h"
 
 namespace mlir {
 namespace query {

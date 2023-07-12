@@ -14,7 +14,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERVARIANTVALUE_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERVARIANTVALUE_H
 
-#include "MatcherDiagnostics.h"
+#include "Diagnostics.h"
 #include "MatchersInternal.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/Twine.h"

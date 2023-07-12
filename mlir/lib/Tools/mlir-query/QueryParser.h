@@ -9,8 +9,8 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERYPARSER_H
 #define MLIR_TOOLS_MLIRQUERY_QUERYPARSER_H
 
-#include "MatcherDiagnostics.h"
-#include "MatcherParser.h"
+#include "Matcher/Diagnostics.h"
+#include "Matcher/Parser.h"
 #include "Query.h"
 #include "QuerySession.h"
 

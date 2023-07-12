@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "MatcherDiagnostics.h"
+#include "Diagnostics.h"
 
 #include "llvm/Support/Debug.h"
 using llvm::dbgs;

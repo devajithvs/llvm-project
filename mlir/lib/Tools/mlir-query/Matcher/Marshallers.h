@@ -17,8 +17,8 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHERS_MARSHALLERS_H
 
-#include "MatcherDiagnostics.h"
-#include "MatcherVariantValue.h"
+#include "Diagnostics.h"
+#include "VariantValue.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/Support/type_traits.h"
 

@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "MatcherRegistry.h"
+#include "Registry.h"
 #include "ExtraMatchers.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/StringMap.h"
