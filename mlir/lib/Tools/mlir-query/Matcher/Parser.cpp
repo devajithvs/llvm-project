@@ -264,7 +264,7 @@ struct Parser::ScopedContextEntry {
   Parser *parser;
 
   ScopedContextEntry(Parser *parser, MatcherCtor c) : parser(parser) {
-    parser->contextStack.push_back(std::make_pair(c, 0u));
+    parser->contextStack.push_back({c, 0u});
   }
 
   ~ScopedContextEntry() { parser->contextStack.pop_back(); }
@@ -273,8 +273,8 @@ struct Parser::ScopedContextEntry {
 };
 
 // Parse and validate expressions starting with an identifier.
-// This function can parse named values and matchers. In case of failure it will
-// try to determine the user's intent to give an appropriate error message.
+// This function can parse named values and matchers. In case of failure, it
+// will try to determine the user's intent to give an appropriate error message.
 bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
   const TokenInfo nameToken = tokenizer->consumeNextToken();
 
@@ -297,7 +297,7 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
     }
 
     // If the syntax is correct and the name is not a matcher either, report
-    // unknown named value.
+    // an unknown named value.
     if ((tokenizer->nextTokenKind() == TokenInfo::TK_Comma ||
          tokenizer->nextTokenKind() == TokenInfo::TK_CloseParen ||
          tokenizer->nextTokenKind() == TokenInfo::TK_NewLine ||
@@ -495,12 +495,13 @@ void Parser::addCompletion(const TokenInfo &compToken,
 std::vector<MatcherCompletion>
 Parser::getNamedValueCompletions(ArrayRef<ArgKind> acceptedTypes) {
   if (!namedValues)
-    return std::vector<MatcherCompletion>();
+    return {};
+
   std::vector<MatcherCompletion> result;
   for (const auto &entry : *namedValues) {
-    std::string Decl =
+    std::string decl =
         (entry.getValue().getTypeAsString() + " " + entry.getKey()).str();
-    result.emplace_back(entry.getKey(), Decl);
+    result.emplace_back(entry.getKey(), decl);
   }
   return result;
 }
@@ -511,10 +512,8 @@ void Parser::addExpressionCompletions() {
 
   // We cannot complete code if there is an invalid element on the context
   // stack.
-  for (ContextStackTy::iterator I = contextStack.begin(),
-                                E = contextStack.end();
-       I != E; ++I) {
-    if (!I->first)
+  for (const auto &entry : contextStack) {
+    if (!entry.first)
       return;
   }
 
@@ -607,10 +606,12 @@ bool Parser::parseExpression(llvm::StringRef &code, Sema *sema,
                              const NamedValueMap *namedValues,
                              VariantValue *value, Diagnostics *error) {
   CodeTokenizer tokenizer(code, error);
-  if (!Parser(&tokenizer, sema, namedValues, error).parseExpressionImpl(value))
+  Parser parser(&tokenizer, sema, namedValues, error);
+  if (!parser.parseExpressionImpl(value))
     return false;
-  auto NT = tokenizer.peekNextToken();
-  if (NT.kind != TokenInfo::TK_Eof && NT.kind != TokenInfo::TK_NewLine) {
+  auto nextToken = tokenizer.peekNextToken();
+  if (nextToken.kind != TokenInfo::TK_Eof &&
+      nextToken.kind != TokenInfo::TK_NewLine) {
     error->addError(tokenizer.peekNextToken().range,
                     error->ET_ParserTrailingCode);
     return false;
@@ -623,11 +624,11 @@ Parser::completeExpression(llvm::StringRef &code, unsigned completionOffset,
                            Sema *sema, const NamedValueMap *namedValues) {
   Diagnostics error;
   CodeTokenizer tokenizer(code, &error, completionOffset);
-  Parser P(&tokenizer, sema, namedValues, &error);
+  Parser parser(&tokenizer, sema, namedValues, &error);
   VariantValue dummy;
-  P.parseExpressionImpl(&dummy);
+  parser.parseExpressionImpl(&dummy);
 
-  return P.completions;
+  return parser.completions;
 }
 
 std::optional<DynMatcher>
