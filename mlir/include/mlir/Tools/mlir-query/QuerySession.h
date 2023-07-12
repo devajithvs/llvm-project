@@ -37,4 +37,4 @@ public:
 } // namespace query
 } // namespace mlir
 
-#endif
+#endif // MLIR_TOOLS_MLIRQUERY_QUERYSESSION_H
