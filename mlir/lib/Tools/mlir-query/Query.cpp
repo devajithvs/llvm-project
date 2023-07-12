@@ -45,74 +45,10 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
-// Function to extract the matches into a vector.
 std::vector<Operation *> getMatches(Operation *rootOp,
                                     const matcher::DynMatcher &matcher) {
   auto matchFinder = matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
-}
-
-// Extract all the matches into a function.
-Operation *extractFunction(std::vector<Operation *> &ops, OpBuilder builder,
-                           StringRef functionName) {
-  std::vector<Operation *> slice;
-  std::vector<Value> values;
-
-  bool hasReturn = false;
-  TypeRange resultType = std::nullopt;
-
-  for (auto *op : ops) {
-    slice.push_back(op);
-    if (auto returnOp = dyn_cast<func::ReturnOp>(op)) {
-      resultType = returnOp.getOperands().getTypes();
-      hasReturn = true;
-    } else {
-      // Extract all values that might potentially be needed as func
-      // arguments.
-      for (Value value : op->getOperands()) {
-        values.push_back(value);
-      }
-    }
-  }
-
-  auto loc = builder.getUnknownLoc();
-
-  if (!hasReturn) {
-    resultType = slice.back()->getResults().getTypes();
-  }
-
-  func::FuncOp funcOp = func::FuncOp::create(
-      loc, functionName,
-      builder.getFunctionType(ValueRange(values), resultType));
-
-  loc = funcOp.getLoc();
-  builder.setInsertionPointToEnd(funcOp.addEntryBlock());
-  builder.setInsertionPointToEnd(&funcOp.getBody().front());
-
-  IRMapping mapper;
-  for (const auto &arg : llvm::enumerate(values))
-    mapper.map(arg.value(), funcOp.getArgument(arg.index()));
-
-  std::vector<Operation *> clonedOps;
-  for (Operation *slicedOp : slice)
-    clonedOps.push_back(builder.clone(*slicedOp, mapper));
-
-  // Remove func arguments that are not used.
-  unsigned currentIndex = 0;
-  while (currentIndex < funcOp.getNumArguments()) {
-    if (funcOp.getArgument(currentIndex).getUses().empty()) {
-      funcOp.eraseArgument(currentIndex);
-    } else {
-      currentIndex++;
-    }
-  }
-
-  // Add an extra return operation with the result of the final operation
-  if (!hasReturn) {
-    builder.create<func::ReturnOp>(loc, clonedOps.back()->getResults());
-  }
-
-  return funcOp;
 }
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
@@ -123,28 +59,17 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   context->printOpOnDiagnostic(false);
   SourceMgrDiagnosticHandler sourceMgrHandler(*QS.sourceMgr, context);
 
-  if (matcher.isExtract()) {
-    auto functionName = matcher.getFunctionName();
-    context->loadDialect<func::FuncDialect>();
-    OpBuilder builder(context);
-    Operation *function = extractFunction(matches, builder, functionName);
-    OS << "\n\n" << *function << "\n\n";
-  } else {
-    unsigned matchCount = 0;
-    OS << "\n";
-    for (auto *op : matches) {
-      OS << "Match #" << ++matchCount << ":\n\n";
-      // Placeholder "root" binding for the initial draft.
-      op->emitRemark("\"root\" binds here");
-    }
-    OS << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
+  unsigned matchCount = 0;
+  OS << "\n";
+  for (Operation *op : matches) {
+    OS << "Match #" << ++matchCount << ":\n\n";
+    // Placeholder "root" binding for the initial draft.
+    op->emitRemark("\"root\" binds here");
   }
+  OS << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
 
   return true;
 }
-
-const QueryKind SetQueryKind<bool>::value;
-const QueryKind SetQueryKind<OutputKind>::value;
 
 } // namespace query
 } // namespace mlir

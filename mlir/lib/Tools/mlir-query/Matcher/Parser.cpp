@@ -43,10 +43,6 @@ struct Parser::TokenInfo {
     TK_Error
   };
 
-  // Some known identifiers.
-  static const char *const ID_Extract;
-  static const char *const ID_Bind;
-
   TokenInfo() = default;
 
   StringRef text;
@@ -55,10 +51,6 @@ struct Parser::TokenInfo {
   VariantValue value;
 };
 
-const char *const Parser::TokenInfo::ID_Extract = "extract";
-const char *const Parser::TokenInfo::ID_Bind = "bind";
-
-// Simple tokenizer for the parser.
 class Parser::CodeTokenizer {
 public:
   explicit CodeTokenizer(StringRef &matcherCode, Diagnostics *error)
@@ -75,27 +67,21 @@ public:
 
   // Returns but doesn't consume the next token.
   const TokenInfo &peekNextToken() const { return nextToken; }
-
   // Consumes and returns the next token.
   TokenInfo consumeNextToken() {
     TokenInfo thisToken = nextToken;
     nextToken = getNextToken();
     return thisToken;
   }
-
   TokenInfo skipNewlines() {
     while (nextToken.kind == TokenInfo::TK_NewLine)
       nextToken = getNextToken();
     return nextToken;
   }
-
   TokenInfo consumeNextTokenIgnoreNewlines() {
     skipNewlines();
-    if (nextToken.kind == TokenInfo::TK_Eof)
-      return nextToken;
-    return consumeNextToken();
+    return nextToken.kind == TokenInfo::TK_Eof ? nextToken : consumeNextToken();
   }
-
   TokenInfo::TokenKind nextTokenKind() const { return nextToken.kind; }
 
 private:
@@ -111,7 +97,6 @@ private:
       return result;
     }
 
-    LLVM_DEBUG(DBGS() << "get Next token" << code << "\n");
     if (code.empty()) {
       result.kind = TokenInfo::TK_Eof;
       result.text = "";
@@ -156,22 +141,8 @@ private:
       consumeStringLiteral(&result);
       break;
 
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-      // Parse an unsigned and float literal.
-      consumeNumberLiteral(&result);
-      break;
-
     default:
-      if (isalnum(code[0]) || code[0] == '_') {
+      if (isalnum(code[0])) {
         // Parse an identifier
         size_t tokenLength = 1;
 
@@ -186,21 +157,12 @@ private:
             code = code.drop_front(tokenLength);
             return result;
           }
-          if (tokenLength == code.size() ||
-              !(isalnum(code[tokenLength]) || code[tokenLength] == '_'))
+          if (tokenLength == code.size() || !(isalnum(code[tokenLength])))
             break;
           ++tokenLength;
         }
-        if (tokenLength == 4 && code.startswith("true")) {
-          result.kind = TokenInfo::TK_Literal;
-          result.value = true;
-        } else if (tokenLength == 5 && code.startswith("false")) {
-          result.kind = TokenInfo::TK_Literal;
-          result.value = false;
-        } else {
-          result.kind = TokenInfo::TK_Ident;
-          result.text = code.substr(0, tokenLength);
-        }
+        result.kind = TokenInfo::TK_Ident;
+        result.text = code.substr(0, tokenLength);
         code = code.drop_front(tokenLength);
       } else {
         result.kind = TokenInfo::TK_InvalidChar;
@@ -214,66 +176,9 @@ private:
     return result;
   }
 
-  // Consume an unsigned and float literal.
-  void consumeNumberLiteral(TokenInfo *result) {
-    bool isFloatingLiteral = false;
-    unsigned length = 1;
-    if (code.size() > 1) {
-      // Consume the 'x' or 'b' radix modifier, if present.
-      switch (tolower(code[1])) {
-      case 'x':
-      case 'b':
-        length = 2;
-      }
-    }
-    while (length < code.size() && isdigit(code[length]))
-      ++length;
-
-    // Try to recognize a floating point literal.
-    while (length < code.size()) {
-      char c = code[length];
-      if (c == '-' || c == '+' || c == '.' || isdigit(c)) {
-        isFloatingLiteral = true;
-        length++;
-      } else {
-        break;
-      }
-    }
-
-    result->text = code.take_front(length);
-    code = code.drop_front(length);
-
-    if (isFloatingLiteral) {
-      char *end;
-      errno = 0;
-      std::string text = result->text.str();
-      double doubleValue = strtod(text.c_str(), &end);
-      if (*end == 0 && errno == 0) {
-        result->kind = TokenInfo::TK_Literal;
-        result->value = doubleValue;
-        return;
-      }
-    } else {
-      unsigned value;
-      if (!result->text.getAsInteger(0, value)) {
-        result->kind = TokenInfo::TK_Literal;
-        result->value = value;
-        LLVM_DEBUG(dbgs() << "\nThis is the unsigned value from parser: "
-                          << value);
-        return;
-      }
-    }
-
-    SourceRange range;
-    range.start = result->range.start;
-    range.end = currentLocation();
-    error->addError(range, error->ET_ParserNumberError) << result->text;
-    result->kind = TokenInfo::TK_Error;
-  }
-
   // Consume a string literal.
-  // code must be positioned at the start of the literal (the opening
-  // quote). Consumed until it finds the same closing quote character.
+  // code must be positioned at the start of the literal (the opening quote).
+  // Consumed until it finds the same closing quote character.
   void consumeStringLiteral(TokenInfo *result) {
     bool inEscape = false;
     const char marker = code[0];
@@ -351,64 +256,23 @@ struct Parser::ScopedContextEntry {
   void nextArg() { ++parser->contextStack.back().second; }
 };
 
-// Parse expressions that start with an identifier.
-///
-/// This function can parse named values and matchers.
-/// In case of failure it will try to determine the user's intent to give
-/// an appropriate error message.
+// Parse and validate expressions that start with an identifier.
+//
+// This function can parse named values and matchers. In case of failure it will
+// try to determine the user's intent to give an appropriate error message.
 bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
   const TokenInfo nameToken = tokenizer->consumeNextToken();
 
   if (tokenizer->nextTokenKind() != TokenInfo::TK_OpenParen) {
     // Parse as a named value.
-    const VariantValue namedValue =
+    auto namedValue =
         namedValues ? namedValues->lookup(nameToken.text) : VariantValue();
 
-    if (tokenizer->nextTokenKind() != TokenInfo::TK_Period) {
-      *value = namedValue;
-      return true;
-    }
-
-    std::string bindId;
-    tokenizer->consumeNextToken();
-    TokenInfo chainCallToken = tokenizer->consumeNextToken();
-    if (chainCallToken.kind == TokenInfo::TK_CodeCompletion) {
-      addCompletion(chainCallToken, MatcherCompletion("bind(\"", "bind"));
-      addCompletion(chainCallToken, MatcherCompletion("extract(\"", "extract"));
+    if (!namedValue.isMatcher()) {
+      error->addError(tokenizer->peekNextToken().range,
+                      error->ET_ParserNotAMatcher);
       return false;
     }
-
-    if (chainCallToken.kind != TokenInfo::TK_Ident ||
-        (chainCallToken.text != TokenInfo::ID_Bind &&
-         chainCallToken.text != TokenInfo::ID_Extract)) {
-      error->addError(chainCallToken.range,
-                      error->ET_ParserMalformedChainedExpr);
-      return false;
-    }
-    // TODO
-    if (chainCallToken.text == TokenInfo::ID_Extract) {
-
-      Diagnostics::Context ctx(Diagnostics::Context::ConstructMatcher, error,
-                               nameToken.text, nameToken.range);
-
-      error->addError(chainCallToken.range,
-                      error->ET_RegistryMatcherNoWithSupport);
-      return false;
-    }
-    if (!parseID(bindId))
-      return false;
-
-    assert(namedValue.isMatcher());
-    std::optional<DynMatcher> result =
-        namedValue.getMatcher().getSingleMatcher();
-    if (result) {
-      std::optional<DynMatcher> bound = result->tryBind(bindId);
-      if (bound) {
-        *value = VariantMatcher::SingleMatcher(*bound);
-        return true;
-      }
-    }
-    return false;
 
     if (tokenizer->nextTokenKind() == TokenInfo::TK_NewLine) {
       error->addError(tokenizer->peekNextToken().range,
@@ -445,29 +309,6 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
 
   // Parse as a matcher expression.
   return parseMatcherExpressionImpl(nameToken, openToken, ctor, value);
-}
-
-bool Parser::parseID(std::string &ID) {
-  // Parse the parenthesized argument to .bind("foo")/.extract("foo")
-  const TokenInfo openToken = tokenizer->consumeNextToken();
-  const TokenInfo idToken = tokenizer->consumeNextTokenIgnoreNewlines();
-  const TokenInfo closeToken = tokenizer->consumeNextTokenIgnoreNewlines();
-
-  if (openToken.kind != TokenInfo::TK_OpenParen) {
-    error->addError(openToken.range, error->ET_ParserMalformedExprNoOpenParen);
-    return false;
-  }
-  if (idToken.kind != TokenInfo::TK_Literal || !idToken.value.isString()) {
-    error->addError(idToken.range, error->ET_ParserMalformedExprNoIdentifier);
-    return false;
-  }
-  if (closeToken.kind != TokenInfo::TK_CloseParen) {
-    error->addError(closeToken.range,
-                    error->ET_ParserMalformedExprNoCloseParen);
-    return false;
-  }
-  ID = idToken.value.getString();
-  return true;
 }
 
 bool Parser::parseMatcherBuilder(MatcherCtor ctor, const TokenInfo &nameToken,
@@ -550,50 +391,12 @@ bool Parser::parseMatcherBuilder(MatcherCtor ctor, const TokenInfo &nameToken,
     return false;
   }
 
-  std::string bindId;
-  std::string functionName;
-  if (tokenizer->peekNextToken().kind == TokenInfo::TK_Period) {
-    tokenizer->consumeNextToken();
-    TokenInfo chainCallToken = tokenizer->consumeNextToken();
-    if (chainCallToken.kind == TokenInfo::TK_CodeCompletion) {
-      addCompletion(chainCallToken, MatcherCompletion("bind(\"", "bind"));
-      addCompletion(chainCallToken, MatcherCompletion("extract(\"", "extract"));
-      return false;
-    }
-    if (chainCallToken.kind != TokenInfo::TK_Ident ||
-        (chainCallToken.text != TokenInfo::ID_Bind &&
-         chainCallToken.text != TokenInfo::ID_Extract)) {
-      error->addError(chainCallToken.range,
-                      error->ET_ParserMalformedChainedExpr);
-      return false;
-    }
-    if (chainCallToken.text == TokenInfo::ID_Bind ||
-        chainCallToken.text == TokenInfo::ID_Extract) {
-      if (chainCallToken.text == TokenInfo::ID_Bind && !parseID(bindId))
-        return false;
-      if (chainCallToken.text == TokenInfo::ID_Extract &&
-          !parseID(functionName))
-        return false;
-      Diagnostics::Context ctx(Diagnostics::Context::ConstructMatcher, error,
-                               nameToken.text, nameToken.range);
-      SourceRange matcherRange = nameToken.range;
-      matcherRange.end = chainCallToken.range.end;
-      VariantMatcher result = sema->actOnMatcherExpression(
-          builtCtor.get(), matcherRange, functionName, bindId, {}, error);
-      if (result.isNull())
-        return false;
-
-      *value = result;
-      return true;
-    }
-  }
-
   Diagnostics::Context ctx(Diagnostics::Context::ConstructMatcher, error,
                            nameToken.text, nameToken.range);
   SourceRange matcherRange = nameToken.range;
   matcherRange.end = endToken.range.end;
-  VariantMatcher result = sema->actOnMatcherExpression(
-      builtCtor.get(), matcherRange, functionName, bindId, {}, error);
+  VariantMatcher result =
+      sema->actOnMatcherExpression(builtCtor.get(), matcherRange, {}, error);
   if (result.isNull())
     return false;
 
@@ -602,9 +405,6 @@ bool Parser::parseMatcherBuilder(MatcherCtor ctor, const TokenInfo &nameToken,
 }
 
 /// Parse and validate a matcher expression.
-/// \return \c true on success, in which case \c value has the matcher parsed.
-///   If the input is malformed, or some argument has an error, it
-///   returns \c false.
 bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
                                         const TokenInfo &openToken,
                                         std::optional<MatcherCtor> ctor,
@@ -663,37 +463,6 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
     return false;
   }
 
-  std::string bindId;
-  std::string functionName;
-  if (tokenizer->peekNextToken().kind == TokenInfo::TK_Period) {
-    tokenizer->consumeNextToken();
-    TokenInfo chainCallToken = tokenizer->consumeNextToken();
-    if (chainCallToken.kind == TokenInfo::TK_CodeCompletion) {
-      addCompletion(chainCallToken, MatcherCompletion("bind(\"", "bind"));
-      addCompletion(chainCallToken, MatcherCompletion("extract(\"", "extract"));
-      return false;
-    }
-
-    if (chainCallToken.kind != TokenInfo::TK_Ident) {
-      error->addError(chainCallToken.range,
-                      error->ET_ParserMalformedChainedExpr);
-      return false;
-    }
-
-    if (chainCallToken.text != TokenInfo::ID_Bind &&
-        chainCallToken.text != TokenInfo::ID_Extract) {
-      error->addError(chainCallToken.range,
-                      error->ET_ParserMalformedChainedExpr);
-      return false;
-    }
-
-    if (chainCallToken.text == TokenInfo::ID_Bind && !parseID(bindId))
-      return false;
-
-    if (chainCallToken.text == TokenInfo::ID_Extract && !parseID(functionName))
-      return false;
-  }
-
   if (!ctor)
     return false;
   // Merge the start and end infos.
@@ -701,8 +470,8 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
                            nameToken.text, nameToken.range);
   SourceRange matcherRange = nameToken.range;
   matcherRange.end = endToken.range.end;
-  VariantMatcher result = sema->actOnMatcherExpression(
-      *ctor, matcherRange, functionName, bindId, args, error);
+  VariantMatcher result =
+      sema->actOnMatcherExpression(*ctor, matcherRange, args, error);
   if (result.isNull())
     return false;
   *value = result;
@@ -710,7 +479,7 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
 }
 
 // If the prefix of this completion matches the completion token, add it to
-// Completions minus the prefix.
+// completions minus the prefix.
 void Parser::addCompletion(const TokenInfo &compToken,
                            const MatcherCompletion &completion) {
   if (StringRef(completion.typedText).startswith(compToken.text)) {
@@ -757,33 +526,21 @@ void Parser::addExpressionCompletions() {
 
 // Parse an <Expresssion>
 bool Parser::parseExpressionImpl(VariantValue *value) {
-  LLVM_DEBUG(DBGS() << "Where does this fail?"
-                    << "\n");
   switch (tokenizer->nextTokenKind()) {
   case TokenInfo::TK_Literal:
-
-    LLVM_DEBUG(DBGS() << "tokenizer TK_literal"
-                      << "\n");
     *value = tokenizer->consumeNextToken().value;
     return true;
-
   case TokenInfo::TK_Ident:
     return parseIdentifierPrefixImpl(value);
-
   case TokenInfo::TK_CodeCompletion:
     addExpressionCompletions();
     return false;
-
   case TokenInfo::TK_Eof:
     error->addError(tokenizer->consumeNextToken().range,
                     error->ET_ParserNoCode);
-    LLVM_DEBUG(DBGS() << "tokenizer TK_EOF"
-                      << "\n");
     return false;
 
   case TokenInfo::TK_Error:
-    LLVM_DEBUG(DBGS() << "tokenizer TK_ERROR"
-                      << "\n");
     // This error was already reported by the tokenizer.
     return false;
   case TokenInfo::TK_NewLine:
@@ -816,17 +573,9 @@ Parser::RegistrySema::lookupMatcherCtor(StringRef matcherName) {
 }
 
 VariantMatcher Parser::RegistrySema::actOnMatcherExpression(
-    MatcherCtor ctor, SourceRange nameRange, StringRef functionName,
-    StringRef bindId, ArrayRef<ParserValue> args, Diagnostics *error) {
-  if (bindId.empty() && functionName.empty()) {
-    return Registry::constructMatcher(ctor, nameRange, args, error);
-  } else if (!functionName.empty()) {
-    return Registry::constructFunctionMatcher(ctor, nameRange, functionName,
-                                              args, error);
-  } else {
-    return Registry::constructBoundMatcher(ctor, nameRange, bindId, args,
-                                           error);
-  }
+    MatcherCtor ctor, SourceRange nameRange, ArrayRef<ParserValue> args,
+    Diagnostics *error) {
+  return Registry::constructMatcher(ctor, nameRange, args, error);
 }
 
 std::vector<ArgKind> Parser::RegistrySema::getAcceptedCompletionTypes(

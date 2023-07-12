@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "Registry.h"
-#include "ExtraMatchers.h"
 #include "mlir/IR/Matchers.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
@@ -34,9 +33,10 @@ using internal::MatcherDescriptor;
 using ConstructorMap =
     llvm::StringMap<std::unique_ptr<const MatcherDescriptor>>;
 
-using constantFnType = detail::constant_op_matcher();
-using attrFnType = detail::AttrOpMatcher(StringRef);
-using opFnType = detail::NameOpMatcher(StringRef);
+// This is needed because these matchers are defined as overloaded functions.
+using IsConstantOp = detail::constant_op_matcher();
+using HasOpAttrName = detail::AttrOpMatcher(StringRef);
+using HasOpName = detail::NameOpMatcher(StringRef);
 
 class RegistryMaps {
 public:
@@ -70,27 +70,18 @@ RegistryMaps::RegistryMaps() {
   };
 
   // Register matchers using the template function
-  registerOpMatcher("allOf", extramatchers::allOf);
-  registerOpMatcher("anyOf", extramatchers::anyOf);
-  registerOpMatcher("hasArgument", extramatchers::hasArgument);
-  registerOpMatcher("definedBy", extramatchers::definedBy);
-  registerOpMatcher("getDefinitions", extramatchers::getDefinitions);
-  registerOpMatcher("getAllDefinitions", extramatchers::getAllDefinitions);
-  registerOpMatcher("uses", extramatchers::uses);
-  registerOpMatcher("getUses", extramatchers::getUses);
-  registerOpMatcher("getAllUses", extramatchers::getAllUses);
-  registerOpMatcher("isConstantOp", static_cast<constantFnType *>(m_Constant));
-  registerOpMatcher("hasOpAttrName", static_cast<attrFnType *>(m_Attr));
-  registerOpMatcher("hasOpName", static_cast<opFnType *>(m_Op));
-  registerOpMatcher("m_PosZeroFloat", m_PosZeroFloat);
-  registerOpMatcher("m_NegZeroFloat", m_NegZeroFloat);
-  registerOpMatcher("m_AnyZeroFloat", m_AnyZeroFloat);
-  registerOpMatcher("m_OneFloat", m_OneFloat);
-  registerOpMatcher("m_PosInfFloat", m_PosInfFloat);
-  registerOpMatcher("m_NegInfFloat", m_NegInfFloat);
-  registerOpMatcher("m_Zero", m_Zero);
-  registerOpMatcher("m_NonZero", m_NonZero);
-  registerOpMatcher("m_One", m_One);
+  registerOpMatcher("isConstantOp", static_cast<IsConstantOp *>(m_Constant));
+  registerOpMatcher("hasOpAttrName", static_cast<HasOpAttrName *>(m_Attr));
+  registerOpMatcher("hasOpName", static_cast<HasOpName *>(m_Op));
+  registerOpMatcher("isPosZeroFloat", m_PosZeroFloat);
+  registerOpMatcher("isNegZeroFloat", m_NegZeroFloat);
+  registerOpMatcher("isZeroFloat", m_AnyZeroFloat);
+  registerOpMatcher("isOneFloat", m_OneFloat);
+  registerOpMatcher("isPosInfFloat", m_PosInfFloat);
+  registerOpMatcher("isNegInfFloat", m_NegInfFloat);
+  registerOpMatcher("isZero", m_Zero);
+  registerOpMatcher("isNonZero", m_NonZero);
+  registerOpMatcher("isOne", m_One);
 }
 
 RegistryMaps::~RegistryMaps() = default;
@@ -129,7 +120,7 @@ std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
     MatcherCtor ctor = ctxEntry.first;
     unsigned argNumber = ctxEntry.second;
     std::vector<ArgKind> nextTypeSet;
-    if ((ctor->isVariadic() || argNumber < ctor->getNumArgs()))
+    if (argNumber < ctor->getNumArgs())
       ctor->getArgKinds(argNumber, nextTypeSet);
     typeSet.insert(nextTypeSet.begin(), nextTypeSet.end());
   }
@@ -145,7 +136,7 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
     const MatcherDescriptor &matcher = *m.getValue();
     StringRef name = m.getKey();
 
-    unsigned numArgs = matcher.isVariadic() ? 1 : matcher.getNumArgs();
+    unsigned numArgs = matcher.getNumArgs();
     std::vector<std::vector<ArgKind>> argKinds(numArgs);
     for (const ArgKind &kind : acceptedTypes) {
       if (kind.getArgKind() != kind.AK_Matcher) {
@@ -175,9 +166,6 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
         OS << argKind.asString();
       }
     }
-
-    if (matcher.isVariadic())
-      OS << "...";
     OS << ")";
 
     typedText += "(";
@@ -192,57 +180,11 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
   return completions;
 }
 
-// static
 VariantMatcher Registry::constructMatcher(MatcherCtor ctor,
                                           SourceRange nameRange,
                                           ArrayRef<ParserValue> args,
                                           Diagnostics *error) {
   return ctor->create(nameRange, args, error);
-}
-
-// static
-VariantMatcher Registry::constructFunctionMatcher(MatcherCtor ctor,
-                                                  SourceRange nameRange,
-                                                  StringRef FunctionName,
-                                                  ArrayRef<ParserValue> args,
-                                                  Diagnostics *error) {
-
-  VariantMatcher out = constructMatcher(ctor, nameRange, args, error);
-  if (out.isNull())
-    return out;
-
-  std::optional<DynMatcher> result = out.getSingleMatcher();
-
-  if (result.has_value()) {
-    result->setFunctionName(FunctionName);
-    if (result.has_value()) {
-      return VariantMatcher::SingleMatcher(*result);
-    }
-  }
-  error->addError(nameRange, error->ET_RegistryNotBindable);
-  return out;
-}
-
-// static
-VariantMatcher Registry::constructBoundMatcher(MatcherCtor ctor,
-                                               SourceRange nameRange,
-                                               StringRef bindId,
-                                               ArrayRef<ParserValue> args,
-                                               Diagnostics *error) {
-  VariantMatcher out = constructMatcher(ctor, nameRange, args, error);
-  if (out.isNull())
-    return out;
-
-  std::optional<DynMatcher> result = out.getSingleMatcher();
-  if (result.has_value()) {
-    // TODO: FIXME
-    // std::optional<DynMatcher> Bound = result->tryBind(BindID);
-    // if (Bound.has_value()) {
-    return VariantMatcher::SingleMatcher(*result);
-    // }
-  }
-  error->addError(nameRange, error->ET_RegistryNotBindable);
-  return VariantMatcher();
 }
 
 } // namespace matcher

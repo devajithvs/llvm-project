@@ -78,53 +78,6 @@ struct ArgTypeTraits<DynMatcher> {
   }
 };
 
-template <>
-struct ArgTypeTraits<bool> {
-
-  static bool hasCorrectType(const VariantValue &value) {
-    return value.isBoolean();
-  }
-
-  static bool get(const VariantValue &value) { return value.getBoolean(); }
-
-  static ArgKind getKind() { return ArgKind(ArgKind::AK_Boolean); }
-
-  static std::optional<std::string> getBestGuess(const VariantValue &) {
-    return std::nullopt;
-  }
-};
-
-template <>
-struct ArgTypeTraits<double> {
-
-  static bool hasCorrectType(const VariantValue &value) {
-    return value.isDouble();
-  }
-
-  static double get(const VariantValue &value) { return value.getDouble(); }
-
-  static ArgKind getKind() { return ArgKind(ArgKind::AK_Double); }
-
-  static std::optional<std::string> getBestGuess(const VariantValue &) {
-    return std::nullopt;
-  }
-};
-
-template <>
-struct ArgTypeTraits<unsigned> {
-  static bool hasCorrectType(const VariantValue &value) {
-    return value.isUnsigned();
-  }
-
-  static unsigned get(const VariantValue &value) { return value.getUnsigned(); }
-
-  static ArgKind getKind() { return ArgKind(ArgKind::AK_Unsigned); }
-
-  static std::optional<std::string> getBestGuess(const VariantValue &) {
-    return std::nullopt;
-  }
-};
-
 // Convert the return values of the functions into a VariantMatcher.
 static VariantMatcher outvalueToVariantMatcher(const DynMatcher &matcher) {
   return VariantMatcher::SingleMatcher(matcher);
@@ -148,11 +101,7 @@ public:
     return {};
   }
 
-  // If the matcher is variadic, it can take any number of arguments.
-  virtual bool isVariadic() const = 0;
-
-  // Returns the number of arguments accepted by the matcher if it is not
-  // variadic.
+  // Returns the number of arguments accepted by the matcher.
   virtual unsigned getNumArgs() const = 0;
 
   // Append the set of argument types accepted for argument 'ArgNo' to
@@ -183,7 +132,6 @@ public:
     return marshaller(func, matcherName, nameRange, args, error);
   }
 
-  bool isVariadic() const override { return false; }
   unsigned getNumArgs() const override { return argKinds.size(); }
 
   void getArgKinds(unsigned argNo, std::vector<ArgKind> &kinds) const override {
@@ -196,53 +144,6 @@ private:
   const StringRef matcherName;
   const std::vector<ArgKind> argKinds;
 };
-
-/// Variadic marshaller function.
-template <typename ResultT, typename ArgT,
-          ResultT (*Func)(ArrayRef<const ArgT *>)>
-VariantMatcher
-variadicMatcherDescriptor(StringRef matcherName, SourceRange nameRange,
-                          ArrayRef<ParserValue> args, Diagnostics *error) {
-  SmallVector<ArgT *, 8> innerArgsPtr;
-  innerArgsPtr.resize_for_overwrite(args.size());
-  SmallVector<ArgT, 8> innerArgs;
-  innerArgs.reserve(args.size());
-
-  for (size_t i = 0, e = args.size(); i != e; ++i) {
-    using ArgTraits = ArgTypeTraits<ArgT>;
-
-    const ParserValue &arg = args[i];
-    const VariantValue &value = arg.value;
-    if (!ArgTraits::hasCorrectType(value)) {
-      error->addError(arg.range, error->ET_RegistryWrongArgType)
-          << (i + 1) << ArgTraits::getKind().asString()
-          << value.getTypeAsString();
-      return {};
-    }
-    if (!ArgTraits::hasCorrectValue(value)) {
-      if (std::optional<std::string> bestGuess =
-              ArgTraits::getBestGuess(value)) {
-        error->addError(arg.range, error->ET_RegistryUnknownEnumWithReplace)
-            << i + 1 << value.getString() << *bestGuess;
-      } else if (value.isString()) {
-        error->addError(arg.range, error->ET_RegistryValueNotFound)
-            << value.getString();
-      } else {
-        // This isn't ideal, but it's better than reporting an empty string as
-        // the error in this case.
-        error->addError(arg.range, error->ET_RegistryWrongArgType)
-            << (i + 1) << ArgTraits::getKind().asString()
-            << value.getTypeAsString();
-      }
-      return {};
-    }
-    assert(innerArgs.size() < innerArgs.capacity());
-    innerArgs.emplace_back(ArgTraits::get(value));
-    innerArgsPtr[i] = &innerArgs[i];
-  }
-  return outvalueToVariantMatcher(
-      *DynMatcher::constructDynMatcherFromMatcherFn(Func(innerArgsPtr)));
-}
 
 // Helper function to check if argument count matches expected count
 inline bool checkArgCount(SourceRange nameRange, size_t expectedArgCount,
@@ -299,55 +200,6 @@ matcherMarshallFixed(void (*func)(), StringRef matcherName,
       std::index_sequence_for<ArgTypes...>{});
 }
 
-// Variadic operator marshaller function.
-class VariadicOperatorMatcherDescriptor : public MatcherDescriptor {
-public:
-  using VarOp = DynMatcher::VariadicOperator;
-  VariadicOperatorMatcherDescriptor(unsigned minCount, unsigned maxCount,
-                                    VarOp varOp, StringRef matcherName)
-      : minCount(minCount), maxCount(maxCount), varOp(varOp),
-        matcherName(matcherName) {}
-
-  VariantMatcher create(SourceRange nameRange, ArrayRef<ParserValue> args,
-                        Diagnostics *error) const override {
-    if (args.size() < minCount || maxCount < args.size()) {
-      error->addError(nameRange, error->ET_RegistryWrongArgCount)
-          << args.size();
-      return VariantMatcher();
-    }
-
-    std::vector<VariantMatcher> innerArgs;
-    for (size_t i = 0, e = args.size(); i != e; ++i) {
-      const ParserValue &arg = args[i];
-      const VariantValue &value = arg.value;
-      if (!value.isMatcher()) {
-        error->addError(arg.range, error->ET_RegistryWrongArgType)
-            << (i + 1) << "Matcher: " << value.getTypeAsString();
-        return VariantMatcher();
-      }
-      innerArgs.push_back(value.getMatcher());
-    }
-    return VariantMatcher::VariadicOperatorMatcher(varOp, std::move(innerArgs));
-  }
-
-  bool isVariadic() const override { return true; }
-
-  unsigned getNumArgs() const override { return 0; }
-
-  void getArgKinds(unsigned argNo, std::vector<ArgKind> &kinds) const override {
-    kinds.push_back(ArgKind(ArgKind::AK_Matcher));
-  }
-
-private:
-  const unsigned minCount;
-  const unsigned maxCount;
-  const VarOp varOp;
-  const StringRef matcherName;
-};
-
-// Helper functions to select the appropriate marshaller functions.
-// They detect the number of arguments, arguments types, and return type.
-
 // Fixed number of arguments overload
 template <typename ReturnType, typename... ArgTypes>
 std::unique_ptr<MatcherDescriptor>
@@ -357,15 +209,6 @@ makeMatcherAutoMarshall(ReturnType (*func)(ArgTypes...),
   return std::make_unique<FixedArgCountMatcherDescriptor>(
       matcherMarshallFixed<ReturnType, ArgTypes...>,
       reinterpret_cast<void (*)()>(func), matcherName, argKinds);
-}
-
-// Variadic operator overload.
-template <unsigned MinCount, unsigned MaxCount>
-std::unique_ptr<MatcherDescriptor>
-makeMatcherAutoMarshall(VariadicOperatorMatcherFunc<MinCount, MaxCount> func,
-                        StringRef matcherName) {
-  return std::make_unique<VariadicOperatorMatcherDescriptor>(
-      MinCount, MaxCount, func.varOp, matcherName);
 }
 
 } // namespace internal

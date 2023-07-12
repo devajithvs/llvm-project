@@ -29,8 +29,8 @@ namespace matcher {
 namespace internal {
 class MatcherDescriptor;
 
-/// A smart (owning) pointer for MatcherDescriptor. We can't use unique_ptr
-/// because MatcherDescriptor is forward declared
+// A smart (owning) pointer for MatcherDescriptor. We can't use unique_ptr
+// because MatcherDescriptor is forward declared
 class MatcherDescriptorPtr {
 public:
   explicit MatcherDescriptorPtr(MatcherDescriptor *);
@@ -59,10 +59,10 @@ struct MatcherCompletion {
     return typedText == Other.typedText && matcherDecl == Other.matcherDecl;
   }
 
-  /// The text to type to select this matcher.
+  // The text to type to select this matcher.
   std::string typedText;
 
-  /// The "declaration" of the matcher, with type information.
+  // The "declaration" of the matcher, with type information.
   std::string matcherDecl;
 };
 
@@ -76,70 +76,31 @@ public:
 
   static bool isBuilderMatcher(MatcherCtor ctor);
 
-  // Look up a matcher in the registry by name,
-  /// \return An opaque value which may be used to refer to the matcher
-  /// constructor, or std::optional<MatcherCtor>() if not found.
-  static std::optional<MatcherCtor> lookupMatcherCtor(StringRef MatcherName);
+  // Look up a matcher in the registry by name and returns an opaque value which
+  // may be used to refer to the matcher constructor, or std::nullptr if not
+  // found.
+  static std::optional<MatcherCtor> lookupMatcherCtor(StringRef matcherName);
 
-  /// Compute the list of completion types for \p Context.
-  ///
-  /// Each element of \p Context represents a matcher invocation, going from
-  /// outermost to innermost. Elements are pairs consisting of a reference to
-  /// the matcher constructor and the index of the next element in the
-  /// argument list of that matcher (or for the last element, the index of
-  /// the completion point in the argument list). An empty list requests
-  /// completion for the root matcher.
+  // Compute the list of completion types for context.
+  //
+  // Each element of context represents a matcher invocation, going from
+  // outermost to innermost. Elements are pairs consisting of a reference to the
+  // matcher constructor and the index of the next element in the argument list
+  // of that matcher (or for the last element, the index of the completion point
+  // in the argument list). An empty list requests completion for the root
+  // matcher.
   static std::vector<ArgKind> getAcceptedCompletionTypes(
-      llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> Context);
+      llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context);
 
-  /// Compute the list of completions that match any of
-  /// \p AcceptedTypes.
-  ///
-  /// \param AcceptedTypes All types accepted for this completion.
-  ///
-  /// \return All completions for the specified types.
-  /// Completions should be valid when used in \c lookupMatcherCtor().
-  /// The matcher constructed from the return of \c lookupMatcherCtor()
-  /// should be convertible to some type in \p AcceptedTypes.
+  /// Compute the list of completions that match any of acceptedTypes.
   static std::vector<MatcherCompletion>
-  getMatcherCompletions(ArrayRef<ArgKind> AcceptedTypes);
+  getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes);
 
   /// Construct a matcher from the registry.
-
-  // Construct a matcher from the registry.
-  // ctor The matcher constructor to instantiate.
-
-  // args is the argument list for the matcher. The number and types of the
-  // values must be valid for the matcher requested. Otherwise, the function
-  // will return an error.
-
-  // Returns the matcher if no error was found. nullptr if the matcher is not
-  // found, or if the number of arguments or argument types do not
-  // match the signature. In that case error will contain the description
-  // of the error.
   static VariantMatcher constructMatcher(MatcherCtor ctor,
                                          SourceRange nameRange,
                                          ArrayRef<ParserValue> args,
                                          Diagnostics *error);
-
-  static VariantMatcher constructFunctionMatcher(MatcherCtor ctor,
-                                                 SourceRange nameRange,
-                                                 StringRef FunctionName,
-                                                 ArrayRef<ParserValue> args,
-                                                 Diagnostics *error);
-
-  // TODO: FIX ALL COMMENTS
-  /// Construct a matcher from the registry and bind it.
-  ///
-  /// Similar the \c constructMatcher() above, but it then tries to bind the
-  /// matcher to the specified \c bindId.
-  /// If the matcher is not bindable, it sets an error in \c error and returns
-  /// a null matcher.
-  static VariantMatcher constructBoundMatcher(MatcherCtor ctor,
-                                              SourceRange nameRange,
-                                              StringRef bindId,
-                                              ArrayRef<ParserValue> args,
-                                              Diagnostics *error);
 };
 
 } // namespace matcher

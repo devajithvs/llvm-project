@@ -39,32 +39,19 @@ namespace matcher {
 // Matcher expression parser.
 class Parser {
 public:
-  // Interface to connect the parser with the registry and more.
-  //
-  // The parser uses the Sema instance passed into
-  // parseMatcherExpression() to handle all matcher tokens. The simplest
-  // processor implementation would simply call into the registry to create
-  // the matchers.
-  // However, a more complex processor might decide to intercept the matcher
-  // creation and do some extra work. For example, it could apply some
-  // transformation to the matcher by adding some id() nodes, or could detect
-  // specific matcher nodes for more efficient lookup.
+  // Interface to connect the parser with the registry and more. The parser uses
+  // the Sema instance passed into parseMatcherExpression() to handle all
+  // matcher tokens.
   class Sema {
   public:
     virtual ~Sema();
 
-    // Process a matcher expression.
-    // All the arguments passed here have already been processed.
-    // ctor is a matcher constructor looked up by lookupMatcherCtor.
-    // args is the argument list for the matcher.
-    // Returns the matcher object constructed by the processor, or nullptr
-    // if an error occurred. In that case, Error will contain a
-    // description of the error.
-    // The caller takes ownership of the Matcher object returned.
-    virtual VariantMatcher
-    actOnMatcherExpression(MatcherCtor ctor, SourceRange nameRange,
-                           llvm::StringRef functionName, llvm::StringRef bindId,
-                           ArrayRef<ParserValue> args, Diagnostics *error) = 0;
+    // Process a matcher expression. The caller takes ownership of the Matcher
+    // object returned.
+    virtual VariantMatcher actOnMatcherExpression(MatcherCtor ctor,
+                                                  SourceRange nameRange,
+                                                  ArrayRef<ParserValue> args,
+                                                  Diagnostics *error) = 0;
 
     // Look up a matcher by name in the matcher name found by the parser.
     // nameRange is the location of the name in the matcher source, useful for
@@ -80,32 +67,16 @@ public:
     buildMatcherCtor(MatcherCtor, SourceRange nameRange,
                      ArrayRef<ParserValue> args, Diagnostics *error) const = 0;
 
-    // Compute the list of completion types for \p Context.
-    ///
-    /// Each element of \p Context represents a matcher invocation, going from
-    /// outermost to innermost. Elements are pairs consisting of a reference to
-    /// the matcher constructor and the index of the next element in the
-    /// argument list of that matcher (or for the last element, the index of
-    /// the completion point in the argument list). An empty list requests
-    /// completion for the root matcher.
+    // Compute the list of completion types for Context.
     virtual std::vector<ArgKind> getAcceptedCompletionTypes(
         llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> Context);
 
-    /// Compute the list of completions that match any of
-    /// \p acceptedTypes.
-    ///
-    /// \param acceptedTypes All types accepted for this completion.
-    ///
-    /// \return All completions for the specified types.
-    /// Completions should be valid when used in \c lookupMatcherCtor().
-    /// The matcher constructed from the return of \c lookupMatcherCtor()
-    /// should be convertible to some type in \p acceptedTypes.
+    // Compute the list of completions that match any of acceptedTypes.
     virtual std::vector<MatcherCompletion>
     getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes);
   };
 
-  /// Sema implementation that uses the matcher registry to process the
-  ///   tokens.
+  // Sema implementation that uses the matcher registry to process the tokens.
   class RegistrySema : public Parser::Sema {
   public:
     ~RegistrySema() override;
@@ -115,8 +86,6 @@ public:
 
     VariantMatcher actOnMatcherExpression(MatcherCtor ctor,
                                           SourceRange nameRange,
-                                          llvm::StringRef functionName,
-                                          llvm::StringRef bindId,
                                           ArrayRef<ParserValue> args,
                                           Diagnostics *error) override;
 
@@ -136,22 +105,8 @@ public:
 
   using NamedValueMap = llvm::StringMap<VariantValue>;
 
-  /// Parse a matcher expression.
-  ///
-  /// \param matcherCode The matcher expression to parse.
-  ///
-  /// \param sema The Sema instance that will help the parser
-  ///   construct the matchers. If null, it uses the default registry.
-  ///
-  /// \param namedValues A map of precomputed named values.  This provides
-  ///   the dictionary for the <NamedValue> rule of the grammar.
-  ///   If null, it is ignored.
-  ///
-  /// \return The matcher object constructed by the processor, or an empty
-  ///   Optional if an error occurred. In that case, \c error will contain a
-  ///   description of the error.
-  ///   The caller takes ownership of the DynTypedMatcher object returned.
-
+  // Parse a matcher expression. The caller takes ownership of the DynMatcher
+  // object returned.
   static std::optional<DynMatcher>
   parseMatcherExpression(llvm::StringRef &matcherCode, Sema *sema,
                          const NamedValueMap *namedValues, Diagnostics *error);
@@ -164,18 +119,8 @@ public:
   parseMatcherExpression(llvm::StringRef &matcherCode, Diagnostics *error) {
     return parseMatcherExpression(matcherCode, nullptr, error);
   }
-  /// Parse an expression.
-  ///
-  /// Parses any expression supported by this parser. In general, the
-  /// \c parseMatcherExpression function is a better approach to get a matcher
-  /// object.
 
-  /// \param sema The Sema instance that will help the parser
-  ///   construct the matchers. If null, it uses the default registry.
-  ///
-  /// \param namedValues A map of precomputed named values.  This provides
-  ///   the dictionary for the <NamedValue> rule of the grammar.
-  ///   If null, it is ignored.
+  /// Parse an expression. Parses any expression supported by this parser.
   static bool parseExpression(llvm::StringRef &code, Sema *sema,
                               const NamedValueMap *namedValues,
                               VariantValue *value, Diagnostics *error);
@@ -190,16 +135,6 @@ public:
   }
 
   /// Complete an expression at the given offset.
-  ///
-  /// \param sema The Sema instance that will help the parser
-  ///   construct the matchers. If null, it uses the default registry.
-  ///
-  /// \param namedValues A map of precomputed named values.  This provides
-  ///   the dictionary for the <NamedValue> rule of the grammar.
-  ///   If null, it is ignored.
-  ///
-  /// \return The list of completions, which may be empty if there are no
-  /// available completions or if an error occurred.
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset,
                      Sema *sema, const NamedValueMap *namedValues);

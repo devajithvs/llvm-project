@@ -9,6 +9,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERYSESSION_H
 #define MLIR_TOOLS_MLIRQUERY_QUERYSESSION_H
 
+// #include "MatcherParser.h"
 #include "Query.h"
 #include "mlir/Tools/ParseUtilities.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -23,8 +24,7 @@ class QuerySession {
 public:
   QuerySession(Operation *rootOp,
                const std::shared_ptr<llvm::SourceMgr> &sourceMgr)
-      : rootOp(rootOp), sourceMgr(sourceMgr), outKind(OK_Diag), bindRoot(true),
-        terminate(false) {}
+      : rootOp(rootOp), sourceMgr(sourceMgr), terminate(false) {}
 
   const std::shared_ptr<llvm::SourceMgr> &getSourceManager() {
     return sourceMgr;
@@ -32,8 +32,6 @@ public:
 
   Operation *rootOp;
   const std::shared_ptr<llvm::SourceMgr> sourceMgr;
-  OutputKind outKind;
-  bool bindRoot;
   bool terminate;
   llvm::StringMap<matcher::VariantValue> namedValues;
 };

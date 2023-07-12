@@ -18,16 +18,7 @@
 namespace mlir {
 namespace query {
 
-enum OutputKind { OK_Diag, OK_Print, OK_Dump };
-
-enum QueryKind {
-  QK_Invalid,
-  QK_NoOp,
-  QK_Help,
-  QK_Match,
-  QK_SetBool,
-  QK_SetOutputKind
-};
+enum QueryKind { QK_Invalid, QK_NoOp, QK_Help, QK_Match };
 
 class QuerySession;
 
@@ -83,37 +74,6 @@ struct MatchQuery : Query {
   StringRef source;
 
   static bool classof(const Query *Q) { return Q->kind == QK_Match; }
-};
-
-template <typename T>
-struct SetQueryKind {};
-
-template <>
-struct SetQueryKind<bool> {
-  static const QueryKind value = QK_SetBool;
-};
-
-template <>
-struct SetQueryKind<OutputKind> {
-  static const QueryKind value = QK_SetOutputKind;
-};
-
-// Query for "set VAR VALUE".
-template <typename T>
-struct SetQuery : Query {
-  SetQuery(T QuerySession::*var, T value)
-      : Query(SetQueryKind<T>::value), var(var), value(value) {}
-  bool run(llvm::raw_ostream &OS, QuerySession &QS) const override {
-    QS.*var = value;
-    return true;
-  }
-
-  static bool classof(const Query *Q) {
-    return Q->kind == SetQueryKind<T>::value;
-  }
-
-  T QuerySession::*var;
-  T value;
 };
 
 } // namespace query
