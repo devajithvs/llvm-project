@@ -45,7 +45,7 @@ public:
   // matcher tokens.
   class Sema {
   public:
-    virtual ~Sema() = default;
+    virtual ~Sema();
 
     // Process a matcher expression. The caller takes ownership of the Matcher
     // object returned.
@@ -58,51 +58,47 @@ public:
     virtual std::optional<MatcherCtor>
     lookupMatcherCtor(llvm::StringRef matcherName) = 0;
 
-    virtual bool isBuilderMatcher(MatcherCtor ctor) const = 0;
+    virtual bool isBuilderMatcher(MatcherCtor) const = 0;
 
     virtual internal::MatcherDescriptorPtr
-    buildMatcherCtor(MatcherCtor ctor, SourceRange nameRange,
+    buildMatcherCtor(MatcherCtor, SourceRange nameRange,
                      ArrayRef<ParserValue> args, Diagnostics *error) const = 0;
 
+    // Compute the list of completion types for Context.
     virtual std::vector<ArgKind> getAcceptedCompletionTypes(
-        llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context) {
-      return {};
-    }
+        llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> Context);
 
+    // Compute the list of completions that match any of acceptedTypes.
     virtual std::vector<MatcherCompletion>
-    getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes) {
-      return {};
-    }
+    getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes);
   };
 
   // RegistrySema class - an implementation of the Sema interface that uses the
   // matcher registry to process tokens.
   class RegistrySema : public Parser::Sema {
   public:
-    ~RegistrySema() override = default;
+    ~RegistrySema() override;
 
     std::optional<MatcherCtor>
-    lookupMatcherCtor(llvm::StringRef matcherName) override {
-      return Registry::lookupMatcherCtor(matcherName);
-    }
+    lookupMatcherCtor(llvm::StringRef matcherName) override;
 
     VariantMatcher actOnMatcherExpression(MatcherCtor ctor,
                                           SourceRange nameRange,
                                           ArrayRef<ParserValue> args,
-                                          Diagnostics *error) override {
-      return Registry::constructMatcher(ctor, nameRange, args, error);
-    }
+                                          Diagnostics *error) override;
 
-    bool isBuilderMatcher(MatcherCtor ctor) const override {
-      return Registry::isBuilderMatcher(ctor);
-    }
+    bool isBuilderMatcher(MatcherCtor ctor) const override;
+
+    std::vector<ArgKind> getAcceptedCompletionTypes(
+        llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context) override;
 
     internal::MatcherDescriptorPtr
-    buildMatcherCtor(MatcherCtor ctor, SourceRange nameRange,
+    buildMatcherCtor(MatcherCtor, SourceRange nameRange,
                      ArrayRef<ParserValue> args,
-                     Diagnostics *error) const override {
-      return Registry::buildMatcherCtor(ctor, nameRange, args, error);
-    }
+                     Diagnostics *error) const override;
+
+    std::vector<MatcherCompletion>
+    getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes) override;
   };
 
   using NamedValueMap = llvm::StringMap<VariantValue>;
@@ -112,18 +108,17 @@ public:
   static std::optional<DynMatcher>
   parseMatcherExpression(llvm::StringRef &matcherCode, Sema *sema,
                          const NamedValueMap *namedValues, Diagnostics *error);
-
   static std::optional<DynMatcher>
   parseMatcherExpression(llvm::StringRef &matcherCode, Sema *sema,
                          Diagnostics *error) {
     return parseMatcherExpression(matcherCode, sema, nullptr, error);
   }
-
   static std::optional<DynMatcher>
   parseMatcherExpression(llvm::StringRef &matcherCode, Diagnostics *error) {
     return parseMatcherExpression(matcherCode, nullptr, error);
   }
 
+  // Methods to parse any expression supported by this parser.
   static bool parseExpression(llvm::StringRef &code, Sema *sema,
                               const NamedValueMap *namedValues,
                               VariantValue *value, Diagnostics *error);
@@ -132,22 +127,20 @@ public:
                               VariantValue *value, Diagnostics *error) {
     return parseExpression(code, sema, nullptr, value, error);
   }
-
   static bool parseExpression(llvm::StringRef &code, VariantValue *value,
                               Diagnostics *error) {
     return parseExpression(code, nullptr, value, error);
   }
 
+  // Methods to complete an expression at a given offset.
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset,
                      Sema *sema, const NamedValueMap *namedValues);
-
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset,
                      Sema *sema) {
     return completeExpression(code, completionOffset, sema, nullptr);
   }
-
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset) {
     return completeExpression(code, completionOffset, nullptr);
@@ -167,14 +160,11 @@ private:
                                const TokenInfo &nameToken,
                                const TokenInfo &openToken,
                                const TokenInfo &endToken, VariantValue *value);
-
   bool parseMatcherArgs(bool isBuilder, std::vector<ParserValue> &args,
                         MatcherCtor ctor, const TokenInfo &nameToken,
                         TokenInfo &endToken);
-
   bool parseMatcherBuilder(MatcherCtor ctor, const TokenInfo &nameToken,
                            const TokenInfo &openToken, VariantValue *value);
-
   bool parseMatcherExpressionImpl(const TokenInfo &nameToken,
                                   const TokenInfo &openToken,
                                   std::optional<MatcherCtor> ctor,
@@ -184,7 +174,6 @@ private:
 
   void addCompletion(const TokenInfo &compToken,
                      const MatcherCompletion &completion);
-
   void addExpressionCompletions();
 
   std::vector<MatcherCompletion>
@@ -196,6 +185,7 @@ private:
   Diagnostics *const error;
 
   using ContextStackTy = std::vector<std::pair<MatcherCtor, unsigned>>;
+
   ContextStackTy contextStack;
   std::vector<MatcherCompletion> completions;
 };
