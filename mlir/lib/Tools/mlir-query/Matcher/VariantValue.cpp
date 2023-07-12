@@ -22,14 +22,14 @@ std::string ArgKind::asString() const {
   case AK_Matcher:
     return "Matcher";
   }
-  llvm_unreachable("unhandled ArgKind");
+  llvm_unreachable("Unhandled ArgKind");
 }
 
-VariantMatcher::Payload::~Payload() {}
+VariantMatcher::Payload::~Payload() = default;
 
 class VariantMatcher::SinglePayload : public VariantMatcher::Payload {
 public:
-  SinglePayload(DynMatcher matcher) : matcher(matcher) {}
+  explicit SinglePayload(DynMatcher matcher) : matcher(std::move(matcher)) {}
 
   std::optional<DynMatcher> getDynMatcher() const override { return matcher; }
 
@@ -39,10 +39,10 @@ private:
   DynMatcher matcher;
 };
 
-VariantMatcher::VariantMatcher() {}
+VariantMatcher::VariantMatcher() = default;
 
 VariantMatcher VariantMatcher::SingleMatcher(DynMatcher matcher) {
-  return VariantMatcher(std::make_shared<SinglePayload>(matcher));
+  return VariantMatcher(std::make_shared<SinglePayload>(std::move(matcher)));
 }
 
 std::optional<DynMatcher> VariantMatcher::getDynMatcher() const {
@@ -57,12 +57,12 @@ VariantValue::VariantValue(const VariantValue &other) : type(VT_Nothing) {
   *this = other;
 }
 
-VariantValue::VariantValue(const StringRef String) : type(VT_Nothing) {
-  setString(String);
+VariantValue::VariantValue(const StringRef String) : type(VT_String) {
+  value.String = new StringRef(String);
 }
 
-VariantValue::VariantValue(const VariantMatcher &Matcher) : type(VT_Nothing) {
-  setMatcher(Matcher);
+VariantValue::VariantValue(const VariantMatcher &Matcher) : type(VT_Matcher) {
+  value.Matcher = new VariantMatcher(Matcher);
 }
 
 VariantValue::~VariantValue() { reset(); }
