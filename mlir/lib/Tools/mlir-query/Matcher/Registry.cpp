@@ -85,11 +85,6 @@ RegistryMaps::~RegistryMaps() = default;
 
 static llvm::ManagedStatic<RegistryMaps> registryData;
 
-internal::MatcherDescriptorPtr::MatcherDescriptorPtr(MatcherDescriptor *ptr)
-    : ptr(ptr) {}
-
-internal::MatcherDescriptorPtr::~MatcherDescriptorPtr() { delete ptr; }
-
 bool Registry::isBuilderMatcher(MatcherCtor ctor) {
   return ctor->isBuilderMatcher();
 }
