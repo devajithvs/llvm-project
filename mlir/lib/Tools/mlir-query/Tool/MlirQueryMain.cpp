@@ -30,15 +30,12 @@ using llvm::dbgs;
 #define DEBUG_TYPE "mlir-query"
 #define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 
-using namespace mlir;
-using namespace mlir::query;
-using namespace llvm;
-
 //===----------------------------------------------------------------------===//
 // Query Parser
 //===----------------------------------------------------------------------===//
 
-LogicalResult mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context) {
+mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
+                                        MLIRContext &context) {
   // Override the default '-h' and use the default PrintHelpMessage() which
   // won't print options in categories.
   static llvm::cl::opt<bool> help("h", llvm::cl::desc("Alias for -help"),
@@ -83,13 +80,13 @@ LogicalResult mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context) {
   if (!opRef)
     return failure();
 
-  QuerySession QS(opRef.get(), sourceMgr);
-  LineEditor LE("mlir-query");
+  mlir::query::QuerySession QS(opRef.get(), sourceMgr);
+  llvm::LineEditor LE("mlir-query");
   LE.setListCompleter([&QS](StringRef line, size_t pos) {
-    return QueryParser::complete(line, pos, QS);
+    return mlir::query::QueryParser::complete(line, pos, QS);
   });
   while (std::optional<std::string> line = LE.readLine()) {
-    QueryRef queryRef = QueryParser::parse(*line, QS);
+    mlir::query::QueryRef queryRef = mlir::query::QueryParser::parse(*line, QS);
     queryRef->run(llvm::outs(), QS);
     llvm::outs().flush();
     if (QS.terminate)
