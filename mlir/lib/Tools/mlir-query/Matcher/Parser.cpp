@@ -247,18 +247,6 @@ private:
   const char *codeCompletionLocation = nullptr;
 };
 
-Parser::Sema::~Sema() = default;
-
-std::vector<ArgKind> Parser::Sema::getAcceptedCompletionTypes(
-    llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context) {
-  return {};
-}
-
-std::vector<MatcherCompletion>
-Parser::Sema::getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes) {
-  return {};
-}
-
 // Entry for the scope of a parser
 struct Parser::ScopedContextEntry {
   Parser *parser;
@@ -567,40 +555,6 @@ Parser::Parser(CodeTokenizer *tokenizer, Sema *sema,
                const NamedValueMap *namedValues, Diagnostics *error)
     : tokenizer(tokenizer), sema(sema ? sema : &*defaultRegistrySema),
       namedValues(namedValues), error(error) {}
-
-Parser::RegistrySema::~RegistrySema() = default;
-
-std::optional<MatcherCtor>
-Parser::RegistrySema::lookupMatcherCtor(llvm::StringRef matcherName) {
-  return Registry::lookupMatcherCtor(matcherName);
-}
-
-VariantMatcher Parser::RegistrySema::actOnMatcherExpression(
-    MatcherCtor ctor, SourceRange nameRange, ArrayRef<ParserValue> args,
-    Diagnostics *error) {
-  return Registry::constructMatcher(ctor, nameRange, args, error);
-}
-
-std::vector<ArgKind> Parser::RegistrySema::getAcceptedCompletionTypes(
-    ArrayRef<std::pair<MatcherCtor, unsigned>> context) {
-  return Registry::getAcceptedCompletionTypes(context);
-}
-
-std::vector<MatcherCompletion>
-Parser::RegistrySema::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
-  return Registry::getMatcherCompletions(acceptedTypes);
-}
-
-bool Parser::RegistrySema::isBuilderMatcher(MatcherCtor ctor) const {
-  return Registry::isBuilderMatcher(ctor);
-}
-
-internal::MatcherDescriptorPtr
-Parser::RegistrySema::buildMatcherCtor(MatcherCtor ctor, SourceRange nameRange,
-                                       ArrayRef<ParserValue> args,
-                                       Diagnostics *error) const {
-  return Registry::buildMatcherCtor(ctor, nameRange, args, error);
-}
 
 bool Parser::parseExpression(llvm::StringRef &code, Sema *sema,
                              const NamedValueMap *namedValues,
