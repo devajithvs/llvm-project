@@ -29,9 +29,8 @@ namespace query {
 namespace matcher {
 namespace {
 
-using internal::MatcherDescriptor;
 using ConstructorMap =
-    llvm::StringMap<std::unique_ptr<const MatcherDescriptor>>;
+    llvm::StringMap<std::unique_ptr<const internal::MatcherDescriptor>>;
 
 // This is needed because these matchers are defined as overloaded functions.
 using IsConstantOp = detail::constant_op_matcher();
@@ -46,27 +45,25 @@ public:
   const ConstructorMap &constructors() const { return constructorMap; }
 
 private:
-  void registerMatcher(StringRef matcherName,
-                       std::unique_ptr<MatcherDescriptor> callback);
+  void registerMatcher(llvm::StringRef matcherName,
+                       std::unique_ptr<internal::MatcherDescriptor> callback);
+
   ConstructorMap constructorMap;
 };
 
 } // namespace
 
 void RegistryMaps::registerMatcher(
-    StringRef matcherName, std::unique_ptr<MatcherDescriptor> callback) {
+    llvm::StringRef matcherName,
+    std::unique_ptr<internal::MatcherDescriptor> callback) {
   assert(!constructorMap.contains(matcherName));
   constructorMap[matcherName] = std::move(callback);
 }
 
 // Generate a registry map with all the known matchers.
 RegistryMaps::RegistryMaps() {
-
-  using internal::makeMatcherAutoMarshall;
-
-  // Define a template function to register operation matchers
   auto registerOpMatcher = [&](const std::string &name, auto matcher) {
-    registerMatcher(name, makeMatcherAutoMarshall(matcher, name));
+    registerMatcher(name, internal::makeMatcherAutoMarshall(matcher, name));
   };
 
   // Register matchers using the template function
@@ -104,7 +101,8 @@ Registry::buildMatcherCtor(MatcherCtor ctor, SourceRange nameRange,
       ctor->buildMatcherCtor(nameRange, args, error).release());
 }
 
-std::optional<MatcherCtor> Registry::lookupMatcherCtor(StringRef matcherName) {
+std::optional<MatcherCtor>
+Registry::lookupMatcherCtor(llvm::StringRef matcherName) {
   auto it = registryData->constructors().find(matcherName);
   return it == registryData->constructors().end() ? std::optional<MatcherCtor>()
                                                   : it->second.get();
@@ -116,14 +114,18 @@ std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
   // the acceptable type set for the argument indicated by each context element.
   std::set<ArgKind> typeSet;
   typeSet.insert(ArgKind(ArgKind::AK_Matcher));
+
   for (const auto &ctxEntry : context) {
     MatcherCtor ctor = ctxEntry.first;
     unsigned argNumber = ctxEntry.second;
     std::vector<ArgKind> nextTypeSet;
+
     if (argNumber < ctor->getNumArgs())
       ctor->getArgKinds(argNumber, nextTypeSet);
+
     typeSet.insert(nextTypeSet.begin(), nextTypeSet.end());
   }
+
   return std::vector<ArgKind>(typeSet.begin(), typeSet.end());
 }
 
@@ -133,15 +135,15 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
 
   // Search the registry for acceptable matchers.
   for (const auto &m : registryData->constructors()) {
-    const MatcherDescriptor &matcher = *m.getValue();
+    const internal::MatcherDescriptor &matcher = *m.getValue();
     StringRef name = m.getKey();
 
     unsigned numArgs = matcher.getNumArgs();
     std::vector<std::vector<ArgKind>> argKinds(numArgs);
+
     for (const ArgKind &kind : acceptedTypes) {
-      if (kind.getArgKind() != kind.AK_Matcher) {
+      if (kind.getArgKind() != kind.AK_Matcher)
         continue;
-      }
 
       for (unsigned arg = 0; arg != numArgs; ++arg)
         matcher.getArgKinds(arg, argKinds[arg]);
@@ -151,8 +153,8 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
     llvm::raw_string_ostream OS(decl);
 
     std::string typedText = std::string(name);
-
     OS << "Matcher: " << name << "(";
+
     for (const std::vector<ArgKind> &arg : argKinds) {
       if (&arg != &argKinds[0])
         OS << ", ";
@@ -162,13 +164,15 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
       for (const ArgKind &argKind : arg) {
         if (!firstArgKind)
           OS << "|";
+
         firstArgKind = false;
         OS << argKind.asString();
       }
     }
-    OS << ")";
 
+    OS << ")";
     typedText += "(";
+
     if (argKinds.empty())
       typedText += ")";
     else if (argKinds[0][0].getArgKind() == ArgKind::AK_String)
