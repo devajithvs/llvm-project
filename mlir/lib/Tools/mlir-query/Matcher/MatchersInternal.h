@@ -67,10 +67,11 @@ public:
       : implementation(implementation) {}
 
   template <typename MatcherFn>
-  static DynMatcher *constructDynMatcherFromMatcherFn(MatcherFn &matcherFn) {
-    auto impl = new MatcherFnImpl<MatcherFn>(matcherFn);
-    return new DynMatcher(impl);
-  };
+  static std::unique_ptr<DynMatcher>
+  constructDynMatcherFromMatcherFn(MatcherFn &matcherFn) {
+    auto impl = std::make_unique<MatcherFnImpl<MatcherFn>>(matcherFn);
+    return std::make_unique<DynMatcher>(impl.release());
+  }
 
   bool match(Operation *op) const { return implementation->match(op); }
 
