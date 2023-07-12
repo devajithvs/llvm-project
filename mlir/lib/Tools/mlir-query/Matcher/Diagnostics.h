@@ -48,10 +48,7 @@ public:
     ET_RegistryMatcherNotFound,
     ET_RegistryWrongArgCount,
     ET_RegistryWrongArgType,
-    ET_RegistryNotBindable,
     ET_RegistryValueNotFound,
-    ET_RegistryUnknownEnumWithReplace,
-    ET_RegistryMatcherNoWithSupport,
 
     ET_ParserStringError,
     ET_ParserNoOpenParen,
@@ -60,13 +57,8 @@ public:
     ET_ParserNoCode,
     ET_ParserNotAMatcher,
     ET_ParserInvalidToken,
-    ET_ParserMalformedExprNoOpenParen,
-    ET_ParserMalformedExprNoIdentifier,
-    ET_ParserMalformedExprNoCloseParen,
     ET_ParserTrailingCode,
-    ET_ParserNumberError,
     ET_ParserOverloadedType,
-    ET_ParserMalformedChainedExpr,
     ET_ParserFailedToBuildMatcher
   };
 

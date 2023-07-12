@@ -176,10 +176,13 @@ matcherMarshallFixedImpl(void (*func)(), StringRef matcherName,
                          SourceRange nameRange, ArrayRef<ParserValue> args,
                          Diagnostics *error, std::index_sequence<Is...>) {
   using FuncType = ReturnType (*)(ArgTypes...);
+
+  // Check if the argument count matches the expected count
   if (!checkArgCount(nameRange, sizeof...(ArgTypes), args, error)) {
     return VariantMatcher();
   }
 
+  // Check if each argument at the corresponding index has the correct type
   if ((... && checkArgTypeAtIndex<ArgTypes, Is>(matcherName, args, error))) {
     ReturnType fnPointer = reinterpret_cast<FuncType>(func)(
         ArgTypeTraits<ArgTypes>::get(args[Is].value)...);
@@ -205,6 +208,7 @@ template <typename ReturnType, typename... ArgTypes>
 std::unique_ptr<MatcherDescriptor>
 makeMatcherAutoMarshall(ReturnType (*func)(ArgTypes...),
                         StringRef matcherName) {
+  // Create a vector of argument kinds
   std::vector<ArgKind> argKinds = {ArgTypeTraits<ArgTypes>::getKind()...};
   return std::make_unique<FixedArgCountMatcherDescriptor>(
       matcherMarshallFixed<ReturnType, ArgTypes...>,

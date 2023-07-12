@@ -99,14 +99,8 @@ static llvm::StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
     return "Incorrect argument count. (Expected = $0) != (Actual = $1)";
   case Diagnostics::ET_RegistryWrongArgType:
     return "Incorrect type for arg $0. (Expected = $1) != (Actual = $2)";
-  case Diagnostics::ET_RegistryNotBindable:
-    return "Matcher does not support binding.";
   case Diagnostics::ET_RegistryValueNotFound:
     return "Value not found: $0";
-  case Diagnostics::ET_RegistryUnknownEnumWithReplace:
-    return "Unknown value '$1' for arg $0; did you mean '$2'";
-  case Diagnostics::ET_RegistryMatcherNoWithSupport:
-    return "Matcher does not support with call.";
 
   case Diagnostics::ET_ParserStringError:
     return "Error parsing string token: <$0>";
@@ -122,20 +116,10 @@ static llvm::StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
     return "Input value is not a matcher expression.";
   case Diagnostics::ET_ParserInvalidToken:
     return "Invalid token <$0> found when looking for a value.";
-  case Diagnostics::ET_ParserMalformedExprNoOpenParen:
-    return "Malformed identifier expression. Missing '('.";
-  case Diagnostics::ET_ParserMalformedExprNoIdentifier:
-    return "Malformed identifier expression. Missing string identifier.";
-  case Diagnostics::ET_ParserMalformedExprNoCloseParen:
-    return "Malformed identifier expression. Missing ')'.";
   case Diagnostics::ET_ParserTrailingCode:
     return "Unexpected end of code.";
-  case Diagnostics::ET_ParserNumberError:
-    return "Error parsing numeric literal: <$0>";
   case Diagnostics::ET_ParserOverloadedType:
     return "Input value has unresolved overloaded type: $0";
-  case Diagnostics::ET_ParserMalformedChainedExpr:
-    return "Period not followed by valid chained call.";
   case Diagnostics::ET_ParserFailedToBuildMatcher:
     return "Failed to build matcher: $0.";
 
