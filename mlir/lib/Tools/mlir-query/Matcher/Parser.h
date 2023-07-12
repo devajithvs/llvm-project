@@ -8,13 +8,14 @@
 //
 // Simple matcher expression parser.
 //
-// The parser understands matcher expressions of the form:
-//   matcherName(Arg0, Arg1, ..., ArgN)
-// as well as simple types like strings.
-// The parser does not know how to process the matchers. It delegates this task
-// to a Sema object received as an argument.
+// This file contains the Parser class, which is responsible for parsing
+// expressions in a specific format: matcherName(Arg0, Arg1, ..., ArgN). The
+// parser can also interpret simple types, like strings.
 //
-// Grammar for the expressions supported:
+// The actual processing of the matchers is handled by a Sema object that is
+// provided to the parser.
+//
+// The grammar for the supported expressions is as follows:
 // <Expression>        := <StringLiteral> | <MatcherExpression>
 // <StringLiteral>     := "quoted string"
 // <MatcherExpression> := <MatcherName>(<ArgumentList>)
@@ -54,10 +55,6 @@ public:
                                                   Diagnostics *error) = 0;
 
     // Look up a matcher by name in the matcher name found by the parser.
-    // nameRange is the location of the name in the matcher source, useful for
-    // error reporting. Returns the matcher constructor, or
-    // optional<MatcherCtor>() if an error occurred. In that case, error will
-    // contain a description of the error.
     virtual std::optional<MatcherCtor>
     lookupMatcherCtor(llvm::StringRef matcherName) = 0;
 
@@ -76,7 +73,8 @@ public:
     getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes);
   };
 
-  // Sema implementation that uses the matcher registry to process the tokens.
+  // RegistrySema class - an implementation of the Sema interface that uses the
+  // matcher registry to process tokens.
   class RegistrySema : public Parser::Sema {
   public:
     ~RegistrySema() override;
@@ -105,8 +103,8 @@ public:
 
   using NamedValueMap = llvm::StringMap<VariantValue>;
 
-  // Parse a matcher expression. The caller takes ownership of the DynMatcher
-  // object returned.
+  // Methods to parse a matcher expression and return a DynMatcher object,
+  // transferring ownership to the caller.
   static std::optional<DynMatcher>
   parseMatcherExpression(llvm::StringRef &matcherCode, Sema *sema,
                          const NamedValueMap *namedValues, Diagnostics *error);
@@ -120,7 +118,7 @@ public:
     return parseMatcherExpression(matcherCode, nullptr, error);
   }
 
-  /// Parse an expression. Parses any expression supported by this parser.
+  // Methods to parse any expression supported by this parser.
   static bool parseExpression(llvm::StringRef &code, Sema *sema,
                               const NamedValueMap *namedValues,
                               VariantValue *value, Diagnostics *error);
@@ -134,7 +132,7 @@ public:
     return parseExpression(code, nullptr, value, error);
   }
 
-  /// Complete an expression at the given offset.
+  // Methods to complete an expression at a given offset.
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset,
                      Sema *sema, const NamedValueMap *namedValues);
@@ -156,8 +154,6 @@ private:
   Parser(CodeTokenizer *tokenizer, Sema *sema, const NamedValueMap *namedValues,
          Diagnostics *error);
 
-  bool parseID(std::string &id);
-
   bool parseExpressionImpl(VariantValue *value);
 
   bool buildAndValidateMatcher(std::vector<ParserValue> &args, MatcherCtor ctor,
@@ -173,6 +169,7 @@ private:
                                   const TokenInfo &openToken,
                                   std::optional<MatcherCtor> ctor,
                                   VariantValue *value);
+
   bool parseIdentifierPrefixImpl(VariantValue *value);
 
   void addCompletion(const TokenInfo &compToken,

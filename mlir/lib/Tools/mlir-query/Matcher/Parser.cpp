@@ -362,7 +362,6 @@ bool Parser::parseMatcherArgs(bool isBuilder, std::vector<ParserValue> &args,
 
     if (!args.empty()) {
       // We must find a , token to continue.
-      // TODO: use a function consumeCommaToken()
       TokenInfo commaToken = tokenizer->consumeNextToken();
       if (commaToken.kind != TokenInfo::TK_Comma) {
         error->addError(commaToken.range, error->ET_ParserNoComma)
@@ -382,7 +381,6 @@ bool Parser::parseMatcherArgs(bool isBuilder, std::vector<ParserValue> &args,
         return false;
       }
 
-      // TODO: use a function consumeIdentToken()
       TokenInfo identToken = tokenizer->consumeNextToken();
       if (identToken.kind != TokenInfo::TK_Ident) {
         error->addError(nameToken.range, error->ET_ParserFailedToBuildMatcher)
@@ -390,7 +388,6 @@ bool Parser::parseMatcherArgs(bool isBuilder, std::vector<ParserValue> &args,
         return false;
       }
 
-      // TODO: set them together with a helper function.
       argValue.text = identToken.text;
       argValue.range = identToken.range;
 
@@ -403,7 +400,6 @@ bool Parser::parseMatcherArgs(bool isBuilder, std::vector<ParserValue> &args,
         return false;
       }
     } else {
-      // TODO: set them together with a helper function.
       argValue.text = tokenizer->peekNextToken().text;
       argValue.range = tokenizer->peekNextToken().range;
       if (!parseExpressionImpl(&argValue.value)) {
