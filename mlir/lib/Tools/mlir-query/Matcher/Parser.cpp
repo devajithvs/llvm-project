@@ -169,7 +169,7 @@ private:
   void consumeStringLiteral(TokenInfo *result) {
     bool inEscape = false;
     const char marker = code[0];
-    for (size_t length = 1, Size = code.size(); length != Size; ++length) {
+    for (size_t length = 1; length < code.size(); ++length) {
       if (inEscape) {
         inEscape = false;
         continue;
