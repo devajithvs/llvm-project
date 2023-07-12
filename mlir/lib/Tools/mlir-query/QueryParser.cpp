@@ -127,11 +127,7 @@ QueryRef QueryParser::endQuery(QueryRef Q) {
 }
 
 namespace {
-enum MatcherKind {
-  M_OpName,
-  M_OpAttr,
-  M_OpConst,
-};
+
 enum ParsedQueryKind {
   PQK_Invalid,
   PQK_Comment,

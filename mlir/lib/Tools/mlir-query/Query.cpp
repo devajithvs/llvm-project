@@ -41,19 +41,18 @@ bool NoOpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   OS << "Available commands:\n\n"
         "  match MATCHER, m MATCHER      "
-        "Match the mlir against the given matcher.\n"
-        "  set bind-root (true|false)    "
-        "Set whether to bind the root matcher to \"root\".\n\n";
+        "Match the mlir against the given matcher.\n\n";
   return true;
 }
 
-// This could be done better but is not worth the variadic template trouble.
+// Function to extract the matches into a vector.
 std::vector<Operation *> getMatches(Operation *rootOp,
                                     const matcher::DynMatcher &matcher) {
   auto matchFinder = matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
 }
 
+// Extract all the matches into a function.
 Operation *extractFunction(std::vector<Operation *> &ops, OpBuilder builder,
                            StringRef functionName) {
   std::vector<Operation *> slice;
