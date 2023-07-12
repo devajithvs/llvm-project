@@ -19,8 +19,6 @@ using llvm::dbgs;
 #define DEBUG_TYPE "mlir-query"
 #define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 
-using namespace llvm;
-
 namespace mlir {
 namespace query {
 
@@ -92,7 +90,7 @@ struct QueryParser::LexOrCompleteWord {
              caseStr.substr(0, wordCompletionPos) ==
                  word.substr(0, wordCompletionPos)) {
 
-      queryParser->completions.push_back(LineEditor::Completion(
+      queryParser->completions.push_back(llvm::LineEditor::Completion(
           (caseStr.substr(wordCompletionPos) + " ").str(),
           std::string(caseStr)));
     }
@@ -208,7 +206,7 @@ QueryRef QueryParser::parse(StringRef line, const QuerySession &QS) {
   return QueryParser(line, QS).doParse();
 }
 
-std::vector<LineEditor::Completion>
+std::vector<llvm::LineEditor::Completion>
 QueryParser::complete(StringRef line, size_t pos, const QuerySession &QS) {
   QueryParser queryParser(line, QS);
   queryParser.completionPos = line.data() + pos;

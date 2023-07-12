@@ -18,8 +18,6 @@
 #include "llvm/LineEditor/LineEditor.h"
 #include <cstddef>
 
-using namespace llvm;
-
 namespace mlir {
 namespace query {
 
