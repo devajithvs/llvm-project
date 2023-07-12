@@ -22,8 +22,6 @@ using llvm::dbgs;
 #define DEBUG_TYPE "mlir-query"
 #define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 
-using namespace mlir;
-
 namespace mlir {
 namespace query {
 

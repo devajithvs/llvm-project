@@ -14,8 +14,6 @@
 #include "mlir/Tools/ParseUtilities.h"
 #include "llvm/ADT/ArrayRef.h"
 
-using namespace mlir;
-
 namespace mlir {
 namespace query {
 

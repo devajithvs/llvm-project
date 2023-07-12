@@ -20,7 +20,6 @@ using llvm::dbgs;
 #define DBGS() (dbgs() << '[' << DEBUG_TYPE << "] ")
 
 using namespace llvm;
-using namespace mlir;
 
 namespace mlir {
 namespace query {
