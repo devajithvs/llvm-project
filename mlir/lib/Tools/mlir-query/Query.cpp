@@ -45,7 +45,7 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 
 std::vector<Operation *> getMatches(Operation *rootOp,
                                     const matcher::DynMatcher &matcher) {
-  auto matchFinder = matcher::MatchFinder();
+  auto matchFinder = query::matcher::MatchFinder();
   return matchFinder.getMatches(rootOp, matcher);
 }
 
