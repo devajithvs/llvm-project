@@ -46,12 +46,12 @@ struct Parser::TokenInfo {
   TokenInfo() = default;
 
   // Method to set the kind and text of the token
-  void set(TokenKind newKind, StringRef newText) {
+  void set(TokenKind newKind, llvm::StringRef newText) {
     kind = newKind;
     text = newText;
   }
 
-  StringRef text;
+  llvm::StringRef text;
   TokenKind kind = TK_Eof;
   SourceRange range;
   VariantValue value;
@@ -60,13 +60,13 @@ struct Parser::TokenInfo {
 class Parser::CodeTokenizer {
 public:
   // Constructor with matcherCode and error
-  explicit CodeTokenizer(StringRef &matcherCode, Diagnostics *error)
+  explicit CodeTokenizer(llvm::StringRef matcherCode, Diagnostics *error)
       : code(matcherCode), startOfLine(matcherCode), line(1), error(error) {
     nextToken = getNextToken();
   }
 
   // Constructor with matcherCode, error, and codeCompletionOffset
-  CodeTokenizer(StringRef &matcherCode, Diagnostics *error,
+  CodeTokenizer(llvm::StringRef matcherCode, Diagnostics *error,
                 unsigned codeCompletionOffset)
       : code(matcherCode), startOfLine(matcherCode), error(error),
         codeCompletionLocation(matcherCode.data() + codeCompletionOffset) {
@@ -102,9 +102,9 @@ public:
 private:
   // Helper function to get the first character as a new StringRef and drop it
   // from the original string
-  StringRef firstCharacterAndDrop(StringRef &str) {
+  llvm::StringRef firstCharacterAndDrop(llvm::StringRef &str) {
     assert(!str.empty());
-    StringRef firstChar = str.substr(0, 1);
+    llvm::StringRef firstChar = str.substr(0, 1);
     str = str.drop_front();
     return firstChar;
   }
@@ -118,7 +118,7 @@ private:
     // Code completion case
     if (codeCompletionLocation && codeCompletionLocation <= code.data()) {
       result.set(TokenInfo::TK_CodeCompletion,
-                 StringRef(codeCompletionLocation, 0));
+                 llvm::StringRef(codeCompletionLocation, 0));
       codeCompletionLocation = nullptr;
       return result;
     }
@@ -186,7 +186,7 @@ private:
         return;
       }
     }
-    StringRef errorText = code;
+    llvm::StringRef errorText = code;
     code = code.drop_front(code.size());
     SourceRange range;
     range.start = result->range.start;
@@ -228,7 +228,7 @@ private:
   // Consume all leading whitespace from code, except newlines
   void consumeWhitespace() {
     code = code.drop_while(
-        [](char c) { return StringRef(" \t\v\f\r").contains(c); });
+        [](char c) { return llvm::StringRef(" \t\v\f\r").contains(c); });
   }
 
   // Returns the current location in the source code
@@ -239,8 +239,8 @@ private:
     return location;
   }
 
-  StringRef code;
-  StringRef startOfLine;
+  llvm::StringRef code;
+  llvm::StringRef startOfLine;
   unsigned line = 1;
   Diagnostics *error;
   TokenInfo nextToken;
@@ -486,7 +486,7 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
 // completions minus the prefix.
 void Parser::addCompletion(const TokenInfo &compToken,
                            const MatcherCompletion &completion) {
-  if (StringRef(completion.typedText).startswith(compToken.text)) {
+  if (llvm::StringRef(completion.typedText).startswith(compToken.text)) {
     completions.emplace_back(completion.typedText.substr(compToken.text.size()),
                              completion.matcherDecl);
   }
@@ -572,7 +572,7 @@ Parser::Parser(CodeTokenizer *tokenizer, Sema *sema,
 Parser::RegistrySema::~RegistrySema() = default;
 
 std::optional<MatcherCtor>
-Parser::RegistrySema::lookupMatcherCtor(StringRef matcherName) {
+Parser::RegistrySema::lookupMatcherCtor(llvm::StringRef matcherName) {
   return Registry::lookupMatcherCtor(matcherName);
 }
 
@@ -603,7 +603,7 @@ Parser::RegistrySema::buildMatcherCtor(MatcherCtor ctor, SourceRange nameRange,
   return Registry::buildMatcherCtor(ctor, nameRange, args, error);
 }
 
-bool Parser::parseExpression(StringRef &code, Sema *sema,
+bool Parser::parseExpression(llvm::StringRef &code, Sema *sema,
                              const NamedValueMap *namedValues,
                              VariantValue *value, Diagnostics *error) {
   CodeTokenizer tokenizer(code, error);
@@ -619,7 +619,7 @@ bool Parser::parseExpression(StringRef &code, Sema *sema,
 }
 
 std::vector<MatcherCompletion>
-Parser::completeExpression(StringRef &code, unsigned completionOffset,
+Parser::completeExpression(llvm::StringRef &code, unsigned completionOffset,
                            Sema *sema, const NamedValueMap *namedValues) {
   Diagnostics error;
   CodeTokenizer tokenizer(code, &error, completionOffset);
@@ -631,7 +631,7 @@ Parser::completeExpression(StringRef &code, unsigned completionOffset,
 }
 
 std::optional<DynMatcher>
-Parser::parseMatcherExpression(StringRef &code, Sema *sema,
+Parser::parseMatcherExpression(llvm::StringRef &code, Sema *sema,
                                const NamedValueMap *namedValues,
                                Diagnostics *error) {
   VariantValue value;
