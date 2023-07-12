@@ -187,10 +187,14 @@ static void printErrorContentToStream(const Diagnostics::ErrorContent &content,
 }
 
 void Diagnostics::printToStream(llvm::raw_ostream &OS) const {
-  for (size_t i = 0, e = errorValues.size(); i != e; ++i) {
-    if (i != 0)
+  for (const ErrorContent &error : errorValues) {
+    if (&error != &errorValues.front())
       OS << "\n";
-    printErrorContentToStream(errorValues[i], OS);
+    for (const ContextFrame &frame : error.contextStack) {
+      printContextFrameToStream(frame, OS);
+      OS << "\n";
+    }
+    printErrorContentToStream(error, OS);
   }
 }
 
@@ -202,12 +206,11 @@ std::string Diagnostics::toString() const {
 }
 
 void Diagnostics::printToStreamFull(llvm::raw_ostream &OS) const {
-  for (size_t i = 0, e = errorValues.size(); i != e; ++i) {
-    if (i != 0)
+  for (const ErrorContent &error : errorValues) {
+    if (&error != &errorValues.front())
       OS << "\n";
-    const ErrorContent &error = errorValues[i];
-    for (size_t i = 0, e = error.contextStack.size(); i != e; ++i) {
-      printContextFrameToStream(error.contextStack[i], OS);
+    for (const ContextFrame &frame : error.contextStack) {
+      printContextFrameToStream(frame, OS);
       OS << "\n";
     }
     printErrorContentToStream(error, OS);

@@ -24,18 +24,19 @@ namespace mlir {
 namespace query {
 namespace matcher {
 
+// Represents the line and column numbers in a source file.
 struct SourceLocation {
-  SourceLocation() : line(), column() {}
-  unsigned line;
-  unsigned column;
+  unsigned line{};
+  unsigned column{};
 };
 
+// Represents a range in a source file, defined by its start and end locations.
 struct SourceRange {
-  SourceLocation start;
-  SourceLocation end;
+  SourceLocation start{};
+  SourceLocation end{};
 };
 
-// Helper class to manage error messages.
+// Diagnostics class to manage error messages.
 class Diagnostics {
 public:
   // Parser context types.
@@ -62,7 +63,7 @@ public:
     ET_ParserFailedToBuildMatcher
   };
 
-  // Helper stream class.
+  // Helper stream class for constructing error messages.
   class ArgStream {
   public:
     ArgStream(std::vector<std::string> *out) : out(out) {}
@@ -76,13 +77,8 @@ public:
     std::vector<std::string> *out;
   };
 
-  // Class defining a parser context.
-  // Used by the parser to specify (possibly recursive) contexts where the
-  // parsing/construction can fail. Any error triggered within a context will
-  // keep information about the context chain.
-  // This class should be used as a RAII instance in the stack.
+  // Context for constructing a matcher or parsing its argument.
   struct Context {
-  public:
     // About to call the constructor for a matcher.
     enum ConstructMatcherEnum { ConstructMatcher };
     Context(ConstructMatcherEnum, Diagnostics *error,
@@ -97,26 +93,22 @@ public:
     Diagnostics *const error;
   };
 
-  // Context for overloaded matcher construction.
-  // This context will take care of merging all errors that happen within it
-  // as "candidate" overloads for the same matcher.
+  // Context for managing overloaded matcher construction.
   struct OverloadContext {
-  public:
+    // Construct an overload context with the given error.
     OverloadContext(Diagnostics *error);
     ~OverloadContext();
-
-    // Revert all errors that happened within this context.
+    // Revert all errors that occurred within this context.
     void revertErrors();
 
   private:
     Diagnostics *const error;
-    unsigned beginIndex;
+    unsigned beginIndex{};
   };
 
-  // Add an error to the diagnostics.
-  // All the context information will be kept on the error message.
-  // Returns a helper class to allow the caller to pass the arguments for the
-  // error message, using the << operator.
+  // Add an error message with the specified range and error type.
+  // Returns an ArgStream object to allow constructing the error message using
+  // the << operator.
   ArgStream addError(SourceRange range, ErrorType error);
 
   // Information stored for one frame of the context.
@@ -136,20 +128,25 @@ public:
     };
     std::vector<Message> messages;
   };
+
+  // Get an array reference to the error contents.
   llvm::ArrayRef<ErrorContent> errors() const { return errorValues; }
 
-  // Returns a simple string representation of each error.
-  // Each error only shows the error message without any context.
+  // Print all error messages to the specified output stream.
   void printToStream(llvm::raw_ostream &OS) const;
+  // Get a string representation of all error messages.
   std::string toString() const;
 
-  // Returns the full string representation of each error.
-  // Each error message contains the full context.
+  // Print the full error messages, including the context information, to the
+  // specified output stream.
   void printToStreamFull(llvm::raw_ostream &OS) const;
+  // Get the full string representation of all error messages, including the
+  // context information.
   std::string toStringFull() const;
 
 private:
-  // Helper function used by the constructors of ContextFrame.
+  // Push a new context frame onto the context stack with the specified type and
+  // range.
   ArgStream pushContextFrame(ContextType type, SourceRange range);
 
   std::vector<ContextFrame> contextStack;
