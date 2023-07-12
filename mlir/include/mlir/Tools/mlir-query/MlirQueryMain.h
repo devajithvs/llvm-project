@@ -14,8 +14,10 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MLIRQUERYMAIN_H
 #define MLIR_TOOLS_MLIRQUERY_MLIRQUERYMAIN_H
 
+#include "Query.h"
+#include "QueryParser.h"
+#include "QuerySession.h"
 #include "mlir/Support/LogicalResult.h"
-
 namespace mlir {
 
 class MLIRContext;

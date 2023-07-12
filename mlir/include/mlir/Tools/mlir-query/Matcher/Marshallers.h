@@ -78,11 +78,6 @@ struct ArgTypeTraits<DynMatcher> {
   }
 };
 
-// Convert the return values of the functions into a VariantMatcher.
-static VariantMatcher outvalueToVariantMatcher(const DynMatcher &matcher) {
-  return VariantMatcher::SingleMatcher(matcher);
-}
-
 // Interface for generic matcher descriptor.
 // Offers a create() method that constructs the matcher from the provided
 // arguments.
@@ -186,7 +181,7 @@ matcherMarshallFixedImpl(void (*func)(), StringRef matcherName,
   if ((... && checkArgTypeAtIndex<ArgTypes, Is>(matcherName, args, error))) {
     ReturnType fnPointer = reinterpret_cast<FuncType>(func)(
         ArgTypeTraits<ArgTypes>::get(args[Is].value)...);
-    return outvalueToVariantMatcher(
+    return VariantMatcher::SingleMatcher(
         *DynMatcher::constructDynMatcherFromMatcherFn(fnPointer));
   } else {
     return VariantMatcher();

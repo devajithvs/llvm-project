@@ -12,10 +12,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Tools/mlir-query/MlirQueryMain.h"
-#include "Query.h"
-#include "QueryParser.h"
-#include "QuerySession.h"
+#include "MlirQueryMain.h"
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Tools/ParseUtilities.h"

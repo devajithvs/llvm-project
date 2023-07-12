@@ -1,3 +1,5 @@
+include_directories(${MLIR_MAIN_INCLUDE_DIR}/mlir/Tools/mlir-query)
+
 add_mlir_library(MLIRQuery
   Query.cpp
   QueryParser.cpp
