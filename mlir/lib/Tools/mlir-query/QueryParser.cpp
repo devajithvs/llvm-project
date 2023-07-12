@@ -148,8 +148,8 @@ QueryRef QueryParser::completeMatcherExpression() {
   std::vector<matcher::MatcherCompletion> comps =
       matcher::Parser::completeExpression(line, completionPos - line.begin(),
                                           nullptr, &QS.namedValues);
-  for (auto I = comps.begin(), E = comps.end(); I != E; ++I) {
-    completions.push_back(LineEditor::Completion(I->typedText, I->matcherDecl));
+  for (const auto &comp : comps) {
+    completions.emplace_back(comp.typedText, comp.matcherDecl);
   }
   return QueryRef();
 }
