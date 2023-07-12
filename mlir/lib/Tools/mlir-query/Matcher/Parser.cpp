@@ -45,6 +45,12 @@ struct Parser::TokenInfo {
 
   TokenInfo() = default;
 
+  // Method to set the kind and text of the token
+  void set(TokenKind newKind, StringRef newText) {
+    kind = newKind;
+    text = newText;
+  }
+
   StringRef text;
   TokenKind kind = TK_Eof;
   SourceRange range;
@@ -53,11 +59,13 @@ struct Parser::TokenInfo {
 
 class Parser::CodeTokenizer {
 public:
+  // Constructor with matcherCode and error
   explicit CodeTokenizer(StringRef &matcherCode, Diagnostics *error)
       : code(matcherCode), startOfLine(matcherCode), line(1), error(error) {
     nextToken = getNextToken();
   }
 
+  // Constructor with matcherCode, error, and codeCompletionOffset
   CodeTokenizer(StringRef &matcherCode, Diagnostics *error,
                 unsigned codeCompletionOffset)
       : code(matcherCode), startOfLine(matcherCode), error(error),
@@ -65,110 +73,90 @@ public:
     nextToken = getNextToken();
   }
 
-  // Returns but doesn't consume the next token.
+  // Peek at next token without consuming it
   const TokenInfo &peekNextToken() const { return nextToken; }
-  // Consumes and returns the next token.
+
+  // Consume and return the next token
   TokenInfo consumeNextToken() {
     TokenInfo thisToken = nextToken;
     nextToken = getNextToken();
     return thisToken;
   }
+
+  // Skip any newline tokens
   TokenInfo skipNewlines() {
     while (nextToken.kind == TokenInfo::TK_NewLine)
       nextToken = getNextToken();
     return nextToken;
   }
+
+  // Consume and return next token, ignoring newlines
   TokenInfo consumeNextTokenIgnoreNewlines() {
     skipNewlines();
     return nextToken.kind == TokenInfo::TK_Eof ? nextToken : consumeNextToken();
   }
+
+  // Return kind of next token
   TokenInfo::TokenKind nextTokenKind() const { return nextToken.kind; }
 
 private:
+  // Helper function to get the first character as a new StringRef and drop it
+  // from the original string
+  StringRef firstCharacterAndDrop(StringRef &str) {
+    assert(!str.empty());
+    StringRef firstChar = str.substr(0, 1);
+    str = str.drop_front();
+    return firstChar;
+  }
+
+  // Get next token, consuming whitespaces and handling different token types
   TokenInfo getNextToken() {
     consumeWhitespace();
     TokenInfo result;
     result.range.start = currentLocation();
 
+    // Code completion case
     if (codeCompletionLocation && codeCompletionLocation <= code.data()) {
-      result.kind = TokenInfo::TK_CodeCompletion;
-      result.text = StringRef(codeCompletionLocation, 0);
+      result.set(TokenInfo::TK_CodeCompletion,
+                 StringRef(codeCompletionLocation, 0));
       codeCompletionLocation = nullptr;
       return result;
     }
 
+    // End of file case
     if (code.empty()) {
-      result.kind = TokenInfo::TK_Eof;
-      result.text = "";
+      result.set(TokenInfo::TK_Eof, "");
       return result;
     }
 
+    // Switch to handle specific characters
     switch (code[0]) {
     case '#':
       code = code.drop_until([](char c) { return c == '\n'; });
       return getNextToken();
     case ',':
-      result.kind = TokenInfo::TK_Comma;
-      result.text = code.substr(0, 1);
-      code = code.drop_front();
+      result.set(TokenInfo::TK_Comma, firstCharacterAndDrop(code));
       break;
     case '.':
-      result.kind = TokenInfo::TK_Period;
-      result.text = code.substr(0, 1);
-      code = code.drop_front();
+      result.set(TokenInfo::TK_Period, firstCharacterAndDrop(code));
       break;
     case '\n':
       ++line;
       startOfLine = code.drop_front();
-      result.kind = TokenInfo::TK_NewLine;
-      result.text = code.substr(0, 1);
-      code = code.drop_front();
+      result.set(TokenInfo::TK_NewLine, firstCharacterAndDrop(code));
       break;
     case '(':
-      result.kind = TokenInfo::TK_OpenParen;
-      result.text = code.substr(0, 1);
-      code = code.drop_front();
+      result.set(TokenInfo::TK_OpenParen, firstCharacterAndDrop(code));
       break;
     case ')':
-      result.kind = TokenInfo::TK_CloseParen;
-      result.text = code.substr(0, 1);
-      code = code.drop_front();
+      result.set(TokenInfo::TK_CloseParen, firstCharacterAndDrop(code));
       break;
-
     case '"':
     case '\'':
-      // Parse a string literal.
       consumeStringLiteral(&result);
       break;
-
     default:
-      if (isalnum(code[0])) {
-        // Parse an identifier
-        size_t tokenLength = 1;
-
-        while (true) {
-          // A code completion location in/immediately after an identifier will
-          // cause the portion of the identifier before the code completion
-          // location to become a code completion token.
-          if (codeCompletionLocation == code.data() + tokenLength) {
-            codeCompletionLocation = nullptr;
-            result.kind = TokenInfo::TK_CodeCompletion;
-            result.text = code.substr(0, tokenLength);
-            code = code.drop_front(tokenLength);
-            return result;
-          }
-          if (tokenLength == code.size() || !(isalnum(code[tokenLength])))
-            break;
-          ++tokenLength;
-        }
-        result.kind = TokenInfo::TK_Ident;
-        result.text = code.substr(0, tokenLength);
-        code = code.drop_front(tokenLength);
-      } else {
-        result.kind = TokenInfo::TK_InvalidChar;
-        result.text = code.substr(0, 1);
-        code = code.drop_front(1);
-      }
+      parseIdentifierOrInvalid(&result);
       break;
     }
 
@@ -176,9 +164,8 @@ private:
     return result;
   }
 
-  // Consume a string literal.
-  // code must be positioned at the start of the literal (the opening quote).
-  // Consumed until it finds the same closing quote character.
+  // Consume a string literal, handle escape sequences and missing closing
+  // quote.
   void consumeStringLiteral(TokenInfo *result) {
     bool inEscape = false;
     const char marker = code[0];
@@ -199,7 +186,6 @@ private:
         return;
       }
     }
-
     StringRef errorText = code;
     code = code.drop_front(code.size());
     SourceRange range;
@@ -209,14 +195,43 @@ private:
     result->kind = TokenInfo::TK_Error;
   }
 
-  // Consume all leading whitespace from code.
-  void consumeWhitespace() {
-    code = code.drop_while([](char c) {
-      // Don't trim newlines.
-      return StringRef(" \t\v\f\r").contains(c);
-    });
+  void parseIdentifierOrInvalid(TokenInfo *result) {
+    if (isalnum(code[0])) {
+      // Parse an identifier
+      size_t tokenLength = 1;
+
+      while (true) {
+        // A code completion location in/immediately after an identifier will
+        // cause the portion of the identifier before the code completion
+        // location to become a code completion token.
+        if (codeCompletionLocation == code.data() + tokenLength) {
+          codeCompletionLocation = nullptr;
+          result->kind = TokenInfo::TK_CodeCompletion;
+          result->text = code.substr(0, tokenLength);
+          code = code.drop_front(tokenLength);
+          return;
+        }
+        if (tokenLength == code.size() || !(isalnum(code[tokenLength])))
+          break;
+        ++tokenLength;
+      }
+      result->kind = TokenInfo::TK_Ident;
+      result->text = code.substr(0, tokenLength);
+      code = code.drop_front(tokenLength);
+    } else {
+      result->kind = TokenInfo::TK_InvalidChar;
+      result->text = code.substr(0, 1);
+      code = code.drop_front(1);
+    }
   }
 
+  // Consume all leading whitespace from code, except newlines
+  void consumeWhitespace() {
+    code = code.drop_while(
+        [](char c) { return StringRef(" \t\v\f\r").contains(c); });
+  }
+
+  // Returns the current location in the source code
   SourceLocation currentLocation() {
     SourceLocation location;
     location.line = line;
