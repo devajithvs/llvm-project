@@ -259,6 +259,7 @@ Parser::Sema::getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes) {
   return {};
 }
 
+// Entry for the scope of a parser
 struct Parser::ScopedContextEntry {
   Parser *parser;
 
@@ -271,8 +272,7 @@ struct Parser::ScopedContextEntry {
   void nextArg() { ++parser->contextStack.back().second; }
 };
 
-// Parse and validate expressions that start with an identifier.
-//
+// Parse and validate expressions starting with an identifier.
 // This function can parse named values and matchers. In case of failure it will
 // try to determine the user's intent to give an appropriate error message.
 bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
@@ -324,6 +324,34 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
 
   // Parse as a matcher expression.
   return parseMatcherExpressionImpl(nameToken, openToken, ctor, value);
+}
+
+bool Parser::buildAndValidateMatcher(std::vector<ParserValue> &args,
+                                     MatcherCtor ctor,
+                                     const TokenInfo &nameToken,
+                                     const TokenInfo &openToken,
+                                     const TokenInfo &endToken,
+                                     VariantValue *value) {
+  internal::MatcherDescriptorPtr builtCtor =
+      sema->buildMatcherCtor(ctor, nameToken.range, args, error);
+
+  if (!builtCtor.get()) {
+    error->addError(nameToken.range, error->ET_ParserFailedToBuildMatcher)
+        << nameToken.text;
+    return false;
+  }
+
+  Diagnostics::Context ctx(Diagnostics::Context::ConstructMatcher, error,
+                           nameToken.text, nameToken.range);
+  SourceRange matcherRange = nameToken.range;
+  matcherRange.end = endToken.range.end;
+  VariantMatcher result =
+      sema->actOnMatcherExpression(builtCtor.get(), matcherRange, {}, error);
+  if (result.isNull())
+    return false;
+
+  *value = result;
+  return true;
 }
 
 bool Parser::parseMatcherBuilder(MatcherCtor ctor, const TokenInfo &nameToken,
@@ -397,26 +425,8 @@ bool Parser::parseMatcherBuilder(MatcherCtor ctor, const TokenInfo &nameToken,
     return false;
   }
 
-  internal::MatcherDescriptorPtr builtCtor =
-      sema->buildMatcherCtor(ctor, nameToken.range, args, error);
-
-  if (!builtCtor.get()) {
-    error->addError(nameToken.range, error->ET_ParserFailedToBuildMatcher)
-        << nameToken.text;
-    return false;
-  }
-
-  Diagnostics::Context ctx(Diagnostics::Context::ConstructMatcher, error,
-                           nameToken.text, nameToken.range);
-  SourceRange matcherRange = nameToken.range;
-  matcherRange.end = endToken.range.end;
-  VariantMatcher result =
-      sema->actOnMatcherExpression(builtCtor.get(), matcherRange, {}, error);
-  if (result.isNull())
-    return false;
-
-  *value = result;
-  return true;
+  return buildAndValidateMatcher(args, ctor, nameToken, openToken, endToken,
+                                 value);
 }
 
 /// Parse and validate a matcher expression.
