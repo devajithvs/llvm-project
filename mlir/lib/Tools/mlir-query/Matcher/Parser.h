@@ -164,6 +164,9 @@ private:
                                const TokenInfo &nameToken,
                                const TokenInfo &openToken,
                                const TokenInfo &endToken, VariantValue *value);
+  bool parseMatcherArgs(bool isBuilder, std::vector<ParserValue> &args,
+                        MatcherCtor ctor, const TokenInfo &nameToken,
+                        TokenInfo &endToken);
   bool parseMatcherBuilder(MatcherCtor ctor, const TokenInfo &nameToken,
                            const TokenInfo &openToken, VariantValue *value);
   bool parseMatcherExpressionImpl(const TokenInfo &nameToken,
