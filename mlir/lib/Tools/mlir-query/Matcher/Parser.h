@@ -58,10 +58,10 @@ public:
     virtual std::optional<MatcherCtor>
     lookupMatcherCtor(llvm::StringRef matcherName) = 0;
 
-    virtual bool isBuilderMatcher(MatcherCtor) const = 0;
+    virtual bool isBuilderMatcher(MatcherCtor ctor) const = 0;
 
     virtual internal::MatcherDescriptorPtr
-    buildMatcherCtor(MatcherCtor, SourceRange nameRange,
+    buildMatcherCtor(MatcherCtor ctor, SourceRange nameRange,
                      ArrayRef<ParserValue> args, Diagnostics *error) const = 0;
 
     // Compute the list of completion types for Context.
@@ -93,7 +93,7 @@ public:
         llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context) override;
 
     internal::MatcherDescriptorPtr
-    buildMatcherCtor(MatcherCtor, SourceRange nameRange,
+    buildMatcherCtor(MatcherCtor ctor, SourceRange nameRange,
                      ArrayRef<ParserValue> args,
                      Diagnostics *error) const override;
 
