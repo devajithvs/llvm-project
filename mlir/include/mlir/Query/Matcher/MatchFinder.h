@@ -23,7 +23,8 @@ namespace mlir::query::matcher {
 class MatchFinder {
 public:
   // Returns all operations that match the given matcher.
-  std::vector<Operation *> getMatches(Operation *root, DynMatcher matcher) {
+  static std::vector<Operation *> getMatches(Operation *root,
+                                             DynMatcher matcher) {
     std::vector<Operation *> matches;
 
     // Simple iterative match finding.
@@ -35,12 +36,6 @@ public:
     return matches;
   }
 };
-
-static std::vector<Operation *> getMatches(Operation *rootOp,
-                                           const DynMatcher &matcher) {
-  auto matchFinder = MatchFinder();
-  return matchFinder.getMatches(rootOp, matcher);
-}
 
 } // namespace mlir::query::matcher
 

@@ -43,8 +43,10 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   int matchCount = 0;
+  std::vector<Operation *> matches =
+      matcher::MatchFinder::getMatches(rootOp, matcher);
   OS << "\n";
-  for (Operation *op : matcher::getMatches(QS.rootOp, matcher)) {
+  for (Operation *op : matches) {
     OS << "Match #" << ++matchCount << ":\n\n";
     // Placeholder "root" binding for the initial draft.
     printMatch(OS, QS, op, "root");
