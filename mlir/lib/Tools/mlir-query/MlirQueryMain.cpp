@@ -79,7 +79,7 @@ mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
   }
 
   auto sourceMgr = std::make_shared<llvm::SourceMgr>();
-  sourceMgr->AddNewSourceBuffer(std::move(file), SMLoc());
+  auto bufferId = sourceMgr->AddNewSourceBuffer(std::move(file), SMLoc());
 
   context.allowUnregisteredDialects(allowUnregisteredDialects);
   context.printOpOnDiagnostic(printOpOnDiagnostic);
@@ -90,7 +90,7 @@ mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
   if (!opRef)
     return failure();
 
-  mlir::query::QuerySession QS(opRef.get(), sourceMgr);
+  mlir::query::QuerySession QS(opRef.get(), sourceMgr, bufferId);
   if (!commands.empty()) {
     for (auto &command : commands) {
     mlir::query::QueryRef queryRef =
