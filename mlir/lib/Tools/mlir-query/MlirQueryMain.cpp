@@ -54,12 +54,6 @@ mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
       llvm::cl::desc("Allow operation with no registered dialects"),
       llvm::cl::init(false));
 
-  static llvm::cl::opt<bool> printOpOnDiagnostic(
-      "print-op-on-diagnostic",
-      llvm::cl::desc("Check that emitted diagnostics match expected-* lines on "
-                     "the corresponding line"),
-      llvm::cl::init(false));
-
   llvm::cl::HideUnrelatedOptions(mlirQueryCategory);
 
   llvm::InitLLVM y(argc, argv);
@@ -82,7 +76,6 @@ mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
   auto bufferId = sourceMgr->AddNewSourceBuffer(std::move(file), SMLoc());
 
   context.allowUnregisteredDialects(allowUnregisteredDialects);
-  context.printOpOnDiagnostic(printOpOnDiagnostic);
 
   // Parse the input MLIR file.
   OwningOpRef<Operation *> opRef =
