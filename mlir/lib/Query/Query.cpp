@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Query/Query.h"
+#include "mlir/Query/Matcher/MatchFinder.h"
 #include "mlir/Query/QuerySession.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -48,7 +49,8 @@ bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   for (Operation *op : matches) {
     OS << "Match #" << ++matchCount << ":\n\n";
     // Placeholder "root" binding for the initial draft.
-    op->emitRemark("\"root\" binds here");
+    op->emitRemark(
+        "\"root\" binds here"); // Uses the MLIR diagnostics to print matches
   }
   OS << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
 

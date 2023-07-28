@@ -16,6 +16,7 @@
 // mlir-query.
 //
 //===----------------------------------------------------------------------===//
+
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_MATCHERSINTERNAL_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_MATCHERSINTERNAL_H
 
@@ -64,22 +65,6 @@ public:
 
 private:
   llvm::IntrusiveRefCntPtr<MatcherInterface> implementation;
-};
-
-// MatchFinder is used to find all operations that match a given matcher.
-class MatchFinder {
-public:
-  // Returns all operations that match the given matcher.
-  std::vector<Operation *> getMatches(Operation *root, DynMatcher matcher) {
-    std::vector<Operation *> matches;
-
-    root->walk([&](Operation *subOp) {
-      if (matcher.match(subOp))
-        matches.push_back(subOp);
-    });
-
-    return matches;
-  }
 };
 
 } // namespace mlir::query::matcher
