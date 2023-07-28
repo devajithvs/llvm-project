@@ -35,6 +35,10 @@ mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
 
   static llvm::cl::OptionCategory mlirQueryCategory("mlir-query options");
 
+  static llvm::cl::list<std::string> commands(
+      "c", llvm::cl::desc("Specify command to run"),
+      llvm::cl::value_desc("command"), llvm::cl::cat(mlirQueryCategory));
+
   static llvm::cl::opt<std::string> inputFilename(
       llvm::cl::Positional, llvm::cl::desc("<input file>"),
       llvm::cl::cat(mlirQueryCategory));
@@ -87,16 +91,26 @@ mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
     return failure();
 
   mlir::query::QuerySession QS(opRef.get(), sourceMgr);
-  llvm::LineEditor LE("mlir-query");
-  LE.setListCompleter([&QS](StringRef line, size_t pos) {
-    return mlir::query::QueryParser::complete(line, pos, QS);
-  });
-  while (std::optional<std::string> line = LE.readLine()) {
-    mlir::query::QueryRef queryRef = mlir::query::QueryParser::parse(*line, QS);
-    queryRef->run(llvm::outs(), QS);
-    llvm::outs().flush();
-    if (QS.terminate)
-      break;
+  if (!commands.empty()) {
+    for (auto &command : commands) {
+    mlir::query::QueryRef queryRef =
+        mlir::query::QueryParser::parse(command, QS);
+    if (!queryRef->run(llvm::outs(), QS))
+      return failure();
+    }
+  } else {
+    llvm::LineEditor LE("mlir-query");
+    LE.setListCompleter([&QS](StringRef line, size_t pos) {
+      return mlir::query::QueryParser::complete(line, pos, QS);
+    });
+    while (std::optional<std::string> line = LE.readLine()) {
+      mlir::query::QueryRef queryRef =
+          mlir::query::QueryParser::parse(*line, QS);
+      queryRef->run(llvm::outs(), QS);
+      llvm::outs().flush();
+      if (QS.terminate)
+        break;
+    }
   }
 
   return success();
