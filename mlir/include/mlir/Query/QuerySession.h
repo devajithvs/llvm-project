@@ -19,8 +19,10 @@ namespace mlir::query {
 class QuerySession {
 public:
   QuerySession(Operation *rootOp,
-               const std::shared_ptr<llvm::SourceMgr> &sourceMgr)
-      : rootOp(rootOp), sourceMgr(sourceMgr), terminate(false) {}
+               const std::shared_ptr<llvm::SourceMgr> &sourceMgr,
+               unsigned bufferId)
+      : rootOp(rootOp), sourceMgr(sourceMgr), bufferId(bufferId),
+        terminate(false) {}
 
   const std::shared_ptr<llvm::SourceMgr> &getSourceManager() {
     return sourceMgr;
@@ -28,6 +30,7 @@ public:
 
   Operation *rootOp;
   const std::shared_ptr<llvm::SourceMgr> sourceMgr;
+  unsigned bufferId;
   bool terminate;
   llvm::StringMap<matcher::VariantValue> namedValues;
 };

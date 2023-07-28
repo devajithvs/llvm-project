@@ -89,7 +89,7 @@ struct QueryParser::LexOrCompleteWord {
   T Default(T value) { return stringSwitch.Default(value); }
 };
 
-QueryRef QueryParser::endQuery(QueryRef Q) {
+QueryRef QueryParser::endQuery(QueryRef queryRef) {
   llvm::StringRef extra = line;
   llvm::StringRef extraTrimmed = extra.drop_while(
       [](char c) { return llvm::StringRef(" \t\v\f\r").contains(c); });
@@ -97,19 +97,19 @@ QueryRef QueryParser::endQuery(QueryRef Q) {
   if ((!extraTrimmed.empty() && extraTrimmed[0] == '\n') ||
       (extraTrimmed.size() >= 2 && extraTrimmed[0] == '\r' &&
        extraTrimmed[1] == '\n'))
-    Q->remainingContent = extra;
+    queryRef->remainingContent = extra;
   else {
     llvm::StringRef trailingWord = lexWord();
     if (!trailingWord.empty() && trailingWord.front() == '#') {
       line = line.drop_until([](char c) { return c == '\n'; });
       line = line.drop_while([](char c) { return c == '\n'; });
-      return endQuery(Q);
+      return endQuery(queryRef);
     }
     if (!trailingWord.empty()) {
       return new InvalidQuery("unexpected extra input: '" + extra + "'");
     }
   }
-  return Q;
+  return queryRef;
 }
 
 namespace {
@@ -123,8 +123,8 @@ enum ParsedQueryKind {
 };
 
 QueryRef makeInvalidQueryFromDiagnostics(const matcher::Diagnostics &diag) {
-  std::string ErrStr;
-  llvm::raw_string_ostream OS(ErrStr);
+  std::string errStr;
+  llvm::raw_string_ostream OS(errStr);
   diag.print(OS);
   return new InvalidQuery(OS.str());
 }
@@ -145,9 +145,9 @@ QueryRef QueryParser::doParse() {
   llvm::StringRef commandStr;
   ParsedQueryKind qKind = LexOrCompleteWord<ParsedQueryKind>(this, commandStr)
                               .Case("", PQK_NoOp)
-                              .Case("#", PQK_Comment, /*IsCompletion=*/false)
+                              .Case("#", PQK_Comment, /*isCompletion=*/false)
                               .Case("help", PQK_Help)
-                              .Case("m", PQK_Match, /*IsCompletion=*/false)
+                              .Case("m", PQK_Match, /*isCompletion=*/false)
                               .Case("match", PQK_Match)
                               .Default(PQK_Invalid);
 

@@ -42,7 +42,7 @@ struct InvalidQuery : Query {
 
   std::string errStr;
 
-  static bool classof(const Query *Q) { return Q->kind == QK_Invalid; }
+  static bool classof(const Query *query) { return query->kind == QK_Invalid; }
 };
 
 // No-op query (i.e. a blank line).
@@ -50,7 +50,7 @@ struct NoOpQuery : Query {
   NoOpQuery() : Query(QK_NoOp) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  static bool classof(const Query *Q) { return Q->kind == QK_NoOp; }
+  static bool classof(const Query *query) { return query->kind == QK_NoOp; }
 };
 
 // Query for "help".
@@ -58,7 +58,7 @@ struct HelpQuery : Query {
   HelpQuery() : Query(QK_Help) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  static bool classof(const Query *Q) { return Q->kind == QK_Help; }
+  static bool classof(const Query *query) { return query->kind == QK_Help; }
 };
 
 // Query for "match MATCHER".
@@ -71,7 +71,7 @@ struct MatchQuery : Query {
 
   StringRef source;
 
-  static bool classof(const Query *Q) { return Q->kind == QK_Match; }
+  static bool classof(const Query *query) { return query->kind == QK_Match; }
 };
 
 } // namespace mlir::query

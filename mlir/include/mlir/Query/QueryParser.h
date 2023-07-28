@@ -38,12 +38,9 @@ private:
   template <typename T>
   struct LexOrCompleteWord;
 
-  QueryRef parseSetBool(bool QuerySession::*Var);
-  template <typename QueryType>
-  QueryRef parseSetOutputKind();
   QueryRef completeMatcherExpression();
 
-  QueryRef endQuery(QueryRef Q);
+  QueryRef endQuery(QueryRef queryRef);
 
   // Parse [Begin, End) and returns a reference to the parsed query object,
   // which may be an InvalidQuery if a parse error occurs.

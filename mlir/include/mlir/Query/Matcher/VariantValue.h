@@ -92,18 +92,18 @@ public:
   VariantValue &operator=(const VariantValue &other);
 
   // Specific constructors for each supported type.
-  VariantValue(const StringRef String);
-  VariantValue(const VariantMatcher &Matcher);
+  VariantValue(const StringRef string);
+  VariantValue(const VariantMatcher &matcher);
 
   // String value functions.
   bool isString() const;
   const StringRef &getString() const;
-  void setString(const StringRef &String);
+  void setString(const StringRef &string);
 
   // Matcher value functions.
   bool isMatcher() const;
   const VariantMatcher &getMatcher() const;
-  void setMatcher(const VariantMatcher &Matcher);
+  void setMatcher(const VariantMatcher &matcher);
 
   // String representation of the type of the value.
   std::string getTypeAsString() const;

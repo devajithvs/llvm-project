@@ -7,10 +7,21 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Query/Query.h"
+#include "mlir/Query/Matcher/MatchFinder.h"
 #include "mlir/Query/QuerySession.h"
+#include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace mlir::query {
+
+static void printMatch(llvm::raw_ostream &OS, QuerySession &QS, Operation *op,
+                       std::string binding) {
+  auto fileLoc = op->getLoc()->findInstanceOf<FileLineColLoc>();
+  auto smloc = QS.sourceMgr->FindLocForLineAndColumn(
+      QS.bufferId, fileLoc.getLine(), fileLoc.getColumn());
+  QS.sourceMgr->PrintMessage(OS, smloc, llvm::SourceMgr::DK_Note,
+                             "\"" + binding + "\" binds here");
+}
 
 Query::~Query() {}
 
@@ -30,25 +41,15 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   return true;
 }
 
-std::vector<Operation *> getMatches(Operation *rootOp,
-                                    const matcher::DynMatcher &matcher) {
-  auto matchFinder = query::matcher::MatchFinder();
-  return matchFinder.getMatches(rootOp, matcher);
-}
-
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
-  Operation *rootOp = QS.rootOp;
-  auto matches = getMatches(rootOp, matcher);
-
-  MLIRContext *context = rootOp->getContext();
-  SourceMgrDiagnosticHandler sourceMgrHandler(*QS.sourceMgr, context);
-
-  unsigned matchCount = 0;
+  int matchCount = 0;
+  std::vector<Operation *> matches =
+      matcher::MatchFinder().getMatches(QS.rootOp, matcher);
   OS << "\n";
   for (Operation *op : matches) {
     OS << "Match #" << ++matchCount << ":\n\n";
     // Placeholder "root" binding for the initial draft.
-    op->emitRemark("\"root\" binds here");
+    printMatch(OS, QS, op, "root");
   }
   OS << matchCount << (matchCount == 1 ? " match.\n\n" : " matches.\n\n");
 

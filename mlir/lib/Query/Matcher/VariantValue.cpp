@@ -16,7 +16,7 @@ namespace mlir::query::matcher {
 std::string ArgKind::asString() const {
   switch (getArgKind()) {
   case AK_String:
-    return "string";
+    return "String";
   case AK_Matcher:
     return "Matcher";
   }
@@ -55,12 +55,12 @@ VariantValue::VariantValue(const VariantValue &other) : type(VT_Nothing) {
   *this = other;
 }
 
-VariantValue::VariantValue(const StringRef String) : type(VT_String) {
-  value.String = new StringRef(String);
+VariantValue::VariantValue(const StringRef string) : type(VT_String) {
+  value.String = new StringRef(string);
 }
 
-VariantValue::VariantValue(const VariantMatcher &Matcher) : type(VT_Matcher) {
-  value.Matcher = new VariantMatcher(Matcher);
+VariantValue::VariantValue(const VariantMatcher &matcher) : type(VT_Matcher) {
+  value.Matcher = new VariantMatcher(matcher);
 }
 
 VariantValue::~VariantValue() { reset(); }
