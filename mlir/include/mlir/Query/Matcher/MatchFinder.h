@@ -36,6 +36,12 @@ public:
   }
 };
 
+static std::vector<Operation *> getMatches(Operation *rootOp,
+                                           const DynMatcher &matcher) {
+  auto matchFinder = MatchFinder();
+  return matchFinder.getMatches(rootOp, matcher);
+}
+
 } // namespace mlir::query::matcher
 
 #endif // MLIR_TOOLS_MLIRQUERY_MATCHER_MATCHERFINDER_H

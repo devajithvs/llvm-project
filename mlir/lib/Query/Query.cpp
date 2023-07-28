@@ -14,12 +14,6 @@
 
 namespace mlir::query {
 
-static std::vector<Operation *> getMatches(Operation *rootOp,
-                                           const matcher::DynMatcher &matcher) {
-  auto matchFinder = query::matcher::MatchFinder();
-  return matchFinder.getMatches(rootOp, matcher);
-}
-
 static void printMatch(llvm::raw_ostream &OS, QuerySession &QS, Operation *op,
                        std::string binding) {
   auto fileLoc = op->getLoc()->findInstanceOf<FileLineColLoc>();
@@ -50,7 +44,7 @@ bool HelpQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
 bool MatchQuery::run(llvm::raw_ostream &OS, QuerySession &QS) const {
   int matchCount = 0;
   OS << "\n";
-  for (Operation *op : getMatches(QS.rootOp, matcher)) {
+  for (Operation *op : matcher::getMatches(QS.rootOp, matcher)) {
     OS << "Match #" << ++matchCount << ":\n\n";
     // Placeholder "root" binding for the initial draft.
     printMatch(OS, QS, op, "root");
