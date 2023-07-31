@@ -75,20 +75,6 @@ public:
     std::vector<std::string> *out;
   };
 
-  // Context for constructing a matcher or parsing its argument.
-  struct Context {
-    enum ConstructMatcherEnum { ConstructMatcher };
-    Context(ConstructMatcherEnum, Diagnostics *error,
-            llvm::StringRef matcherName, SourceRange matcherRange);
-    enum MatcherArgEnum { MatcherArg };
-    Context(MatcherArgEnum, Diagnostics *error, llvm::StringRef matcherName,
-            SourceRange matcherRange, int argNumber);
-    ~Context();
-
-  private:
-    Diagnostics *const error;
-  };
-
   // Add an error message with the specified range and error type.
   // Returns an ArgStream object to allow constructing the error message using
   // the << operator.
@@ -97,30 +83,9 @@ public:
   // Print all error messages to the specified output stream.
   void print(llvm::raw_ostream &OS) const;
 
-  // Print the full error messages, including the context information, to the
-  // specified output stream.
-  void printFull(llvm::raw_ostream &OS) const;
-
 private:
-  // Parser context types.
-  enum class ContextType { MatcherArg, MatcherConstruct };
-
-  // Context for managing overloaded matcher construction.
-  struct OverloadContext {
-    // Construct an overload context with the given error.
-    OverloadContext(Diagnostics *error);
-    ~OverloadContext();
-    // Revert all errors that occurred within this context.
-    void revertErrors();
-
-  private:
-    Diagnostics *const error;
-    unsigned beginIndex{};
-  };
-
   // Information stored for one frame of the context.
   struct ContextFrame {
-    ContextType type;
     SourceRange range;
     std::vector<std::string> args;
   };
@@ -139,21 +104,11 @@ private:
   // Get an array reference to the error contents.
   llvm::ArrayRef<ErrorContent> errors() const { return errorValues; }
 
-  llvm::StringRef contextTypeToFormatString(ContextType type) const;
+  void printMessage(const ErrorContent::Message &message,
+                    const llvm::Twine Prefix, llvm::raw_ostream &OS) const;
 
-  void printContextFrameToStream(const ContextFrame &frame,
-                                 llvm::raw_ostream &OS) const;
-
-  void printMessageToStream(const ErrorContent::Message &message,
-                            const llvm::Twine Prefix,
-                            llvm::raw_ostream &OS) const;
-
-  void printErrorContentToStream(const ErrorContent &content,
-                                 llvm::raw_ostream &OS) const;
-
-  // Push a new context frame onto the context stack with the specified type and
-  // range.
-  ArgStream pushContextFrame(ContextType type, SourceRange range);
+  void printErrorContent(const ErrorContent &content,
+                         llvm::raw_ostream &OS) const;
 
   std::vector<ContextFrame> contextStack;
   std::vector<ErrorContent> errorValues;

@@ -10,52 +10,6 @@
 
 namespace mlir::query::matcher {
 
-Diagnostics::ArgStream Diagnostics::pushContextFrame(ContextType type,
-                                                     SourceRange range) {
-  contextStack.emplace_back();
-  ContextFrame &data = contextStack.back();
-  data.type = type;
-  data.range = range;
-  return ArgStream(&data.args);
-}
-
-Diagnostics::Context::Context(ConstructMatcherEnum, Diagnostics *error,
-                              llvm::StringRef matcherName,
-                              SourceRange matcherRange)
-    : error(error) {
-  error->pushContextFrame(ContextType::MatcherConstruct, matcherRange)
-      << matcherName;
-}
-
-Diagnostics::Context::Context(MatcherArgEnum, Diagnostics *error,
-                              llvm::StringRef matcherName,
-                              SourceRange matcherRange, int argnumber)
-    : error(error) {
-  error->pushContextFrame(ContextType::MatcherArg, matcherRange)
-      << argnumber << matcherName;
-}
-
-Diagnostics::Context::~Context() { error->contextStack.pop_back(); }
-
-Diagnostics::OverloadContext::OverloadContext(Diagnostics *error)
-    : error(error), beginIndex(error->errorValues.size()) {}
-
-Diagnostics::OverloadContext::~OverloadContext() {
-  // Merge all errors that happened while in this context.
-  if (beginIndex < error->errorValues.size()) {
-    Diagnostics::ErrorContent &dest = error->errorValues[beginIndex];
-    for (size_t i = beginIndex + 1, e = error->errorValues.size(); i < e; ++i) {
-      dest.messages.push_back(error->errorValues[i].messages[0]);
-    }
-    error->errorValues.resize(beginIndex + 1);
-  }
-}
-
-void Diagnostics::OverloadContext::revertErrors() {
-  // Revert the errors.
-  error->errorValues.resize(beginIndex);
-}
-
 Diagnostics::ArgStream &
 Diagnostics::ArgStream::operator<<(const llvm::Twine &arg) {
   out->push_back(arg.str());
@@ -71,17 +25,6 @@ Diagnostics::ArgStream Diagnostics::addError(SourceRange range,
   last.messages.back().range = range;
   last.messages.back().type = error;
   return ArgStream(&last.messages.back().args);
-}
-
-llvm::StringRef
-Diagnostics::contextTypeToFormatString(Diagnostics::ContextType type) const {
-  switch (type) {
-  case Diagnostics::ContextType::MatcherConstruct:
-    return "Error building matcher $0.";
-  case Diagnostics::ContextType::MatcherArg:
-    return "Error parsing argument $0 for matcher $1.";
-  }
-  llvm_unreachable("Unknown ContextType value.");
 }
 
 static llvm::StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
@@ -151,13 +94,7 @@ static void maybeAddLineAndColumn(SourceRange range, llvm::raw_ostream &OS) {
   }
 }
 
-void Diagnostics::printContextFrameToStream(
-    const Diagnostics::ContextFrame &frame, llvm::raw_ostream &OS) const {
-  maybeAddLineAndColumn(frame.range, OS);
-  formatErrorString(contextTypeToFormatString(frame.type), frame.args, OS);
-}
-
-void Diagnostics::printMessageToStream(
+void Diagnostics::printMessage(
     const Diagnostics::ErrorContent::Message &message, const llvm::Twine Prefix,
     llvm::raw_ostream &OS) const {
   maybeAddLineAndColumn(message.range, OS);
@@ -165,16 +102,16 @@ void Diagnostics::printMessageToStream(
   formatErrorString(errorTypeToFormatString(message.type), message.args, OS);
 }
 
-void Diagnostics::printErrorContentToStream(
-    const Diagnostics::ErrorContent &content, llvm::raw_ostream &OS) const {
+void Diagnostics::printErrorContent(const Diagnostics::ErrorContent &content,
+                                    llvm::raw_ostream &OS) const {
   if (content.messages.size() == 1) {
-    printMessageToStream(content.messages[0], "", OS);
+    printMessage(content.messages[0], "", OS);
   } else {
     for (size_t i = 0, e = content.messages.size(); i != e; ++i) {
       if (i != 0)
         OS << "\n";
-      printMessageToStream(content.messages[i],
-                           "Candidate " + llvm::Twine(i + 1) + ": ", OS);
+      printMessage(content.messages[i],
+                   "Candidate " + llvm::Twine(i + 1) + ": ", OS);
     }
   }
 }
@@ -183,19 +120,7 @@ void Diagnostics::print(llvm::raw_ostream &OS) const {
   for (const ErrorContent &error : errorValues) {
     if (&error != &errorValues.front())
       OS << "\n";
-    printErrorContentToStream(error, OS);
-  }
-}
-
-void Diagnostics::printFull(llvm::raw_ostream &OS) const {
-  for (const ErrorContent &error : errorValues) {
-    if (&error != &errorValues.front())
-      OS << "\n";
-    for (const ContextFrame &frame : error.contextStack) {
-      printContextFrameToStream(frame, OS);
-      OS << "\n";
-    }
-    printErrorContentToStream(error, OS);
+    printErrorContent(error, OS);
   }
 }
 

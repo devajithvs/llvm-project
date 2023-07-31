@@ -339,8 +339,6 @@ bool Parser::parseMatcherArgs(std::vector<ParserValue> &args, MatcherCtor ctor,
       }
     }
 
-    Diagnostics::Context ctx(Diagnostics::Context::MatcherArg, error,
-                             nameToken.text, nameToken.range, args.size() + 1);
     ParserValue argValue;
     tokenizer->skipNewlines();
 
@@ -388,8 +386,6 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
   if (!ctor)
     return false;
   // Merge the start and end infos.
-  Diagnostics::Context ctx(Diagnostics::Context::ConstructMatcher, error,
-                           nameToken.text, nameToken.range);
   SourceRange matcherRange = nameToken.range;
   matcherRange.end = endToken.range.end;
   VariantMatcher result =
