@@ -23,14 +23,15 @@ Diagnostics::Context::Context(ConstructMatcherEnum, Diagnostics *error,
                               llvm::StringRef matcherName,
                               SourceRange matcherRange)
     : error(error) {
-  error->pushContextFrame(CT_MatcherConstruct, matcherRange) << matcherName;
+  error->pushContextFrame(ContextType::MatcherConstruct, matcherRange)
+      << matcherName;
 }
 
 Diagnostics::Context::Context(MatcherArgEnum, Diagnostics *error,
                               llvm::StringRef matcherName,
                               SourceRange matcherRange, int argnumber)
     : error(error) {
-  error->pushContextFrame(CT_MatcherArg, matcherRange)
+  error->pushContextFrame(ContextType::MatcherArg, matcherRange)
       << argnumber << matcherName;
 }
 
@@ -75,9 +76,9 @@ Diagnostics::ArgStream Diagnostics::addError(SourceRange range,
 llvm::StringRef
 Diagnostics::contextTypeToFormatString(Diagnostics::ContextType type) const {
   switch (type) {
-  case Diagnostics::CT_MatcherConstruct:
+  case Diagnostics::ContextType::MatcherConstruct:
     return "Error building matcher $0.";
-  case Diagnostics::CT_MatcherArg:
+  case Diagnostics::ContextType::MatcherArg:
     return "Error parsing argument $0 for matcher $1.";
   }
   llvm_unreachable("Unknown ContextType value.");

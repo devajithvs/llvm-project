@@ -103,7 +103,7 @@ public:
 
 private:
   // Parser context types.
-  enum ContextType { CT_MatcherArg, CT_MatcherConstruct };
+  enum class ContextType { MatcherArg, MatcherConstruct };
 
   // Context for managing overloaded matcher construction.
   struct OverloadContext {
