@@ -182,7 +182,8 @@ private:
     SourceRange range;
     range.start = result->range.start;
     range.end = currentLocation();
-    error->addError(range, error->ET_ParserStringError) << errorText;
+    error->addError(range, Diagnostics::ErrorType::ParserStringError)
+        << errorText;
     result->kind = TokenInfo::TK_Error;
   }
 
@@ -276,13 +277,13 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
 
     if (!namedValue.isMatcher()) {
       error->addError(tokenizer->peekNextToken().range,
-                      error->ET_ParserNotAMatcher);
+                      Diagnostics::ErrorType::ParserNotAMatcher);
       return false;
     }
 
     if (tokenizer->nextTokenKind() == TokenInfo::TK_NewLine) {
       error->addError(tokenizer->peekNextToken().range,
-                      error->ET_ParserNoOpenParen)
+                      Diagnostics::ErrorType::ParserNoOpenParen)
           << "NewLine";
       return false;
     }
@@ -294,7 +295,8 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
          tokenizer->nextTokenKind() == TokenInfo::TK_NewLine ||
          tokenizer->nextTokenKind() == TokenInfo::TK_Eof) &&
         !sema->lookupMatcherCtor(nameToken.text)) {
-      error->addError(nameToken.range, error->ET_RegistryValueNotFound)
+      error->addError(nameToken.range,
+                      Diagnostics::ErrorType::RegistryValueNotFound)
           << nameToken.text;
       return false;
     }
@@ -306,7 +308,7 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
   assert(nameToken.kind == TokenInfo::TK_Ident);
   TokenInfo openToken = tokenizer->consumeNextToken();
   if (openToken.kind != TokenInfo::TK_OpenParen) {
-    error->addError(openToken.range, error->ET_ParserNoOpenParen)
+    error->addError(openToken.range, Diagnostics::ErrorType::ParserNoOpenParen)
         << openToken.text;
     return false;
   }
@@ -333,7 +335,7 @@ bool Parser::parseMatcherArgs(std::vector<ParserValue> &args, MatcherCtor ctor,
       // We must find a , token to continue.
       TokenInfo commaToken = tokenizer->consumeNextToken();
       if (commaToken.kind != TokenInfo::TK_Comma) {
-        error->addError(commaToken.range, error->ET_ParserNoComma)
+        error->addError(commaToken.range, Diagnostics::ErrorType::ParserNoComma)
             << commaToken.text;
         return false;
       }
@@ -362,7 +364,8 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
                                         std::optional<MatcherCtor> ctor,
                                         VariantValue *value) {
   if (!ctor) {
-    error->addError(nameToken.range, error->ET_RegistryMatcherNotFound)
+    error->addError(nameToken.range,
+                    Diagnostics::ErrorType::RegistryMatcherNotFound)
         << nameToken.text;
     // Do not return here. We need to continue to give completion suggestions.
   }
@@ -378,7 +381,7 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
 
   // Check for the missing closing parenthesis
   if (endToken.kind != TokenInfo::TK_CloseParen) {
-    error->addError(openToken.range, error->ET_ParserNoCloseParen)
+    error->addError(openToken.range, Diagnostics::ErrorType::ParserNoCloseParen)
         << nameToken.text;
     return false;
   }
@@ -454,7 +457,7 @@ bool Parser::parseExpressionImpl(VariantValue *value) {
     return false;
   case TokenInfo::TK_Eof:
     error->addError(tokenizer->consumeNextToken().range,
-                    error->ET_ParserNoCode);
+                    Diagnostics::ErrorType::ParserNoCode);
     return false;
 
   case TokenInfo::TK_Error:
@@ -467,7 +470,7 @@ bool Parser::parseExpressionImpl(VariantValue *value) {
   case TokenInfo::TK_Period:
   case TokenInfo::TK_InvalidChar:
     const TokenInfo token = tokenizer->consumeNextToken();
-    error->addError(token.range, error->ET_ParserInvalidToken)
+    error->addError(token.range, Diagnostics::ErrorType::ParserInvalidToken)
         << (token.kind == TokenInfo::TK_NewLine ? "NewLine" : token.text);
     return false;
   }
@@ -516,7 +519,7 @@ bool Parser::parseExpression(llvm::StringRef &code, Sema *sema,
   if (nextToken.kind != TokenInfo::TK_Eof &&
       nextToken.kind != TokenInfo::TK_NewLine) {
     error->addError(tokenizer.peekNextToken().range,
-                    error->ET_ParserTrailingCode);
+                    Diagnostics::ErrorType::ParserTrailingCode);
     return false;
   }
   return true;
@@ -542,12 +545,12 @@ Parser::parseMatcherExpression(llvm::StringRef &code, Sema *sema,
   if (!parseExpression(code, sema, namedValues, &value, error))
     return std::nullopt;
   if (!value.isMatcher()) {
-    error->addError(SourceRange(), error->ET_ParserNotAMatcher);
+    error->addError(SourceRange(), Diagnostics::ErrorType::ParserNotAMatcher);
     return std::nullopt;
   }
   std::optional<DynMatcher> result = value.getMatcher().getDynMatcher();
   if (!result) {
-    error->addError(SourceRange(), error->ET_ParserOverloadedType)
+    error->addError(SourceRange(), Diagnostics::ErrorType::ParserOverloadedType)
         << value.getTypeAsString();
   }
   return result;

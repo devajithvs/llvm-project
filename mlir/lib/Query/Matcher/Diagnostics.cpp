@@ -29,37 +29,37 @@ Diagnostics::ArgStream Diagnostics::addError(SourceRange range,
 
 static llvm::StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
   switch (type) {
-  case Diagnostics::ET_RegistryMatcherNotFound:
+  case Diagnostics::ErrorType::RegistryMatcherNotFound:
     return "Matcher not found: $0";
-  case Diagnostics::ET_RegistryWrongArgCount:
+  case Diagnostics::ErrorType::RegistryWrongArgCount:
     return "Incorrect argument count. (Expected = $0) != (Actual = $1)";
-  case Diagnostics::ET_RegistryWrongArgType:
+  case Diagnostics::ErrorType::RegistryWrongArgType:
     return "Incorrect type for arg $0. (Expected = $1) != (Actual = $2)";
-  case Diagnostics::ET_RegistryValueNotFound:
+  case Diagnostics::ErrorType::RegistryValueNotFound:
     return "Value not found: $0";
 
-  case Diagnostics::ET_ParserStringError:
+  case Diagnostics::ErrorType::ParserStringError:
     return "Error parsing string token: <$0>";
-  case Diagnostics::ET_ParserNoOpenParen:
+  case Diagnostics::ErrorType::ParserNoOpenParen:
     return "Error parsing matcher. Found token <$0> while looking for '('.";
-  case Diagnostics::ET_ParserNoCloseParen:
+  case Diagnostics::ErrorType::ParserNoCloseParen:
     return "Error parsing matcher. Found end-of-code while looking for ')'.";
-  case Diagnostics::ET_ParserNoComma:
+  case Diagnostics::ErrorType::ParserNoComma:
     return "Error parsing matcher. Found token <$0> while looking for ','.";
-  case Diagnostics::ET_ParserNoCode:
+  case Diagnostics::ErrorType::ParserNoCode:
     return "End of code found while looking for token.";
-  case Diagnostics::ET_ParserNotAMatcher:
+  case Diagnostics::ErrorType::ParserNotAMatcher:
     return "Input value is not a matcher expression.";
-  case Diagnostics::ET_ParserInvalidToken:
+  case Diagnostics::ErrorType::ParserInvalidToken:
     return "Invalid token <$0> found when looking for a value.";
-  case Diagnostics::ET_ParserTrailingCode:
+  case Diagnostics::ErrorType::ParserTrailingCode:
     return "Unexpected end of code.";
-  case Diagnostics::ET_ParserOverloadedType:
+  case Diagnostics::ErrorType::ParserOverloadedType:
     return "Input value has unresolved overloaded type: $0";
-  case Diagnostics::ET_ParserFailedToBuildMatcher:
+  case Diagnostics::ErrorType::ParserFailedToBuildMatcher:
     return "Failed to build matcher: $0.";
 
-  case Diagnostics::ET_None:
+  case Diagnostics::ErrorType::None:
     return "<N/A>";
   }
   llvm_unreachable("Unknown ErrorType value.");

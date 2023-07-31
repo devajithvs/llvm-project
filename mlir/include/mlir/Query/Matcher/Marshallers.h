@@ -124,7 +124,7 @@ private:
 inline bool checkArgCount(SourceRange nameRange, size_t expectedArgCount,
                           ArrayRef<ParserValue> args, Diagnostics *error) {
   if (args.size() != expectedArgCount) {
-    error->addError(nameRange, error->ET_RegistryWrongArgCount)
+    error->addError(nameRange, Diagnostics::ErrorType::RegistryWrongArgCount)
         << expectedArgCount << args.size();
     return false;
   }
@@ -137,7 +137,8 @@ inline bool checkArgTypeAtIndex(StringRef matcherName,
                                 ArrayRef<ParserValue> args,
                                 Diagnostics *error) {
   if (!ArgTypeTraits<ArgType>::hasCorrectType(args[Index].value)) {
-    error->addError(args[Index].range, error->ET_RegistryWrongArgType)
+    error->addError(args[Index].range,
+                    Diagnostics::ErrorType::RegistryWrongArgType)
         << matcherName << Index + 1;
     return false;
   }
