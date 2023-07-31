@@ -72,8 +72,8 @@ Diagnostics::ArgStream Diagnostics::addError(SourceRange range,
   return ArgStream(&last.messages.back().args);
 }
 
-static llvm::StringRef
-contextTypeToFormatString(Diagnostics::ContextType type) {
+llvm::StringRef
+Diagnostics::contextTypeToFormatString(Diagnostics::ContextType type) const {
   switch (type) {
   case Diagnostics::CT_MatcherConstruct:
     return "Error building matcher $0.";
@@ -150,22 +150,22 @@ static void maybeAddLineAndColumn(SourceRange range, llvm::raw_ostream &OS) {
   }
 }
 
-static void printContextFrameToStream(const Diagnostics::ContextFrame &frame,
-                                      llvm::raw_ostream &OS) {
+void Diagnostics::printContextFrameToStream(
+    const Diagnostics::ContextFrame &frame, llvm::raw_ostream &OS) const {
   maybeAddLineAndColumn(frame.range, OS);
   formatErrorString(contextTypeToFormatString(frame.type), frame.args, OS);
 }
 
-static void
-printMessageToStream(const Diagnostics::ErrorContent::Message &message,
-                     const llvm::Twine Prefix, llvm::raw_ostream &OS) {
+void Diagnostics::printMessageToStream(
+    const Diagnostics::ErrorContent::Message &message, const llvm::Twine Prefix,
+    llvm::raw_ostream &OS) const {
   maybeAddLineAndColumn(message.range, OS);
   OS << Prefix;
   formatErrorString(errorTypeToFormatString(message.type), message.args, OS);
 }
 
-static void printErrorContentToStream(const Diagnostics::ErrorContent &content,
-                                      llvm::raw_ostream &OS) {
+void Diagnostics::printErrorContentToStream(
+    const Diagnostics::ErrorContent &content, llvm::raw_ostream &OS) const {
   if (content.messages.size() == 1) {
     printMessageToStream(content.messages[0], "", OS);
   } else {
