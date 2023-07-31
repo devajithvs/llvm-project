@@ -39,26 +39,26 @@ struct SourceRange {
 class Diagnostics {
 public:
   // All errors from the system.
-  enum ErrorType {
-    ET_None,
+  enum class ErrorType {
+    None,
 
     // Parser Errors
-    ET_ParserFailedToBuildMatcher,
-    ET_ParserInvalidToken,
-    ET_ParserNoCloseParen,
-    ET_ParserNoCode,
-    ET_ParserNoComma,
-    ET_ParserNoOpenParen,
-    ET_ParserNotAMatcher,
-    ET_ParserOverloadedType,
-    ET_ParserStringError,
-    ET_ParserTrailingCode,
+    ParserFailedToBuildMatcher,
+    ParserInvalidToken,
+    ParserNoCloseParen,
+    ParserNoCode,
+    ParserNoComma,
+    ParserNoOpenParen,
+    ParserNotAMatcher,
+    ParserOverloadedType,
+    ParserStringError,
+    ParserTrailingCode,
 
     // Registry Errors
-    ET_RegistryMatcherNotFound,
-    ET_RegistryValueNotFound,
-    ET_RegistryWrongArgCount,
-    ET_RegistryWrongArgType
+    RegistryMatcherNotFound,
+    RegistryValueNotFound,
+    RegistryWrongArgCount,
+    RegistryWrongArgType
   };
 
   // Helper stream class for constructing error messages.
