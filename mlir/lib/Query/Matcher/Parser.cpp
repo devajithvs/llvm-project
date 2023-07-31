@@ -378,6 +378,13 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
     return false;
   }
 
+  // Check for the missing closing parenthesis
+  if (endToken.kind != TokenInfo::TK_CloseParen) {
+    error->addError(openToken.range, error->ET_ParserNoCloseParen)
+        << nameToken.text;
+    return false;
+  }
+
   if (!ctor)
     return false;
   // Merge the start and end infos.
