@@ -122,7 +122,8 @@ enum ParsedQueryKind {
   PQK_Match,
 };
 
-QueryRef makeInvalidQueryFromDiagnostics(const matcher::Diagnostics &diag) {
+QueryRef
+makeInvalidQueryFromDiagnostics(const matcher::internal::Diagnostics &diag) {
   std::string errStr;
   llvm::raw_string_ostream OS(errStr);
   diag.print(OS);
@@ -132,8 +133,8 @@ QueryRef makeInvalidQueryFromDiagnostics(const matcher::Diagnostics &diag) {
 
 QueryRef QueryParser::completeMatcherExpression() {
   std::vector<matcher::MatcherCompletion> comps =
-      matcher::Parser::completeExpression(line, completionPos - line.begin(),
-                                          nullptr, &QS.namedValues);
+      matcher::internal::Parser::completeExpression(
+          line, completionPos - line.begin(), nullptr, &QS.namedValues);
   for (const auto &comp : comps) {
     completions.emplace_back(comp.typedText, comp.matcherDecl);
   }
@@ -168,12 +169,12 @@ QueryRef QueryParser::doParse() {
       return completeMatcherExpression();
     }
 
-    matcher::Diagnostics diag;
+    matcher::internal::Diagnostics diag;
     auto matcherSource = line.ltrim();
     auto origMatcherSource = matcherSource;
     std::optional<matcher::DynMatcher> matcher =
-        matcher::Parser::parseMatcherExpression(matcherSource, nullptr,
-                                                &QS.namedValues, &diag);
+        matcher::internal::Parser::parseMatcherExpression(
+            matcherSource, nullptr, &QS.namedValues, &diag);
     if (!matcher) {
       return makeInvalidQueryFromDiagnostics(diag);
     }

@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-namespace mlir::query::matcher {
+namespace mlir::query::matcher::internal {
 
 // Represents the line and column numbers in a source query.
 struct SourceLocation {
@@ -114,6 +114,6 @@ private:
   std::vector<ErrorContent> errorValues;
 };
 
-} // namespace mlir::query::matcher
+} // namespace mlir::query::matcher::internal
 
 #endif // MLIR_TOOLS_MLIRQUERY_MATCHER_DIAGNOSTICS_H

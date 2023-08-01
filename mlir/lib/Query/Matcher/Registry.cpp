@@ -162,9 +162,9 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
 }
 
 VariantMatcher Registry::constructMatcher(MatcherCtor ctor,
-                                          SourceRange nameRange,
+                                          internal::SourceRange nameRange,
                                           ArrayRef<ParserValue> args,
-                                          Diagnostics *error) {
+                                          internal::Diagnostics *error) {
   return ctor->create(nameRange, args, error);
 }
 

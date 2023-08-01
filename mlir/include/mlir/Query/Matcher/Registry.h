@@ -56,9 +56,9 @@ public:
   getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes);
 
   static VariantMatcher constructMatcher(MatcherCtor ctor,
-                                         SourceRange nameRange,
+                                         internal::SourceRange nameRange,
                                          ArrayRef<ParserValue> args,
-                                         Diagnostics *error);
+                                         internal::Diagnostics *error);
 };
 
 } // namespace mlir::query::matcher

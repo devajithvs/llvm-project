@@ -8,7 +8,7 @@
 
 #include "mlir/Query/Matcher/Diagnostics.h"
 
-namespace mlir::query::matcher {
+namespace mlir::query::matcher::internal {
 
 Diagnostics::ArgStream &
 Diagnostics::ArgStream::operator<<(const llvm::Twine &arg) {
@@ -124,4 +124,4 @@ void Diagnostics::print(llvm::raw_ostream &OS) const {
   }
 }
 
-} // namespace mlir::query::matcher
+} // namespace mlir::query::matcher::internal
