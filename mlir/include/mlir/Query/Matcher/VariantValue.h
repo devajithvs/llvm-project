@@ -132,7 +132,7 @@ private:
 struct ParserValue {
   ParserValue() {}
   llvm::StringRef text;
-  SourceRange range;
+  internal::SourceRange range;
   VariantValue value;
 };
 

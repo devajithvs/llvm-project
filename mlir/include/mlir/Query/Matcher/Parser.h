@@ -33,7 +33,7 @@
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 
-namespace mlir::query::matcher {
+namespace mlir::query::matcher::internal {
 
 // Matcher expression parser.
 class Parser {
@@ -169,6 +169,6 @@ private:
   std::vector<MatcherCompletion> completions;
 };
 
-} // namespace mlir::query::matcher
+} // namespace mlir::query::matcher::internal
 
 #endif // MLIR_TOOLS_MLIRQUERY_MATCHER_PARSER_H

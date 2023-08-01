@@ -15,7 +15,7 @@
 #include "llvm/Support/ManagedStatic.h"
 #include <vector>
 
-namespace mlir::query::matcher {
+namespace mlir::query::matcher::internal {
 
 // Simple structure to hold information for one token from the parser.
 struct Parser::TokenInfo {
@@ -556,4 +556,4 @@ Parser::parseMatcherExpression(llvm::StringRef &code, Sema *sema,
   return result;
 }
 
-} // namespace mlir::query::matcher
+} // namespace mlir::query::matcher::internal
