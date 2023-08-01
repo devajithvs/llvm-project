@@ -19,22 +19,8 @@
 
 namespace mlir::query::matcher {
 
-// Kind identifier that supports all types that VariantValue can contain.
-class ArgKind {
-public:
-  enum Kind { AK_Matcher, AK_String };
-  ArgKind(Kind k) : k(k) {}
-
-  Kind getArgKind() const { return k; }
-
-  bool operator<(const ArgKind &other) const { return k < other.k; }
-
-  // String representation of the type.
-  std::string asString() const;
-
-private:
-  Kind k;
-};
+// All types that VariantValue can contain.
+enum class ArgKind { Matcher, String };
 
 // A variant matcher object to abstract simple and complex matchers into a
 // single object type.

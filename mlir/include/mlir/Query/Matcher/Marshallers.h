@@ -41,7 +41,7 @@ struct ArgTypeTraits<StringRef> {
     return value.getString();
   }
 
-  static ArgKind getKind() { return ArgKind(ArgKind::AK_String); }
+  static ArgKind getKind() { return ArgKind::String; }
 
   static std::optional<std::string> getBestGuess(const VariantValue &) {
     return std::nullopt;
@@ -59,7 +59,7 @@ struct ArgTypeTraits<DynMatcher> {
     return *value.getMatcher().getDynMatcher();
   }
 
-  static ArgKind getKind() { return ArgKind(ArgKind::AK_Matcher); }
+  static ArgKind getKind() { return ArgKind::Matcher; }
 
   static std::optional<std::string> getBestGuess(const VariantValue &) {
     return std::nullopt;
