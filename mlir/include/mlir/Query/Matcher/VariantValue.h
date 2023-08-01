@@ -85,7 +85,7 @@ private:
 //  - VariantMatcher
 class VariantValue {
 public:
-  VariantValue() : type(VT_Nothing) {}
+  VariantValue() : type(ValueType::Nothing) {}
 
   VariantValue(const VariantValue &other);
   ~VariantValue();
@@ -112,10 +112,10 @@ private:
   void reset();
 
   // All supported value types.
-  enum ValueType {
-    VT_Nothing,
-    VT_String,
-    VT_Matcher,
+  enum class ValueType {
+    Nothing,
+    String,
+    Matcher,
   };
 
   // All supported value types.

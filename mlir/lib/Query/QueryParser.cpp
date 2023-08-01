@@ -114,12 +114,12 @@ QueryRef QueryParser::endQuery(QueryRef queryRef) {
 
 namespace {
 
-enum ParsedQueryKind {
-  PQK_Invalid,
-  PQK_Comment,
-  PQK_NoOp,
-  PQK_Help,
-  PQK_Match,
+enum class ParsedQueryKind {
+  Invalid,
+  Comment,
+  NoOp,
+  Help,
+  Match,
 };
 
 QueryRef
@@ -144,27 +144,28 @@ QueryRef QueryParser::completeMatcherExpression() {
 QueryRef QueryParser::doParse() {
 
   llvm::StringRef commandStr;
-  ParsedQueryKind qKind = LexOrCompleteWord<ParsedQueryKind>(this, commandStr)
-                              .Case("", PQK_NoOp)
-                              .Case("#", PQK_Comment, /*isCompletion=*/false)
-                              .Case("help", PQK_Help)
-                              .Case("m", PQK_Match, /*isCompletion=*/false)
-                              .Case("match", PQK_Match)
-                              .Default(PQK_Invalid);
+  ParsedQueryKind qKind =
+      LexOrCompleteWord<ParsedQueryKind>(this, commandStr)
+          .Case("", ParsedQueryKind::NoOp)
+          .Case("#", ParsedQueryKind::Comment, /*isCompletion=*/false)
+          .Case("help", ParsedQueryKind::Help)
+          .Case("m", ParsedQueryKind::Match, /*isCompletion=*/false)
+          .Case("match", ParsedQueryKind::Match)
+          .Default(ParsedQueryKind::Invalid);
 
   switch (qKind) {
-  case PQK_Comment:
-  case PQK_NoOp:
+  case ParsedQueryKind::Comment:
+  case ParsedQueryKind::NoOp:
     line = line.drop_until([](char c) { return c == '\n'; });
     line = line.drop_while([](char c) { return c == '\n'; });
     if (line.empty())
       return new NoOpQuery;
     return doParse();
 
-  case PQK_Help:
+  case ParsedQueryKind::Help:
     return endQuery(new HelpQuery);
 
-  case PQK_Match: {
+  case ParsedQueryKind::Match: {
     if (completionPos) {
       return completeMatcherExpression();
     }
@@ -185,7 +186,7 @@ QueryRef QueryParser::doParse() {
     return Q;
   }
 
-  case PQK_Invalid:
+  case ParsedQueryKind::Invalid:
     return new InvalidQuery("unknown command: " + commandStr);
   }
 

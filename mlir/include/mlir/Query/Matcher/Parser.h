@@ -38,6 +38,21 @@ namespace mlir::query::matcher::internal {
 // Matcher expression parser.
 class Parser {
 public:
+  // Different possible tokens.
+  enum class TokenKind {
+    Eof,
+    NewLine,
+    OpenParen,
+    CloseParen,
+    Comma,
+    Period,
+    Literal,
+    Ident,
+    InvalidChar,
+    CodeCompletion,
+    Error
+  };
+
   // Interface to connect the parser with the registry and more. The parser uses
   // the Sema instance passed into parseMatcherExpression() to handle all
   // matcher tokens.

@@ -16,7 +16,7 @@
 
 namespace mlir::query {
 
-enum QueryKind { QK_Invalid, QK_NoOp, QK_Help, QK_Match };
+enum class QueryKind { Invalid, NoOp, Help, Match };
 
 class QuerySession;
 
@@ -37,41 +37,49 @@ typedef llvm::IntrusiveRefCntPtr<Query> QueryRef;
 // Any query which resulted in a parse error. The error message is in ErrStr.
 struct InvalidQuery : Query {
   InvalidQuery(const llvm::Twine &errStr)
-      : Query(QK_Invalid), errStr(errStr.str()) {}
+      : Query(QueryKind::Invalid), errStr(errStr.str()) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
   std::string errStr;
 
-  static bool classof(const Query *query) { return query->kind == QK_Invalid; }
+  static bool classof(const Query *query) {
+    return query->kind == QueryKind::Invalid;
+  }
 };
 
 // No-op query (i.e. a blank line).
 struct NoOpQuery : Query {
-  NoOpQuery() : Query(QK_NoOp) {}
+  NoOpQuery() : Query(QueryKind::NoOp) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  static bool classof(const Query *query) { return query->kind == QK_NoOp; }
+  static bool classof(const Query *query) {
+    return query->kind == QueryKind::NoOp;
+  }
 };
 
 // Query for "help".
 struct HelpQuery : Query {
-  HelpQuery() : Query(QK_Help) {}
+  HelpQuery() : Query(QueryKind::Help) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
-  static bool classof(const Query *query) { return query->kind == QK_Help; }
+  static bool classof(const Query *query) {
+    return query->kind == QueryKind::Help;
+  }
 };
 
 // Query for "match MATCHER".
 struct MatchQuery : Query {
   MatchQuery(StringRef source, const matcher::DynMatcher &matcher)
-      : Query(QK_Match), matcher(matcher), source(source) {}
+      : Query(QueryKind::Match), matcher(matcher), source(source) {}
   bool run(llvm::raw_ostream &OS, QuerySession &QS) const override;
 
   const matcher::DynMatcher matcher;
 
   StringRef source;
 
-  static bool classof(const Query *query) { return query->kind == QK_Match; }
+  static bool classof(const Query *query) {
+    return query->kind == QueryKind::Match;
+  }
 };
 
 } // namespace mlir::query
