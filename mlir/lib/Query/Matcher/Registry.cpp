@@ -29,6 +29,17 @@ using IsConstantOp = detail::constant_op_matcher();
 using HasOpAttrName = detail::AttrOpMatcher(StringRef);
 using HasOpName = detail::NameOpMatcher(StringRef);
 
+// Enum to string for autocomplete.
+static std::string asArgString(ArgKind kind) {
+  switch (kind) {
+  case ArgKind::Matcher:
+    return "Matcher";
+  case ArgKind::String:
+    return "String";
+  }
+  llvm_unreachable("Unhandled ArgKind");
+}
+
 class RegistryMaps {
 public:
   RegistryMaps();
@@ -90,7 +101,7 @@ std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
   // Starting with the above seed of acceptable top-level matcher types, compute
   // the acceptable type set for the argument indicated by each context element.
   std::set<ArgKind> typeSet;
-  typeSet.insert(ArgKind(ArgKind::AK_Matcher));
+  typeSet.insert(ArgKind::Matcher);
 
   for (const auto &ctxEntry : context) {
     MatcherCtor ctor = ctxEntry.first;
@@ -119,7 +130,7 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
     std::vector<std::vector<ArgKind>> argKinds(numArgs);
 
     for (const ArgKind &kind : acceptedTypes) {
-      if (kind.getArgKind() != kind.AK_Matcher)
+      if (kind != ArgKind::Matcher)
         continue;
 
       for (unsigned arg = 0; arg != numArgs; ++arg)
@@ -143,7 +154,7 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
           OS << "|";
 
         firstArgKind = false;
-        OS << argKind.asString();
+        OS << asArgString(argKind);
       }
     }
 
@@ -152,7 +163,7 @@ Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
 
     if (argKinds.empty())
       typedText += ")";
-    else if (argKinds[0][0].getArgKind() == ArgKind::AK_String)
+    else if (argKinds[0][0] == ArgKind::String)
       typedText += "\"";
 
     completions.emplace_back(typedText, OS.str());

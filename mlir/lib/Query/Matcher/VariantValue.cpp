@@ -13,16 +13,6 @@
 
 namespace mlir::query::matcher {
 
-std::string ArgKind::asString() const {
-  switch (getArgKind()) {
-  case AK_String:
-    return "String";
-  case AK_Matcher:
-    return "Matcher";
-  }
-  llvm_unreachable("Unhandled ArgKind");
-}
-
 VariantMatcher::Payload::~Payload() = default;
 
 class VariantMatcher::SinglePayload : public VariantMatcher::Payload {
