@@ -19,21 +19,6 @@ namespace mlir::query::matcher::internal {
 
 // Simple structure to hold information for one token from the parser.
 struct Parser::TokenInfo {
-  // Different possible tokens.
-  enum TokenKind {
-    TK_Eof,
-    TK_NewLine,
-    TK_OpenParen,
-    TK_CloseParen,
-    TK_Comma,
-    TK_Period,
-    TK_Literal,
-    TK_Ident,
-    TK_InvalidChar,
-    TK_CodeCompletion,
-    TK_Error
-  };
-
   TokenInfo() = default;
 
   // Method to set the kind and text of the token
@@ -43,7 +28,7 @@ struct Parser::TokenInfo {
   }
 
   llvm::StringRef text;
-  TokenKind kind = TK_Eof;
+  TokenKind kind = TokenKind::Eof;
   SourceRange range;
   VariantValue value;
 };
@@ -76,7 +61,7 @@ public:
 
   // Skip any newline tokens
   TokenInfo skipNewlines() {
-    while (nextToken.kind == TokenInfo::TK_NewLine)
+    while (nextToken.kind == TokenKind::NewLine)
       nextToken = getNextToken();
     return nextToken;
   }
@@ -84,11 +69,11 @@ public:
   // Consume and return next token, ignoring newlines
   TokenInfo consumeNextTokenIgnoreNewlines() {
     skipNewlines();
-    return nextToken.kind == TokenInfo::TK_Eof ? nextToken : consumeNextToken();
+    return nextToken.kind == TokenKind::Eof ? nextToken : consumeNextToken();
   }
 
   // Return kind of next token
-  TokenInfo::TokenKind nextTokenKind() const { return nextToken.kind; }
+  TokenKind nextTokenKind() const { return nextToken.kind; }
 
 private:
   // Helper function to get the first character as a new StringRef and drop it
@@ -108,7 +93,7 @@ private:
 
     // Code completion case
     if (codeCompletionLocation && codeCompletionLocation <= code.data()) {
-      result.set(TokenInfo::TK_CodeCompletion,
+      result.set(TokenKind::CodeCompletion,
                  llvm::StringRef(codeCompletionLocation, 0));
       codeCompletionLocation = nullptr;
       return result;
@@ -116,7 +101,7 @@ private:
 
     // End of file case
     if (code.empty()) {
-      result.set(TokenInfo::TK_Eof, "");
+      result.set(TokenKind::Eof, "");
       return result;
     }
 
@@ -126,21 +111,21 @@ private:
       code = code.drop_until([](char c) { return c == '\n'; });
       return getNextToken();
     case ',':
-      result.set(TokenInfo::TK_Comma, firstCharacterAndDrop(code));
+      result.set(TokenKind::Comma, firstCharacterAndDrop(code));
       break;
     case '.':
-      result.set(TokenInfo::TK_Period, firstCharacterAndDrop(code));
+      result.set(TokenKind::Period, firstCharacterAndDrop(code));
       break;
     case '\n':
       ++line;
       startOfLine = code.drop_front();
-      result.set(TokenInfo::TK_NewLine, firstCharacterAndDrop(code));
+      result.set(TokenKind::NewLine, firstCharacterAndDrop(code));
       break;
     case '(':
-      result.set(TokenInfo::TK_OpenParen, firstCharacterAndDrop(code));
+      result.set(TokenKind::OpenParen, firstCharacterAndDrop(code));
       break;
     case ')':
-      result.set(TokenInfo::TK_CloseParen, firstCharacterAndDrop(code));
+      result.set(TokenKind::CloseParen, firstCharacterAndDrop(code));
       break;
     case '"':
     case '\'':
@@ -170,7 +155,7 @@ private:
         continue;
       }
       if (code[length] == marker) {
-        result->kind = TokenInfo::TK_Literal;
+        result->kind = TokenKind::Literal;
         result->text = code.substr(0, length + 1);
         result->value = code.substr(1, length - 1);
         code = code.drop_front(length + 1);
@@ -184,7 +169,7 @@ private:
     range.end = currentLocation();
     error->addError(range, Diagnostics::ErrorType::ParserStringError)
         << errorText;
-    result->kind = TokenInfo::TK_Error;
+    result->kind = TokenKind::Error;
   }
 
   void parseIdentifierOrInvalid(TokenInfo *result) {
@@ -198,7 +183,7 @@ private:
         // location to become a code completion token.
         if (codeCompletionLocation == code.data() + tokenLength) {
           codeCompletionLocation = nullptr;
-          result->kind = TokenInfo::TK_CodeCompletion;
+          result->kind = TokenKind::CodeCompletion;
           result->text = code.substr(0, tokenLength);
           code = code.drop_front(tokenLength);
           return;
@@ -207,11 +192,11 @@ private:
           break;
         ++tokenLength;
       }
-      result->kind = TokenInfo::TK_Ident;
+      result->kind = TokenKind::Ident;
       result->text = code.substr(0, tokenLength);
       code = code.drop_front(tokenLength);
     } else {
-      result->kind = TokenInfo::TK_InvalidChar;
+      result->kind = TokenKind::InvalidChar;
       result->text = code.substr(0, 1);
       code = code.drop_front(1);
     }
@@ -270,7 +255,7 @@ struct Parser::ScopedContextEntry {
 bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
   const TokenInfo nameToken = tokenizer->consumeNextToken();
 
-  if (tokenizer->nextTokenKind() != TokenInfo::TK_OpenParen) {
+  if (tokenizer->nextTokenKind() != TokenKind::OpenParen) {
     // Parse as a named value.
     auto namedValue =
         namedValues ? namedValues->lookup(nameToken.text) : VariantValue();
@@ -281,7 +266,7 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
       return false;
     }
 
-    if (tokenizer->nextTokenKind() == TokenInfo::TK_NewLine) {
+    if (tokenizer->nextTokenKind() == TokenKind::NewLine) {
       error->addError(tokenizer->peekNextToken().range,
                       Diagnostics::ErrorType::ParserNoOpenParen)
           << "NewLine";
@@ -290,10 +275,10 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
 
     // If the syntax is correct and the name is not a matcher either, report
     // an unknown named value.
-    if ((tokenizer->nextTokenKind() == TokenInfo::TK_Comma ||
-         tokenizer->nextTokenKind() == TokenInfo::TK_CloseParen ||
-         tokenizer->nextTokenKind() == TokenInfo::TK_NewLine ||
-         tokenizer->nextTokenKind() == TokenInfo::TK_Eof) &&
+    if ((tokenizer->nextTokenKind() == TokenKind::Comma ||
+         tokenizer->nextTokenKind() == TokenKind::CloseParen ||
+         tokenizer->nextTokenKind() == TokenKind::NewLine ||
+         tokenizer->nextTokenKind() == TokenKind::Eof) &&
         !sema->lookupMatcherCtor(nameToken.text)) {
       error->addError(nameToken.range,
                       Diagnostics::ErrorType::RegistryValueNotFound)
@@ -305,9 +290,9 @@ bool Parser::parseIdentifierPrefixImpl(VariantValue *value) {
 
   tokenizer->skipNewlines();
 
-  assert(nameToken.kind == TokenInfo::TK_Ident);
+  assert(nameToken.kind == TokenKind::Ident);
   TokenInfo openToken = tokenizer->consumeNextToken();
-  if (openToken.kind != TokenInfo::TK_OpenParen) {
+  if (openToken.kind != TokenKind::OpenParen) {
     error->addError(openToken.range, Diagnostics::ErrorType::ParserNoOpenParen)
         << openToken.text;
     return false;
@@ -324,8 +309,8 @@ bool Parser::parseMatcherArgs(std::vector<ParserValue> &args, MatcherCtor ctor,
                               const TokenInfo &nameToken, TokenInfo &endToken) {
   ScopedContextEntry sce(this, ctor);
 
-  while (tokenizer->nextTokenKind() != TokenInfo::TK_Eof) {
-    if (tokenizer->nextTokenKind() == TokenInfo::TK_CloseParen) {
+  while (tokenizer->nextTokenKind() != TokenKind::Eof) {
+    if (tokenizer->nextTokenKind() == TokenKind::CloseParen) {
       // end of args.
       endToken = tokenizer->consumeNextToken();
       break;
@@ -334,7 +319,7 @@ bool Parser::parseMatcherArgs(std::vector<ParserValue> &args, MatcherCtor ctor,
     if (!args.empty()) {
       // We must find a , token to continue.
       TokenInfo commaToken = tokenizer->consumeNextToken();
-      if (commaToken.kind != TokenInfo::TK_Comma) {
+      if (commaToken.kind != TokenKind::Comma) {
         error->addError(commaToken.range, Diagnostics::ErrorType::ParserNoComma)
             << commaToken.text;
         return false;
@@ -380,7 +365,7 @@ bool Parser::parseMatcherExpressionImpl(const TokenInfo &nameToken,
   }
 
   // Check for the missing closing parenthesis
-  if (endToken.kind != TokenInfo::TK_CloseParen) {
+  if (endToken.kind != TokenKind::CloseParen) {
     error->addError(openToken.range, Diagnostics::ErrorType::ParserNoCloseParen)
         << nameToken.text;
     return false;
@@ -425,7 +410,7 @@ Parser::getNamedValueCompletions(ArrayRef<ArgKind> acceptedTypes) {
 
 void Parser::addExpressionCompletions() {
   const TokenInfo compToken = tokenizer->consumeNextTokenIgnoreNewlines();
-  assert(compToken.kind == TokenInfo::TK_CodeCompletion);
+  assert(compToken.kind == TokenKind::CodeCompletion);
 
   // We cannot complete code if there is an invalid element on the context
   // stack.
@@ -447,31 +432,31 @@ void Parser::addExpressionCompletions() {
 // Parse an <Expresssion>
 bool Parser::parseExpressionImpl(VariantValue *value) {
   switch (tokenizer->nextTokenKind()) {
-  case TokenInfo::TK_Literal:
+  case TokenKind::Literal:
     *value = tokenizer->consumeNextToken().value;
     return true;
-  case TokenInfo::TK_Ident:
+  case TokenKind::Ident:
     return parseIdentifierPrefixImpl(value);
-  case TokenInfo::TK_CodeCompletion:
+  case TokenKind::CodeCompletion:
     addExpressionCompletions();
     return false;
-  case TokenInfo::TK_Eof:
+  case TokenKind::Eof:
     error->addError(tokenizer->consumeNextToken().range,
                     Diagnostics::ErrorType::ParserNoCode);
     return false;
 
-  case TokenInfo::TK_Error:
+  case TokenKind::Error:
     // This error was already reported by the tokenizer.
     return false;
-  case TokenInfo::TK_NewLine:
-  case TokenInfo::TK_OpenParen:
-  case TokenInfo::TK_CloseParen:
-  case TokenInfo::TK_Comma:
-  case TokenInfo::TK_Period:
-  case TokenInfo::TK_InvalidChar:
+  case TokenKind::NewLine:
+  case TokenKind::OpenParen:
+  case TokenKind::CloseParen:
+  case TokenKind::Comma:
+  case TokenKind::Period:
+  case TokenKind::InvalidChar:
     const TokenInfo token = tokenizer->consumeNextToken();
     error->addError(token.range, Diagnostics::ErrorType::ParserInvalidToken)
-        << (token.kind == TokenInfo::TK_NewLine ? "NewLine" : token.text);
+        << (token.kind == TokenKind::NewLine ? "NewLine" : token.text);
     return false;
   }
 
@@ -516,8 +501,8 @@ bool Parser::parseExpression(llvm::StringRef &code, Sema *sema,
   if (!parser.parseExpressionImpl(value))
     return false;
   auto nextToken = tokenizer.peekNextToken();
-  if (nextToken.kind != TokenInfo::TK_Eof &&
-      nextToken.kind != TokenInfo::TK_NewLine) {
+  if (nextToken.kind != TokenKind::Eof &&
+      nextToken.kind != TokenKind::NewLine) {
     error->addError(tokenizer.peekNextToken().range,
                     Diagnostics::ErrorType::ParserTrailingCode);
     return false;

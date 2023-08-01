@@ -51,15 +51,17 @@ void VariantMatcher::reset() { value.reset(); }
 
 std::string VariantMatcher::getTypeAsString() const { return "<Nothing>"; }
 
-VariantValue::VariantValue(const VariantValue &other) : type(VT_Nothing) {
+VariantValue::VariantValue(const VariantValue &other)
+    : type(ValueType::Nothing) {
   *this = other;
 }
 
-VariantValue::VariantValue(const StringRef string) : type(VT_String) {
+VariantValue::VariantValue(const StringRef string) : type(ValueType::String) {
   value.String = new StringRef(string);
 }
 
-VariantValue::VariantValue(const VariantMatcher &matcher) : type(VT_Matcher) {
+VariantValue::VariantValue(const VariantMatcher &matcher)
+    : type(ValueType::Matcher) {
   value.Matcher = new VariantMatcher(matcher);
 }
 
@@ -70,14 +72,14 @@ VariantValue &VariantValue::operator=(const VariantValue &other) {
     return *this;
   reset();
   switch (other.type) {
-  case VT_String:
+  case ValueType::String:
     setString(other.getString());
     break;
-  case VT_Matcher:
+  case ValueType::Matcher:
     setMatcher(other.getMatcher());
     break;
-  case VT_Nothing:
-    type = VT_Nothing;
+  case ValueType::Nothing:
+    type = ValueType::Nothing;
     break;
   }
   return *this;
@@ -85,20 +87,20 @@ VariantValue &VariantValue::operator=(const VariantValue &other) {
 
 void VariantValue::reset() {
   switch (type) {
-  case VT_String:
+  case ValueType::String:
     delete value.String;
     break;
-  case VT_Matcher:
+  case ValueType::Matcher:
     delete value.Matcher;
     break;
   // Cases that do nothing.
-  case VT_Nothing:
+  case ValueType::Nothing:
     break;
   }
-  type = VT_Nothing;
+  type = ValueType::Nothing;
 }
 
-bool VariantValue::isString() const { return type == VT_String; }
+bool VariantValue::isString() const { return type == ValueType::String; }
 
 const StringRef &VariantValue::getString() const {
   assert(isString());
@@ -107,11 +109,11 @@ const StringRef &VariantValue::getString() const {
 
 void VariantValue::setString(const StringRef &newValue) {
   reset();
-  type = VT_String;
+  type = ValueType::String;
   value.String = new StringRef(newValue);
 }
 
-bool VariantValue::isMatcher() const { return type == VT_Matcher; }
+bool VariantValue::isMatcher() const { return type == ValueType::Matcher; }
 
 const VariantMatcher &VariantValue::getMatcher() const {
   assert(isMatcher());
@@ -120,17 +122,17 @@ const VariantMatcher &VariantValue::getMatcher() const {
 
 void VariantValue::setMatcher(const VariantMatcher &newValue) {
   reset();
-  type = VT_Matcher;
+  type = ValueType::Matcher;
   value.Matcher = new VariantMatcher(newValue);
 }
 
 std::string VariantValue::getTypeAsString() const {
   switch (type) {
-  case VT_String:
+  case ValueType::String:
     return "String";
-  case VT_Matcher:
+  case ValueType::Matcher:
     return "Matcher";
-  case VT_Nothing:
+  case ValueType::Nothing:
     return "Nothing";
   }
   llvm_unreachable("Invalid Type");
