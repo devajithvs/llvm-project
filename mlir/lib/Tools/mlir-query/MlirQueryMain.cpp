@@ -71,6 +71,7 @@ mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context,
   std::string errorMessage;
   auto file = openInputFile(inputFilename, &errorMessage);
   if (!file) {
+    llvm::errs() << errorMessage << "\n";
     return failure();
   }
 
