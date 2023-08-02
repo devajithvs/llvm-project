@@ -10,6 +10,7 @@
 #define MLIR_TOOLS_MLIRQUERY_QUERYSESSION_H
 
 #include "Query.h"
+#include "mlir/Query/Matcher/Registry.h"
 #include "mlir/Tools/ParseUtilities.h"
 #include "llvm/ADT/StringMap.h"
 
@@ -20,9 +21,10 @@ class QuerySession {
 public:
   QuerySession(Operation *rootOp,
                const std::shared_ptr<llvm::SourceMgr> &sourceMgr,
-               unsigned bufferId)
+               unsigned bufferId,
+               const mlir::query::matcher::RegistryMaps &registryData)
       : rootOp(rootOp), sourceMgr(sourceMgr), bufferId(bufferId),
-        terminate(false) {}
+        registryData(registryData), terminate(false) {}
 
   const std::shared_ptr<llvm::SourceMgr> &getSourceManager() {
     return sourceMgr;
@@ -31,6 +33,7 @@ public:
   Operation *rootOp;
   const std::shared_ptr<llvm::SourceMgr> sourceMgr;
   unsigned bufferId;
+  const mlir::query::matcher::RegistryMaps &registryData;
   bool terminate;
   llvm::StringMap<matcher::VariantValue> namedValues;
 };
