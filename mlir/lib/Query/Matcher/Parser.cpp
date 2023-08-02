@@ -463,18 +463,16 @@ bool Parser::parseExpressionImpl(VariantValue *value) {
   llvm_unreachable("Unknown token kind.");
 }
 
-static llvm::ManagedStatic<Parser::RegistrySema> defaultRegistrySema;
-
-Parser::Parser(CodeTokenizer *tokenizer, Sema *sema,
+Parser::Parser(CodeTokenizer *tokenizer, const RegistryMaps &registryData,
                const NamedValueMap *namedValues, Diagnostics *error)
-    : tokenizer(tokenizer), sema(sema ? sema : &*defaultRegistrySema),
+    : tokenizer(tokenizer), sema(std::make_unique<RegistrySema>(registryData)),
       namedValues(namedValues), error(error) {}
 
 Parser::RegistrySema::~RegistrySema() = default;
 
 std::optional<MatcherCtor>
 Parser::RegistrySema::lookupMatcherCtor(llvm::StringRef matcherName) {
-  return Registry::lookupMatcherCtor(matcherName);
+  return Registry::lookupMatcherCtor(matcherName, registryData);
 }
 
 VariantMatcher Parser::RegistrySema::actOnMatcherExpression(
@@ -490,14 +488,15 @@ std::vector<ArgKind> Parser::RegistrySema::getAcceptedCompletionTypes(
 
 std::vector<MatcherCompletion>
 Parser::RegistrySema::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
-  return Registry::getMatcherCompletions(acceptedTypes);
+  return Registry::getMatcherCompletions(acceptedTypes, registryData);
 }
 
-bool Parser::parseExpression(llvm::StringRef &code, Sema *sema,
+bool Parser::parseExpression(llvm::StringRef &code,
+                             const RegistryMaps &registryData,
                              const NamedValueMap *namedValues,
                              VariantValue *value, Diagnostics *error) {
   CodeTokenizer tokenizer(code, error);
-  Parser parser(&tokenizer, sema, namedValues, error);
+  Parser parser(&tokenizer, registryData, namedValues, error);
   if (!parser.parseExpressionImpl(value))
     return false;
   auto nextToken = tokenizer.peekNextToken();
@@ -512,22 +511,22 @@ bool Parser::parseExpression(llvm::StringRef &code, Sema *sema,
 
 std::vector<MatcherCompletion>
 Parser::completeExpression(llvm::StringRef &code, unsigned completionOffset,
-                           Sema *sema, const NamedValueMap *namedValues) {
+                           const RegistryMaps &registryData,
+                           const NamedValueMap *namedValues) {
   Diagnostics error;
   CodeTokenizer tokenizer(code, &error, completionOffset);
-  Parser parser(&tokenizer, sema, namedValues, &error);
+  Parser parser(&tokenizer, registryData, namedValues, &error);
   VariantValue dummy;
   parser.parseExpressionImpl(&dummy);
 
   return parser.completions;
 }
 
-std::optional<DynMatcher>
-Parser::parseMatcherExpression(llvm::StringRef &code, Sema *sema,
-                               const NamedValueMap *namedValues,
-                               Diagnostics *error) {
+std::optional<DynMatcher> Parser::parseMatcherExpression(
+    llvm::StringRef &code, const RegistryMaps &registryData,
+    const NamedValueMap *namedValues, Diagnostics *error) {
   VariantValue value;
-  if (!parseExpression(code, sema, namedValues, &value, error))
+  if (!parseExpression(code, registryData, namedValues, &value, error))
     return std::nullopt;
   if (!value.isMatcher()) {
     error->addError(SourceRange(), Diagnostics::ErrorType::ParserNotAMatcher);

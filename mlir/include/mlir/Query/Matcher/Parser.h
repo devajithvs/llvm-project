@@ -84,6 +84,8 @@ public:
   // process tokens.
   class RegistrySema : public Parser::Sema {
   public:
+    RegistrySema(const RegistryMaps &registryData)
+        : registryData(registryData) {}
     ~RegistrySema() override;
 
     std::optional<MatcherCtor>
@@ -99,6 +101,9 @@ public:
 
     std::vector<MatcherCompletion>
     getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes) override;
+
+  private:
+    const RegistryMaps &registryData;
   };
 
   using NamedValueMap = llvm::StringMap<VariantValue>;
@@ -106,44 +111,36 @@ public:
   // Methods to parse a matcher expression and return a DynMatcher object,
   // transferring ownership to the caller.
   static std::optional<DynMatcher>
-  parseMatcherExpression(llvm::StringRef &matcherCode, Sema *sema,
+  parseMatcherExpression(llvm::StringRef &matcherCode,
+                         const RegistryMaps &registryData,
                          const NamedValueMap *namedValues, Diagnostics *error);
   static std::optional<DynMatcher>
-  parseMatcherExpression(llvm::StringRef &matcherCode, Sema *sema,
-                         Diagnostics *error) {
-    return parseMatcherExpression(matcherCode, sema, nullptr, error);
-  }
-  static std::optional<DynMatcher>
-  parseMatcherExpression(llvm::StringRef &matcherCode, Diagnostics *error) {
-    return parseMatcherExpression(matcherCode, nullptr, error);
+  parseMatcherExpression(llvm::StringRef &matcherCode,
+                         const RegistryMaps &registryData, Diagnostics *error) {
+    return parseMatcherExpression(matcherCode, registryData, nullptr, error);
   }
 
   // Methods to parse any expression supported by this parser.
-  static bool parseExpression(llvm::StringRef &code, Sema *sema,
+  static bool parseExpression(llvm::StringRef &code,
+                              const RegistryMaps &registryData,
                               const NamedValueMap *namedValues,
                               VariantValue *value, Diagnostics *error);
 
-  static bool parseExpression(llvm::StringRef &code, Sema *sema,
+  static bool parseExpression(llvm::StringRef &code,
+                              const RegistryMaps &registryData,
                               VariantValue *value, Diagnostics *error) {
-    return parseExpression(code, sema, nullptr, value, error);
-  }
-  static bool parseExpression(llvm::StringRef &code, VariantValue *value,
-                              Diagnostics *error) {
-    return parseExpression(code, nullptr, value, error);
+    return parseExpression(code, registryData, nullptr, value, error);
   }
 
   // Methods to complete an expression at a given offset.
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset,
-                     Sema *sema, const NamedValueMap *namedValues);
+                     const RegistryMaps &registryData,
+                     const NamedValueMap *namedValues);
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset,
-                     Sema *sema) {
-    return completeExpression(code, completionOffset, sema, nullptr);
-  }
-  static std::vector<MatcherCompletion>
-  completeExpression(llvm::StringRef &code, unsigned completionOffset) {
-    return completeExpression(code, completionOffset, nullptr);
+                     const RegistryMaps &registryData) {
+    return completeExpression(code, completionOffset, registryData, nullptr);
   }
 
 private:
@@ -151,8 +148,8 @@ private:
   struct ScopedContextEntry;
   struct TokenInfo;
 
-  Parser(CodeTokenizer *tokenizer, Sema *sema, const NamedValueMap *namedValues,
-         Diagnostics *error);
+  Parser(CodeTokenizer *tokenizer, const RegistryMaps &registryData,
+         const NamedValueMap *namedValues, Diagnostics *error);
 
   bool parseExpressionImpl(VariantValue *value);
 
@@ -174,7 +171,7 @@ private:
   getNamedValueCompletions(ArrayRef<ArgKind> acceptedTypes);
 
   CodeTokenizer *const tokenizer;
-  Sema *const sema;
+  std::unique_ptr<RegistrySema> sema;
   const NamedValueMap *const namedValues;
   Diagnostics *const error;
 

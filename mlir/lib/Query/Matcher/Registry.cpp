@@ -12,17 +12,11 @@
 
 #include "mlir/Query/Matcher/Registry.h"
 
-#include "mlir/IR/Matchers.h"
-#include "llvm/ADT/StringMap.h"
-#include "llvm/Support/ManagedStatic.h"
 #include <set>
 #include <utility>
 
 namespace mlir::query::matcher {
 namespace {
-
-using ConstructorMap =
-    llvm::StringMap<std::unique_ptr<const internal::MatcherDescriptor>>;
 
 // This is needed because these matchers are defined as overloaded functions.
 using IsConstantOp = detail::constant_op_matcher();
@@ -40,60 +34,21 @@ static std::string asArgString(ArgKind kind) {
   llvm_unreachable("Unhandled ArgKind");
 }
 
-class RegistryMaps {
-public:
-  RegistryMaps();
-  ~RegistryMaps();
-
-  const ConstructorMap &constructors() const { return constructorMap; }
-
-private:
-  void registerMatcher(llvm::StringRef matcherName,
-                       std::unique_ptr<internal::MatcherDescriptor> callback);
-
-  ConstructorMap constructorMap;
-};
-
 } // namespace
 
-void RegistryMaps::registerMatcher(
+void RegistryMaps::registerMatcherDescriptor(
     llvm::StringRef matcherName,
     std::unique_ptr<internal::MatcherDescriptor> callback) {
   assert(!constructorMap.contains(matcherName));
   constructorMap[matcherName] = std::move(callback);
 }
 
-// Generate a registry map with all the known matchers.
-RegistryMaps::RegistryMaps() {
-  auto registerOpMatcher = [&](const std::string &name, auto matcher) {
-    registerMatcher(name, internal::makeMatcherAutoMarshall(matcher, name));
-  };
-
-  // Register matchers using the template function (added in alphabetical order
-  // for consistency)
-  registerOpMatcher("hasOpAttrName", static_cast<HasOpAttrName *>(m_Attr));
-  registerOpMatcher("hasOpName", static_cast<HasOpName *>(m_Op));
-  registerOpMatcher("isConstantOp", static_cast<IsConstantOp *>(m_Constant));
-  registerOpMatcher("isNegInfFloat", m_NegInfFloat);
-  registerOpMatcher("isNegZeroFloat", m_NegZeroFloat);
-  registerOpMatcher("isNonZero", m_NonZero);
-  registerOpMatcher("isOne", m_One);
-  registerOpMatcher("isOneFloat", m_OneFloat);
-  registerOpMatcher("isPosInfFloat", m_PosInfFloat);
-  registerOpMatcher("isPosZeroFloat", m_PosZeroFloat);
-  registerOpMatcher("isZero", m_Zero);
-  registerOpMatcher("isZeroFloat", m_AnyZeroFloat);
-}
-
-RegistryMaps::~RegistryMaps() = default;
-
-static llvm::ManagedStatic<RegistryMaps> registryData;
-
 std::optional<MatcherCtor>
-Registry::lookupMatcherCtor(llvm::StringRef matcherName) {
-  auto it = registryData->constructors().find(matcherName);
-  return it == registryData->constructors().end() ? std::optional<MatcherCtor>()
-                                                  : it->second.get();
+Registry::lookupMatcherCtor(llvm::StringRef matcherName,
+                            const RegistryMaps &registryData) {
+  auto it = registryData.constructors().find(matcherName);
+  return it == registryData.constructors().end() ? std::optional<MatcherCtor>()
+                                                 : it->second.get();
 }
 
 std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
@@ -118,11 +73,12 @@ std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
 }
 
 std::vector<MatcherCompletion>
-Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes) {
+Registry::getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes,
+                                const RegistryMaps &registryData) {
   std::vector<MatcherCompletion> completions;
 
   // Search the registry for acceptable matchers.
-  for (const auto &m : registryData->constructors()) {
+  for (const auto &m : registryData.constructors()) {
     const internal::MatcherDescriptor &matcher = *m.getValue();
     StringRef name = m.getKey();
 

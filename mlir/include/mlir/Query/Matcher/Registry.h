@@ -19,12 +19,36 @@
 #include "Marshallers.h"
 #include "VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include <string>
 
 namespace mlir::query::matcher {
 
 using MatcherCtor = const internal::MatcherDescriptor *;
+using ConstructorMap =
+    llvm::StringMap<std::unique_ptr<const internal::MatcherDescriptor>>;
+
+class RegistryMaps {
+public:
+  RegistryMaps() = default;
+  ~RegistryMaps() = default;
+
+  const ConstructorMap &constructors() const { return constructorMap; }
+
+  template <typename MatcherType>
+  void registerMatcher(const std::string &name, MatcherType matcher) {
+    registerMatcherDescriptor(name,
+                              internal::makeMatcherAutoMarshall(matcher, name));
+  }
+
+private:
+  void registerMatcherDescriptor(
+      llvm::StringRef matcherName,
+      std::unique_ptr<internal::MatcherDescriptor> callback);
+
+  ConstructorMap constructorMap;
+};
 
 struct MatcherCompletion {
   MatcherCompletion() = default;
@@ -47,13 +71,15 @@ public:
   Registry() = delete;
 
   static std::optional<MatcherCtor>
-  lookupMatcherCtor(llvm::StringRef matcherName);
+  lookupMatcherCtor(llvm::StringRef matcherName,
+                    const RegistryMaps &registryData);
 
   static std::vector<ArgKind> getAcceptedCompletionTypes(
       llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context);
 
   static std::vector<MatcherCompletion>
-  getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes);
+  getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes,
+                        const RegistryMaps &registryData);
 
   static VariantMatcher constructMatcher(MatcherCtor ctor,
                                          internal::SourceRange nameRange,

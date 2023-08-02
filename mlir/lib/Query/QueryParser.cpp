@@ -134,7 +134,7 @@ makeInvalidQueryFromDiagnostics(const matcher::internal::Diagnostics &diag) {
 QueryRef QueryParser::completeMatcherExpression() {
   std::vector<matcher::MatcherCompletion> comps =
       matcher::internal::Parser::completeExpression(
-          line, completionPos - line.begin(), nullptr, &QS.namedValues);
+          line, completionPos - line.begin(), QS.registryData, &QS.namedValues);
   for (const auto &comp : comps) {
     completions.emplace_back(comp.typedText, comp.matcherDecl);
   }
@@ -175,7 +175,7 @@ QueryRef QueryParser::doParse() {
     auto origMatcherSource = matcherSource;
     std::optional<matcher::DynMatcher> matcher =
         matcher::internal::Parser::parseMatcherExpression(
-            matcherSource, nullptr, &QS.namedValues, &diag);
+            matcherSource, QS.registryData, &QS.namedValues, &diag);
     if (!matcher) {
       return makeInvalidQueryFromDiagnostics(diag);
     }
