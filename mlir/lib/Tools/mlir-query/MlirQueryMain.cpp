@@ -13,8 +13,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
-#include "mlir/IR/Matchers.h"
-#include "mlir/Query/Matcher/Registry.h"
 #include "mlir/Query/QueryParser.h"
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Support/LogicalResult.h"
@@ -28,8 +26,9 @@
 // Query Parser
 //===----------------------------------------------------------------------===//
 
-mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
-                                        MLIRContext &context) {
+mlir::LogicalResult
+mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context,
+                    const mlir::query::matcher::RegistryMaps &registryData) {
 
   // Override the default '-h' and use the default PrintHelpMessage() which
   // won't print options in categories.
@@ -85,29 +84,6 @@ mlir::LogicalResult mlir::mlirQueryMain(int argc, char **argv,
       parseSourceFileForTool(sourceMgr, &context, !noImplicitModule);
   if (!opRef)
     return failure();
-
-  mlir::query::matcher::RegistryMaps registryData;
-
-  // This is needed because these matchers are defined as overloaded functions.
-  using IsConstantOp = mlir::detail::constant_op_matcher();
-  using HasOpAttrName = mlir::detail::AttrOpMatcher(StringRef);
-  using HasOpName = mlir::detail::NameOpMatcher(StringRef);
-
-  // Matchers registered in alphabetical order for consistency:
-  registryData.registerMatcher("hasOpAttrName",
-                               static_cast<HasOpAttrName *>(m_Attr));
-  registryData.registerMatcher("hasOpName", static_cast<HasOpName *>(m_Op));
-  registryData.registerMatcher("isConstantOp",
-                               static_cast<IsConstantOp *>(m_Constant));
-  registryData.registerMatcher("isNegInfFloat", m_NegInfFloat);
-  registryData.registerMatcher("isNegZeroFloat", m_NegZeroFloat);
-  registryData.registerMatcher("isNonZero", m_NonZero);
-  registryData.registerMatcher("isOne", m_One);
-  registryData.registerMatcher("isOneFloat", m_OneFloat);
-  registryData.registerMatcher("isPosInfFloat", m_PosInfFloat);
-  registryData.registerMatcher("isPosZeroFloat", m_PosZeroFloat);
-  registryData.registerMatcher("isZero", m_Zero);
-  registryData.registerMatcher("isZeroFloat", m_AnyZeroFloat);
 
   mlir::query::QuerySession QS(opRef.get(), sourceMgr, bufferId, registryData);
   if (!commands.empty()) {

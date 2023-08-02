@@ -21,8 +21,7 @@ class QuerySession {
 public:
   QuerySession(Operation *rootOp,
                const std::shared_ptr<llvm::SourceMgr> &sourceMgr,
-               unsigned bufferId,
-               const mlir::query::matcher::RegistryMaps &registryData)
+               unsigned bufferId, const matcher::RegistryMaps &registryData)
       : rootOp(rootOp), sourceMgr(sourceMgr), bufferId(bufferId),
         registryData(registryData), terminate(false) {}
 
@@ -33,7 +32,7 @@ public:
   Operation *rootOp;
   const std::shared_ptr<llvm::SourceMgr> sourceMgr;
   unsigned bufferId;
-  const mlir::query::matcher::RegistryMaps &registryData;
+  const matcher::RegistryMaps &registryData;
   bool terminate;
   llvm::StringMap<matcher::VariantValue> namedValues;
 };
