@@ -19,22 +19,24 @@ namespace mlir::query {
 // Represents the state for a particular mlir-query session.
 class QuerySession {
 public:
-  QuerySession(Operation *rootOp,
-               const std::shared_ptr<llvm::SourceMgr> &sourceMgr,
-               unsigned bufferId, const matcher::RegistryMaps &registryData)
+  QuerySession(Operation *rootOp, llvm::SourceMgr &sourceMgr, unsigned bufferId,
+               const matcher::RegistryMaps &registryData)
       : rootOp(rootOp), sourceMgr(sourceMgr), bufferId(bufferId),
-        registryData(registryData), terminate(false) {}
+        registryData(registryData) {}
 
-  const std::shared_ptr<llvm::SourceMgr> &getSourceManager() {
-    return sourceMgr;
-  }
+  Operation *getRootOp() { return rootOp; }
+  llvm::SourceMgr &getSourceManager() const { return sourceMgr; }
+  unsigned getBufferId() { return bufferId; }
+  const matcher::RegistryMaps &getRegistryData() const { return registryData; }
 
+  llvm::StringMap<matcher::VariantValue> namedValues;
+  bool terminate = false;
+
+private:
   Operation *rootOp;
-  const std::shared_ptr<llvm::SourceMgr> sourceMgr;
+  llvm::SourceMgr &sourceMgr;
   unsigned bufferId;
   const matcher::RegistryMaps &registryData;
-  bool terminate;
-  llvm::StringMap<matcher::VariantValue> namedValues;
 };
 
 } // namespace mlir::query

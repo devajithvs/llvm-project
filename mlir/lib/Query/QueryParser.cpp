@@ -120,6 +120,7 @@ enum class ParsedQueryKind {
   NoOp,
   Help,
   Match,
+  Quit,
 };
 
 QueryRef
@@ -134,7 +135,8 @@ makeInvalidQueryFromDiagnostics(const matcher::internal::Diagnostics &diag) {
 QueryRef QueryParser::completeMatcherExpression() {
   std::vector<matcher::MatcherCompletion> comps =
       matcher::internal::Parser::completeExpression(
-          line, completionPos - line.begin(), qs.registryData, &qs.namedValues);
+          line, completionPos - line.begin(), qs.getRegistryData(),
+          &qs.namedValues);
   for (const auto &comp : comps) {
     completions.emplace_back(comp.typedText, comp.matcherDecl);
   }
@@ -151,6 +153,8 @@ QueryRef QueryParser::doParse() {
           .Case("help", ParsedQueryKind::Help)
           .Case("m", ParsedQueryKind::Match, /*isCompletion=*/false)
           .Case("match", ParsedQueryKind::Match)
+          .Case("q", ParsedQueryKind::Quit, /*IsCompletion=*/false)
+          .Case("quit", ParsedQueryKind::Quit)
           .Default(ParsedQueryKind::Invalid);
 
   switch (qKind) {
@@ -165,6 +169,9 @@ QueryRef QueryParser::doParse() {
   case ParsedQueryKind::Help:
     return endQuery(new HelpQuery);
 
+  case ParsedQueryKind::Quit:
+    return endQuery(new QuitQuery);
+
   case ParsedQueryKind::Match: {
     if (completionPos) {
       return completeMatcherExpression();
@@ -175,7 +182,7 @@ QueryRef QueryParser::doParse() {
     auto origMatcherSource = matcherSource;
     std::optional<matcher::DynMatcher> matcher =
         matcher::internal::Parser::parseMatcherExpression(
-            matcherSource, qs.registryData, &qs.namedValues, &diag);
+            matcherSource, qs.getRegistryData(), &qs.namedValues, &diag);
     if (!matcher) {
       return makeInvalidQueryFromDiagnostics(diag);
     }

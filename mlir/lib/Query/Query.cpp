@@ -18,10 +18,10 @@ namespace mlir::query {
 static void printMatch(llvm::raw_ostream &os, QuerySession &qs, Operation *op,
                        const std::string &binding) {
   auto fileLoc = op->getLoc()->findInstanceOf<FileLineColLoc>();
-  auto smloc = qs.sourceMgr->FindLocForLineAndColumn(
-      qs.bufferId, fileLoc.getLine(), fileLoc.getColumn());
-  qs.sourceMgr->PrintMessage(os, smloc, llvm::SourceMgr::DK_Note,
-                             "\"" + binding + "\" binds here");
+  auto smloc = qs.getSourceManager().FindLocForLineAndColumn(
+      qs.getBufferId(), fileLoc.getLine(), fileLoc.getColumn());
+  qs.getSourceManager().PrintMessage(os, smloc, llvm::SourceMgr::DK_Note,
+                                     "\"" + binding + "\" binds here");
 }
 
 Query::~Query() = default;
@@ -41,7 +41,15 @@ mlir::LogicalResult HelpQuery::run(llvm::raw_ostream &os,
                                    QuerySession &qs) const {
   os << "Available commands:\n\n"
         "  match MATCHER, m MATCHER      "
-        "Match the mlir against the given matcher.\n\n";
+        "Match the mlir against the given matcher.\n"
+        "  quit                              "
+        "Terminates the query session.\n\n";
+  return mlir::success();
+}
+
+mlir::LogicalResult QuitQuery::run(llvm::raw_ostream &os,
+                                   QuerySession &qs) const {
+  qs.terminate = true;
   return mlir::success();
 }
 
@@ -49,7 +57,7 @@ mlir::LogicalResult MatchQuery::run(llvm::raw_ostream &os,
                                     QuerySession &qs) const {
   int matchCount = 0;
   std::vector<Operation *> matches =
-      matcher::MatchFinder().getMatches(qs.rootOp, matcher);
+      matcher::MatchFinder().getMatches(qs.getRootOp(), matcher);
   os << "\n";
   for (Operation *op : matches) {
     os << "Match #" << ++matchCount << ":\n\n";

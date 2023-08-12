@@ -18,7 +18,7 @@
 
 namespace mlir::query {
 
-enum class QueryKind { Invalid, NoOp, Help, Match };
+enum class QueryKind { Invalid, NoOp, Help, Match, Quit };
 
 class QuerySession;
 
@@ -69,6 +69,17 @@ struct HelpQuery : Query {
 
   static bool classof(const Query *query) {
     return query->kind == QueryKind::Help;
+  }
+};
+
+// Query for "quit".
+struct QuitQuery : Query {
+  QuitQuery() : Query(QueryKind::Quit) {}
+  mlir::LogicalResult run(llvm::raw_ostream &os,
+                          QuerySession &qs) const override;
+
+  static bool classof(const Query *query) {
+    return query->kind == QueryKind::Quit;
   }
 };
 

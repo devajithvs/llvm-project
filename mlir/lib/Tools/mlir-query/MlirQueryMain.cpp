@@ -13,10 +13,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/Parser/Parser.h"
 #include "mlir/Query/QueryParser.h"
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Support/LogicalResult.h"
-#include "mlir/Tools/ParseUtilities.h"
 #include "llvm/LineEditor/LineEditor.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
@@ -75,14 +76,15 @@ mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context,
     return mlir::failure();
   }
 
-  auto sourceMgr = std::make_shared<llvm::SourceMgr>();
-  auto bufferId = sourceMgr->AddNewSourceBuffer(std::move(file), SMLoc());
+  auto sourceMgr = llvm::SourceMgr();
+  auto bufferId = sourceMgr.AddNewSourceBuffer(std::move(file), SMLoc());
 
   context.allowUnregisteredDialects(allowUnregisteredDialects);
 
   // Parse the input MLIR file.
   OwningOpRef<Operation *> opRef =
-      parseSourceFileForTool(sourceMgr, &context, !noImplicitModule);
+      noImplicitModule ? parseSourceFile(sourceMgr, &context)
+                       : parseSourceFile<mlir::ModuleOp>(sourceMgr, &context);
   if (!opRef)
     return mlir::failure();
 
