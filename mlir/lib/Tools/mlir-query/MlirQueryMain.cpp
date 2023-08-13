@@ -15,7 +15,8 @@
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Parser/Parser.h"
-#include "mlir/Query/QueryParser.h"
+#include "mlir/Query/Query.h"
+#include "mlir/Query/QuerySession.h"
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/LineEditor/LineEditor.h"
@@ -91,19 +92,17 @@ mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context,
   mlir::query::QuerySession qs(opRef.get(), sourceMgr, bufferId, registryData);
   if (!commands.empty()) {
     for (auto &command : commands) {
-      mlir::query::QueryRef queryRef =
-          mlir::query::QueryParser::parse(command, qs);
+      mlir::query::QueryRef queryRef = mlir::query::parse(command, qs);
       if (mlir::failed(queryRef->run(llvm::outs(), qs)))
         return mlir::failure();
     }
   } else {
     llvm::LineEditor le("mlir-query");
     le.setListCompleter([&qs](llvm::StringRef line, size_t pos) {
-      return mlir::query::QueryParser::complete(line, pos, qs);
+      return mlir::query::complete(line, pos, qs);
     });
     while (std::optional<std::string> line = le.readLine()) {
-      mlir::query::QueryRef queryRef =
-          mlir::query::QueryParser::parse(*line, qs);
+      mlir::query::QueryRef queryRef = mlir::query::parse(*line, qs);
       (void)queryRef->run(llvm::outs(), qs);
       llvm::outs().flush();
       if (qs.terminate)

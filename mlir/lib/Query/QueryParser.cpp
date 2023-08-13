@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Query/QueryParser.h"
+#include "QueryParser.h"
 #include "llvm/ADT/StringSwitch.h"
 
 namespace mlir::query {

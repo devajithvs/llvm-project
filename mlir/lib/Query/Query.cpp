@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/Query/Query.h"
+#include "QueryParser.h"
 #include "mlir/Query/Matcher/MatchFinder.h"
 #include "mlir/Query/QuerySession.h"
 #include "mlir/Support/LogicalResult.h"
@@ -14,6 +15,15 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace mlir::query {
+
+QueryRef parse(llvm::StringRef line, const QuerySession &qs) {
+  return QueryParser::parse(line, qs);
+}
+
+std::vector<llvm::LineEditor::Completion>
+complete(llvm::StringRef line, size_t pos, const QuerySession &qs) {
+  return QueryParser::complete(line, pos, qs);
+}
 
 static void printMatch(llvm::raw_ostream &os, QuerySession &qs, Operation *op,
                        const std::string &binding) {

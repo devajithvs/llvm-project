@@ -9,9 +9,9 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERYPARSER_H
 #define MLIR_TOOLS_MLIRQUERY_QUERYPARSER_H
 
-#include "Matcher/Parser.h"
-#include "Query.h"
-#include "QuerySession.h"
+#include "mlir/Query/Matcher/Parser.h"
+#include "mlir/Query/Query.h"
+#include "mlir/Query/QuerySession.h"
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/LineEditor/LineEditor.h"

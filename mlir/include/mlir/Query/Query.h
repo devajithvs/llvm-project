@@ -14,6 +14,7 @@
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/LineEditor/LineEditor.h"
 #include <string>
 
 namespace mlir::query {
@@ -35,6 +36,11 @@ struct Query : llvm::RefCountedBase<Query> {
 };
 
 typedef llvm::IntrusiveRefCntPtr<Query> QueryRef;
+
+QueryRef parse(llvm::StringRef line, const QuerySession &qs);
+
+std::vector<llvm::LineEditor::Completion>
+complete(llvm::StringRef line, size_t pos, const QuerySession &qs);
 
 // Any query which resulted in a parse error. The error message is in ErrStr.
 struct InvalidQuery : Query {
