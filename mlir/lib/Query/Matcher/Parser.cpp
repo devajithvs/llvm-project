@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Query/Matcher/Parser.h"
+#include "Parser.h"
 
 #include <vector>
 
