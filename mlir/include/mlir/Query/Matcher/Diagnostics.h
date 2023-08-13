@@ -14,6 +14,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_DIAGNOSTICS_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_DIAGNOSTICS_H
 
+#include "SourceLocation.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -22,18 +23,6 @@
 #include <vector>
 
 namespace mlir::query::matcher::internal {
-
-// Represents the line and column numbers in a source query.
-struct SourceLocation {
-  unsigned line{};
-  unsigned column{};
-};
-
-// Represents a range in a source query, defined by its start and end locations.
-struct SourceRange {
-  SourceLocation start{};
-  SourceLocation end{};
-};
 
 // Diagnostics class to manage error messages.
 class Diagnostics {

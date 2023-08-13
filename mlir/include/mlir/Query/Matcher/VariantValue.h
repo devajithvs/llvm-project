@@ -14,9 +14,9 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_VARIANTVALUE_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_VARIANTVALUE_H
 
-#include "Diagnostics.h"
 #include "MatchersInternal.h"
 #include "llvm/ADT/StringRef.h"
+#include "SourceLocation.h"
 
 namespace mlir::query::matcher {
 
