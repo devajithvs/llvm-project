@@ -30,7 +30,7 @@
 
 mlir::LogicalResult
 mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context,
-                    const mlir::query::matcher::RegistryMaps &registryData) {
+                    const mlir::query::matcher::Registry &matcherRegistry) {
 
   // Override the default '-h' and use the default PrintHelpMessage() which
   // won't print options in categories.
@@ -89,7 +89,8 @@ mlir::mlirQueryMain(int argc, char **argv, MLIRContext &context,
   if (!opRef)
     return mlir::failure();
 
-  mlir::query::QuerySession qs(opRef.get(), sourceMgr, bufferId, registryData);
+  mlir::query::QuerySession qs(opRef.get(), sourceMgr, bufferId,
+                               matcherRegistry);
   if (!commands.empty()) {
     for (auto &command : commands) {
       mlir::query::QueryRef queryRef = mlir::query::parse(command, qs);

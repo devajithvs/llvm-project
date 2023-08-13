@@ -1,6 +1,6 @@
 add_mlir_library(MLIRQueryMatcher
   Parser.cpp
-  Registry.cpp
+  RegistryManager.cpp
   VariantValue.cpp
   Diagnostics.cpp
 

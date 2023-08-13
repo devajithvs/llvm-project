@@ -10,10 +10,10 @@ namespace mlir::query::matcher {
 using ConstructorMap =
     llvm::StringMap<std::unique_ptr<const internal::MatcherDescriptor>>;
 
-class RegistryMaps {
+class Registry {
 public:
-  RegistryMaps() = default;
-  ~RegistryMaps() = default;
+  Registry() = default;
+  ~Registry() = default;
 
   const ConstructorMap &constructors() const { return constructorMap; }
 

@@ -15,7 +15,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/InitAllDialects.h"
-#include "mlir/Query/Matcher/RegistryMap.h"
+#include "mlir/Query/Matcher/Registry.h"
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
 
 using namespace mlir;
@@ -33,31 +33,31 @@ void registerTestDialect(DialectRegistry &);
 
 int main(int argc, char **argv) {
 
-  DialectRegistry registry;
-  registerAllDialects(registry);
+  DialectRegistry dialectRegistry;
+  registerAllDialects(dialectRegistry);
 
-  query::matcher::RegistryMaps registryData;
+  query::matcher::Registry matcherRegistry;
 
   // Matchers registered in alphabetical order for consistency:
-  registryData.registerMatcher("hasOpAttrName",
-                               static_cast<HasOpAttrName *>(m_Attr));
-  registryData.registerMatcher("hasOpName", static_cast<HasOpName *>(m_Op));
-  registryData.registerMatcher("isConstantOp",
-                               static_cast<IsConstantOp *>(m_Constant));
-  registryData.registerMatcher("isNegInfFloat", m_NegInfFloat);
-  registryData.registerMatcher("isNegZeroFloat", m_NegZeroFloat);
-  registryData.registerMatcher("isNonZero", m_NonZero);
-  registryData.registerMatcher("isOne", m_One);
-  registryData.registerMatcher("isOneFloat", m_OneFloat);
-  registryData.registerMatcher("isPosInfFloat", m_PosInfFloat);
-  registryData.registerMatcher("isPosZeroFloat", m_PosZeroFloat);
-  registryData.registerMatcher("isZero", m_Zero);
-  registryData.registerMatcher("isZeroFloat", m_AnyZeroFloat);
+  matcherRegistry.registerMatcher("hasOpAttrName",
+                                  static_cast<HasOpAttrName *>(m_Attr));
+  matcherRegistry.registerMatcher("hasOpName", static_cast<HasOpName *>(m_Op));
+  matcherRegistry.registerMatcher("isConstantOp",
+                                  static_cast<IsConstantOp *>(m_Constant));
+  matcherRegistry.registerMatcher("isNegInfFloat", m_NegInfFloat);
+  matcherRegistry.registerMatcher("isNegZeroFloat", m_NegZeroFloat);
+  matcherRegistry.registerMatcher("isNonZero", m_NonZero);
+  matcherRegistry.registerMatcher("isOne", m_One);
+  matcherRegistry.registerMatcher("isOneFloat", m_OneFloat);
+  matcherRegistry.registerMatcher("isPosInfFloat", m_PosInfFloat);
+  matcherRegistry.registerMatcher("isPosZeroFloat", m_PosZeroFloat);
+  matcherRegistry.registerMatcher("isZero", m_Zero);
+  matcherRegistry.registerMatcher("isZeroFloat", m_AnyZeroFloat);
 
 #ifdef MLIR_INCLUDE_TESTS
-  test::registerTestDialect(registry);
+  test::registerTestDialect(dialectRegistry);
 #endif
-  MLIRContext context(registry);
+  MLIRContext context(dialectRegistry);
 
-  return failed(mlirQueryMain(argc, argv, context, registryData));
+  return failed(mlirQueryMain(argc, argv, context, matcherRegistry));
 }

@@ -1,4 +1,4 @@
-//===- MatcherRegistry.cpp - Matcher registry -----------------------------===//
+//===- RegistryManager.cpp - Matcher registry -----------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -10,8 +10,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Registry.h"
-#include "mlir/Query/Matcher/RegistryMap.h"
+#include "RegistryManager.h"
+#include "mlir/Query/Matcher/Registry.h"
 
 #include <set>
 #include <utility>
@@ -37,7 +37,7 @@ static std::string asArgString(ArgKind kind) {
 
 } // namespace
 
-void RegistryMaps::registerMatcherDescriptor(
+void Registry::registerMatcherDescriptor(
     llvm::StringRef matcherName,
     std::unique_ptr<internal::MatcherDescriptor> callback) {
   assert(!constructorMap.contains(matcherName));
@@ -45,14 +45,15 @@ void RegistryMaps::registerMatcherDescriptor(
 }
 
 std::optional<MatcherCtor>
-Registry::lookupMatcherCtor(llvm::StringRef matcherName,
-                            const RegistryMaps &registryData) {
-  auto it = registryData.constructors().find(matcherName);
-  return it == registryData.constructors().end() ? std::optional<MatcherCtor>()
-                                                 : it->second.get();
+RegistryManager::lookupMatcherCtor(llvm::StringRef matcherName,
+                                   const Registry &matcherRegistry) {
+  auto it = matcherRegistry.constructors().find(matcherName);
+  return it == matcherRegistry.constructors().end()
+             ? std::optional<MatcherCtor>()
+             : it->second.get();
 }
 
-std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
+std::vector<ArgKind> RegistryManager::getAcceptedCompletionTypes(
     llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context) {
   // Starting with the above seed of acceptable top-level matcher types, compute
   // the acceptable type set for the argument indicated by each context element.
@@ -74,12 +75,12 @@ std::vector<ArgKind> Registry::getAcceptedCompletionTypes(
 }
 
 std::vector<MatcherCompletion>
-Registry::getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes,
-                                const RegistryMaps &registryData) {
+RegistryManager::getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes,
+                                       const Registry &matcherRegistry) {
   std::vector<MatcherCompletion> completions;
 
   // Search the registry for acceptable matchers.
-  for (const auto &m : registryData.constructors()) {
+  for (const auto &m : matcherRegistry.constructors()) {
     const internal::MatcherDescriptor &matcher = *m.getValue();
     llvm::StringRef name = m.getKey();
 
@@ -129,10 +130,9 @@ Registry::getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes,
   return completions;
 }
 
-VariantMatcher Registry::constructMatcher(MatcherCtor ctor,
-                                          internal::SourceRange nameRange,
-                                          llvm::ArrayRef<ParserValue> args,
-                                          internal::Diagnostics *error) {
+VariantMatcher RegistryManager::constructMatcher(
+    MatcherCtor ctor, internal::SourceRange nameRange,
+    llvm::ArrayRef<ParserValue> args, internal::Diagnostics *error) {
   return ctor->create(nameRange, args, error);
 }
 

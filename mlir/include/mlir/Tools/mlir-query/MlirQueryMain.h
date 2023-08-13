@@ -14,7 +14,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MLIRQUERYMAIN_H
 #define MLIR_TOOLS_MLIRQUERY_MLIRQUERYMAIN_H
 
-#include "mlir/Query/Matcher/RegistryMap.h"
+#include "mlir/Query/Matcher/Registry.h"
 #include "mlir/Support/LogicalResult.h"
 
 namespace mlir {
@@ -23,7 +23,7 @@ class MLIRContext;
 
 LogicalResult
 mlirQueryMain(int argc, char **argv, MLIRContext &context,
-              const mlir::query::matcher::RegistryMaps &registryData);
+              const mlir::query::matcher::Registry &matcherRegistry);
 
 } // namespace mlir
 

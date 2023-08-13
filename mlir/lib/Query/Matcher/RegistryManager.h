@@ -1,4 +1,4 @@
-//===--- Registry.h - Matcher registry --------------------------*- C++ -*-===//
+//===--- RegistryManager.h - Matcher registry -------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Registry of all known matchers.
+// RegistryManager to manage registry of all known matchers.
 //
 // The registry provides a generic interface to construct any matcher by name.
 //
@@ -17,7 +17,7 @@
 
 #include "mlir/Query/Matcher/Diagnostics.h"
 #include "mlir/Query/Matcher/Marshallers.h"
-#include "mlir/Query/Matcher/RegistryMap.h"
+#include "mlir/Query/Matcher/Registry.h"
 #include "mlir/Query/Matcher/VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringMap.h"
@@ -44,20 +44,20 @@ struct MatcherCompletion {
   std::string matcherDecl;
 };
 
-class Registry {
+class RegistryManager {
 public:
-  Registry() = delete;
+  RegistryManager() = delete;
 
   static std::optional<MatcherCtor>
   lookupMatcherCtor(llvm::StringRef matcherName,
-                    const RegistryMaps &registryData);
+                    const Registry &matcherRegistry);
 
   static std::vector<ArgKind> getAcceptedCompletionTypes(
       llvm::ArrayRef<std::pair<MatcherCtor, unsigned>> context);
 
   static std::vector<MatcherCompletion>
   getMatcherCompletions(ArrayRef<ArgKind> acceptedTypes,
-                        const RegistryMaps &registryData);
+                        const Registry &matcherRegistry);
 
   static VariantMatcher constructMatcher(MatcherCtor ctor,
                                          internal::SourceRange nameRange,

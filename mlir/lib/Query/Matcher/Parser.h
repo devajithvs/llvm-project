@@ -27,7 +27,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_PARSER_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_PARSER_H
 
-#include "Registry.h"
+#include "RegistryManager.h"
 #include "mlir/Query/Matcher/Diagnostics.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringMap.h"
@@ -86,8 +86,8 @@ public:
   // process tokens.
   class RegistrySema : public Parser::Sema {
   public:
-    RegistrySema(const RegistryMaps &registryData)
-        : registryData(registryData) {}
+    RegistrySema(const Registry &matcherRegistry)
+        : matcherRegistry(matcherRegistry) {}
     ~RegistrySema() override;
 
     std::optional<MatcherCtor>
@@ -105,7 +105,7 @@ public:
     getMatcherCompletions(llvm::ArrayRef<ArgKind> acceptedTypes) override;
 
   private:
-    const RegistryMaps &registryData;
+    const Registry &matcherRegistry;
   };
 
   using NamedValueMap = llvm::StringMap<VariantValue>;
@@ -114,35 +114,35 @@ public:
   // transferring ownership to the caller.
   static std::optional<DynMatcher>
   parseMatcherExpression(llvm::StringRef &matcherCode,
-                         const RegistryMaps &registryData,
+                         const Registry &matcherRegistry,
                          const NamedValueMap *namedValues, Diagnostics *error);
   static std::optional<DynMatcher>
   parseMatcherExpression(llvm::StringRef &matcherCode,
-                         const RegistryMaps &registryData, Diagnostics *error) {
-    return parseMatcherExpression(matcherCode, registryData, nullptr, error);
+                         const Registry &matcherRegistry, Diagnostics *error) {
+    return parseMatcherExpression(matcherCode, matcherRegistry, nullptr, error);
   }
 
   // Methods to parse any expression supported by this parser.
   static bool parseExpression(llvm::StringRef &code,
-                              const RegistryMaps &registryData,
+                              const Registry &matcherRegistry,
                               const NamedValueMap *namedValues,
                               VariantValue *value, Diagnostics *error);
 
   static bool parseExpression(llvm::StringRef &code,
-                              const RegistryMaps &registryData,
+                              const Registry &matcherRegistry,
                               VariantValue *value, Diagnostics *error) {
-    return parseExpression(code, registryData, nullptr, value, error);
+    return parseExpression(code, matcherRegistry, nullptr, value, error);
   }
 
   // Methods to complete an expression at a given offset.
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset,
-                     const RegistryMaps &registryData,
+                     const Registry &matcherRegistry,
                      const NamedValueMap *namedValues);
   static std::vector<MatcherCompletion>
   completeExpression(llvm::StringRef &code, unsigned completionOffset,
-                     const RegistryMaps &registryData) {
-    return completeExpression(code, completionOffset, registryData, nullptr);
+                     const Registry &matcherRegistry) {
+    return completeExpression(code, completionOffset, matcherRegistry, nullptr);
   }
 
 private:
@@ -150,7 +150,7 @@ private:
   struct ScopedContextEntry;
   struct TokenInfo;
 
-  Parser(CodeTokenizer *tokenizer, const RegistryMaps &registryData,
+  Parser(CodeTokenizer *tokenizer, const Registry &matcherRegistry,
          const NamedValueMap *namedValues, Diagnostics *error);
 
   bool parseExpressionImpl(VariantValue *value);
