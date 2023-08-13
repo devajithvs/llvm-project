@@ -10,7 +10,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Query/Matcher/Registry.h"
+#include "Registry.h"
+#include "mlir/Query/Matcher/RegistryMap.h"
 
 #include <set>
 #include <utility>

@@ -14,7 +14,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MLIRQUERYMAIN_H
 #define MLIR_TOOLS_MLIRQUERY_MLIRQUERYMAIN_H
 
-#include "mlir/Query/Matcher/Registry.h"
+#include "mlir/Query/Matcher/RegistryMap.h"
 #include "mlir/Support/LogicalResult.h"
 
 namespace mlir {

@@ -15,7 +15,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/InitAllDialects.h"
-#include "mlir/Query/Matcher/Registry.h"
+#include "mlir/Query/Matcher/RegistryMap.h"
 #include "mlir/Tools/mlir-query/MlirQueryMain.h"
 
 using namespace mlir;

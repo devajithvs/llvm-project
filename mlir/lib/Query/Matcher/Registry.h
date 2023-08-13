@@ -15,9 +15,10 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_REGISTRY_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_REGISTRY_H
 
-#include "Diagnostics.h"
-#include "Marshallers.h"
-#include "VariantValue.h"
+#include "mlir/Query/Matcher/Diagnostics.h"
+#include "mlir/Query/Matcher/Marshallers.h"
+#include "mlir/Query/Matcher/RegistryMap.h"
+#include "mlir/Query/Matcher/VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
@@ -26,29 +27,6 @@
 namespace mlir::query::matcher {
 
 using MatcherCtor = const internal::MatcherDescriptor *;
-using ConstructorMap =
-    llvm::StringMap<std::unique_ptr<const internal::MatcherDescriptor>>;
-
-class RegistryMaps {
-public:
-  RegistryMaps() = default;
-  ~RegistryMaps() = default;
-
-  const ConstructorMap &constructors() const { return constructorMap; }
-
-  template <typename MatcherType>
-  void registerMatcher(const std::string &name, MatcherType matcher) {
-    registerMatcherDescriptor(name,
-                              internal::makeMatcherAutoMarshall(matcher, name));
-  }
-
-private:
-  void registerMatcherDescriptor(
-      llvm::StringRef matcherName,
-      std::unique_ptr<internal::MatcherDescriptor> callback);
-
-  ConstructorMap constructorMap;
-};
 
 struct MatcherCompletion {
   MatcherCompletion() = default;
