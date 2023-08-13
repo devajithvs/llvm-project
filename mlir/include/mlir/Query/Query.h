@@ -13,7 +13,6 @@
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Twine.h"
 #include "llvm/LineEditor/LineEditor.h"
 #include <string>
 

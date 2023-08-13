@@ -9,13 +9,11 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_QUERYSESSION_H
 #define MLIR_TOOLS_MLIRQUERY_QUERYSESSION_H
 
-#include "Query.h"
-#include "mlir/Query/Matcher/Registry.h"
-#include "mlir/Tools/ParseUtilities.h"
 #include "llvm/ADT/StringMap.h"
 
 namespace mlir::query {
 
+class RegistryMaps;
 // Represents the state for a particular mlir-query session.
 class QuerySession {
 public:

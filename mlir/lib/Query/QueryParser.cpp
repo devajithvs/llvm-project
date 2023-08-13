@@ -188,7 +188,7 @@ QueryRef QueryParser::doParse() {
     }
     auto actualSource = origMatcherSource.slice(0, origMatcherSource.size() -
                                                        matcherSource.size());
-    auto *query = new MatchQuery(actualSource, *matcher);
+    QueryRef query = new MatchQuery(actualSource, *matcher);
     query->remainingContent = matcherSource;
     return query;
   }
