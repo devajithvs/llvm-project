@@ -17,7 +17,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_MARSHALLERS_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_MARSHALLERS_H
 
-#include "Diagnostics.h"
+#include "ErrorBuilder.h"
 #include "VariantValue.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
@@ -128,8 +128,8 @@ inline bool checkArgCount(SourceRange nameRange, size_t expectedArgCount,
                           llvm::ArrayRef<ParserValue> args,
                           Diagnostics *error) {
   if (args.size() != expectedArgCount) {
-    error->addError(nameRange, Diagnostics::ErrorType::RegistryWrongArgCount)
-        << expectedArgCount << args.size();
+    addError(error, nameRange, ErrorType::RegistryWrongArgCount,
+             {llvm::Twine(expectedArgCount), llvm::Twine(args.size())});
     return false;
   }
   return true;
@@ -141,9 +141,8 @@ inline bool checkArgTypeAtIndex(llvm::StringRef matcherName,
                                 llvm::ArrayRef<ParserValue> args,
                                 Diagnostics *error) {
   if (!ArgTypeTraits<ArgType>::hasCorrectType(args[Index].value)) {
-    error->addError(args[Index].range,
-                    Diagnostics::ErrorType::RegistryWrongArgType)
-        << matcherName << Index + 1;
+    addError(error, args[Index].range, ErrorType::RegistryWrongArgType,
+             {llvm::Twine(matcherName), llvm::Twine(Index + 1)});
     return false;
   }
   return true;

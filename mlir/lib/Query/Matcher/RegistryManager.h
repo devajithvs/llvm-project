@@ -12,10 +12,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_REGISTRY_H
-#define MLIR_TOOLS_MLIRQUERY_MATCHER_REGISTRY_H
+#ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_REGISTRYMANAGER_H
+#define MLIR_TOOLS_MLIRQUERY_MATCHER_REGISTRYMANAGER_H
 
-#include "mlir/Query/Matcher/Diagnostics.h"
+#include "Diagnostics.h"
 #include "mlir/Query/Matcher/Marshallers.h"
 #include "mlir/Query/Matcher/Registry.h"
 #include "mlir/Query/Matcher/VariantValue.h"
@@ -67,4 +67,4 @@ public:
 
 } // namespace mlir::query::matcher
 
-#endif // MLIR_TOOLS_MLIRQUERY_MATCHER_REGISTRY_H
+#endif // MLIR_TOOLS_MLIRQUERY_MATCHER_REGISTRYMANAGER_H

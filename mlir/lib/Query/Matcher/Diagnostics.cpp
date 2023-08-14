@@ -1,4 +1,4 @@
-//===- MatcherDiagnostic.cpp ----------------------------------------------===//
+//===- Diagnostic.cpp -----------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,7 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Query/Matcher/Diagnostics.h"
+#include "Diagnostics.h"
+#include "mlir/Query/Matcher/ErrorBuilder.h"
 
 namespace mlir::query::matcher::internal {
 
@@ -27,39 +28,39 @@ Diagnostics::ArgStream Diagnostics::addError(SourceRange range,
   return ArgStream(&last.messages.back().args);
 }
 
-static llvm::StringRef errorTypeToFormatString(Diagnostics::ErrorType type) {
+static llvm::StringRef errorTypeToFormatString(ErrorType type) {
   switch (type) {
-  case Diagnostics::ErrorType::RegistryMatcherNotFound:
+  case ErrorType::RegistryMatcherNotFound:
     return "Matcher not found: $0";
-  case Diagnostics::ErrorType::RegistryWrongArgCount:
+  case ErrorType::RegistryWrongArgCount:
     return "Incorrect argument count. (Expected = $0) != (Actual = $1)";
-  case Diagnostics::ErrorType::RegistryWrongArgType:
+  case ErrorType::RegistryWrongArgType:
     return "Incorrect type for arg $0. (Expected = $1) != (Actual = $2)";
-  case Diagnostics::ErrorType::RegistryValueNotFound:
+  case ErrorType::RegistryValueNotFound:
     return "Value not found: $0";
 
-  case Diagnostics::ErrorType::ParserStringError:
+  case ErrorType::ParserStringError:
     return "Error parsing string token: <$0>";
-  case Diagnostics::ErrorType::ParserNoOpenParen:
+  case ErrorType::ParserNoOpenParen:
     return "Error parsing matcher. Found token <$0> while looking for '('.";
-  case Diagnostics::ErrorType::ParserNoCloseParen:
+  case ErrorType::ParserNoCloseParen:
     return "Error parsing matcher. Found end-of-code while looking for ')'.";
-  case Diagnostics::ErrorType::ParserNoComma:
+  case ErrorType::ParserNoComma:
     return "Error parsing matcher. Found token <$0> while looking for ','.";
-  case Diagnostics::ErrorType::ParserNoCode:
+  case ErrorType::ParserNoCode:
     return "End of code found while looking for token.";
-  case Diagnostics::ErrorType::ParserNotAMatcher:
+  case ErrorType::ParserNotAMatcher:
     return "Input value is not a matcher expression.";
-  case Diagnostics::ErrorType::ParserInvalidToken:
+  case ErrorType::ParserInvalidToken:
     return "Invalid token <$0> found when looking for a value.";
-  case Diagnostics::ErrorType::ParserTrailingCode:
+  case ErrorType::ParserTrailingCode:
     return "Unexpected end of code.";
-  case Diagnostics::ErrorType::ParserOverloadedType:
+  case ErrorType::ParserOverloadedType:
     return "Input value has unresolved overloaded type: $0";
-  case Diagnostics::ErrorType::ParserFailedToBuildMatcher:
+  case ErrorType::ParserFailedToBuildMatcher:
     return "Failed to build matcher: $0.";
 
-  case Diagnostics::ErrorType::None:
+  case ErrorType::None:
     return "<N/A>";
   }
   llvm_unreachable("Unknown ErrorType value.");

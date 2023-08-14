@@ -27,8 +27,8 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_PARSER_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_PARSER_H
 
+#include "Diagnostics.h"
 #include "RegistryManager.h"
-#include "mlir/Query/Matcher/Diagnostics.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"

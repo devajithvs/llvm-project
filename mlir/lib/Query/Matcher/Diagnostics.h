@@ -14,7 +14,7 @@
 #ifndef MLIR_TOOLS_MLIRQUERY_MATCHER_DIAGNOSTICS_H
 #define MLIR_TOOLS_MLIRQUERY_MATCHER_DIAGNOSTICS_H
 
-#include "SourceLocation.h"
+#include "mlir/Query/Matcher/ErrorBuilder.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -27,29 +27,6 @@ namespace mlir::query::matcher::internal {
 // Diagnostics class to manage error messages.
 class Diagnostics {
 public:
-  // All errors from the system.
-  enum class ErrorType {
-    None,
-
-    // Parser Errors
-    ParserFailedToBuildMatcher,
-    ParserInvalidToken,
-    ParserNoCloseParen,
-    ParserNoCode,
-    ParserNoComma,
-    ParserNoOpenParen,
-    ParserNotAMatcher,
-    ParserOverloadedType,
-    ParserStringError,
-    ParserTrailingCode,
-
-    // Registry Errors
-    RegistryMatcherNotFound,
-    RegistryValueNotFound,
-    RegistryWrongArgCount,
-    RegistryWrongArgType
-  };
-
   // Helper stream class for constructing error messages.
   class ArgStream {
   public:
@@ -89,9 +66,6 @@ private:
     };
     std::vector<Message> messages;
   };
-
-  // Get an array reference to the error contents.
-  llvm::ArrayRef<ErrorContent> errors() const { return errorValues; }
 
   void printMessage(const ErrorContent::Message &message,
                     const llvm::Twine Prefix, llvm::raw_ostream &os) const;
