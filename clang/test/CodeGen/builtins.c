@@ -928,12 +928,12 @@ void test_builtin_popcountg(unsigned char uc, unsigned short us,
   pop = __builtin_popcountg(uc);
   // CHECK: %1 = load i8, ptr %uc.addr, align 1
   // CHECK-NEXT: %2 = call i8 @llvm.ctpop.i8(i8 %1)
-  // CHECK-NEXT: %cast = sext i8 %2 to i32
+  // CHECK-NEXT: %cast = zext i8 %2 to i32
   // CHECK-NEXT: store volatile i32 %cast, ptr %pop, align 4
   pop = __builtin_popcountg(us);
   // CHECK-NEXT: %3 = load i16, ptr %us.addr, align 2
   // CHECK-NEXT: %4 = call i16 @llvm.ctpop.i16(i16 %3)
-  // CHECK-NEXT: %cast1 = sext i16 %4 to i32
+  // CHECK-NEXT: %cast1 = zext i16 %4 to i32
   // CHECK-NEXT: store volatile i32 %cast1, ptr %pop, align 4
   pop = __builtin_popcountg(ui);
   // CHECK-NEXT: %5 = load i32, ptr %ui.addr, align 4
@@ -971,12 +971,12 @@ void test_builtin_clzg(unsigned char uc, unsigned short us, unsigned int ui,
   lz = __builtin_clzg(uc);
   // CHECK: %1 = load i8, ptr %uc.addr, align 1
   // CHECK-NEXT: %2 = call i8 @llvm.ctlz.i8(i8 %1, i1 true)
-  // CHECK-NEXT: %cast = sext i8 %2 to i32
+  // CHECK-NEXT: %cast = zext i8 %2 to i32
   // CHECK-NEXT: store volatile i32 %cast, ptr %lz, align 4
   lz = __builtin_clzg(us);
   // CHECK-NEXT: %3 = load i16, ptr %us.addr, align 2
   // CHECK-NEXT: %4 = call i16 @llvm.ctlz.i16(i16 %3, i1 true)
-  // CHECK-NEXT: %cast1 = sext i16 %4 to i32
+  // CHECK-NEXT: %cast1 = zext i16 %4 to i32
   // CHECK-NEXT: store volatile i32 %cast1, ptr %lz, align 4
   lz = __builtin_clzg(ui);
   // CHECK-NEXT: %5 = load i32, ptr %ui.addr, align 4
@@ -1005,7 +1005,7 @@ void test_builtin_clzg(unsigned char uc, unsigned short us, unsigned int ui,
   lz = __builtin_clzg(uc, sc);
   // CHECK-NEXT: %15 = load i8, ptr %uc.addr, align 1
   // CHECK-NEXT: %16 = call i8 @llvm.ctlz.i8(i8 %15, i1 true)
-  // CHECK-NEXT: %cast6 = sext i8 %16 to i32
+  // CHECK-NEXT: %cast6 = zext i8 %16 to i32
   // CHECK-NEXT: %iszero = icmp eq i8 %15, 0
   // CHECK-NEXT: %17 = load i8, ptr %sc.addr, align 1
   // CHECK-NEXT: %conv = sext i8 %17 to i32
@@ -1014,7 +1014,7 @@ void test_builtin_clzg(unsigned char uc, unsigned short us, unsigned int ui,
   lz = __builtin_clzg(us, uc);
   // CHECK-NEXT: %18 = load i16, ptr %us.addr, align 2
   // CHECK-NEXT: %19 = call i16 @llvm.ctlz.i16(i16 %18, i1 true)
-  // CHECK-NEXT: %cast7 = sext i16 %19 to i32
+  // CHECK-NEXT: %cast7 = zext i16 %19 to i32
   // CHECK-NEXT: %iszero8 = icmp eq i16 %18, 0
   // CHECK-NEXT: %20 = load i8, ptr %uc.addr, align 1
   // CHECK-NEXT: %conv9 = zext i8 %20 to i32
@@ -1073,12 +1073,12 @@ void test_builtin_ctzg(unsigned char uc, unsigned short us, unsigned int ui,
   tz = __builtin_ctzg(uc);
   // CHECK: %1 = load i8, ptr %uc.addr, align 1
   // CHECK-NEXT: %2 = call i8 @llvm.cttz.i8(i8 %1, i1 true)
-  // CHECK-NEXT: %cast = sext i8 %2 to i32
+  // CHECK-NEXT: %cast = zext i8 %2 to i32
   // CHECK-NEXT: store volatile i32 %cast, ptr %tz, align 4
   tz = __builtin_ctzg(us);
   // CHECK-NEXT: %3 = load i16, ptr %us.addr, align 2
   // CHECK-NEXT: %4 = call i16 @llvm.cttz.i16(i16 %3, i1 true)
-  // CHECK-NEXT: %cast1 = sext i16 %4 to i32
+  // CHECK-NEXT: %cast1 = zext i16 %4 to i32
   // CHECK-NEXT: store volatile i32 %cast1, ptr %tz, align 4
   tz = __builtin_ctzg(ui);
   // CHECK-NEXT: %5 = load i32, ptr %ui.addr, align 4
@@ -1107,7 +1107,7 @@ void test_builtin_ctzg(unsigned char uc, unsigned short us, unsigned int ui,
   tz = __builtin_ctzg(uc, sc);
   // CHECK-NEXT: %15 = load i8, ptr %uc.addr, align 1
   // CHECK-NEXT: %16 = call i8 @llvm.cttz.i8(i8 %15, i1 true)
-  // CHECK-NEXT: %cast6 = sext i8 %16 to i32
+  // CHECK-NEXT: %cast6 = zext i8 %16 to i32
   // CHECK-NEXT: %iszero = icmp eq i8 %15, 0
   // CHECK-NEXT: %17 = load i8, ptr %sc.addr, align 1
   // CHECK-NEXT: %conv = sext i8 %17 to i32
@@ -1116,7 +1116,7 @@ void test_builtin_ctzg(unsigned char uc, unsigned short us, unsigned int ui,
   tz = __builtin_ctzg(us, uc);
   // CHECK-NEXT: %18 = load i16, ptr %us.addr, align 2
   // CHECK-NEXT: %19 = call i16 @llvm.cttz.i16(i16 %18, i1 true)
-  // CHECK-NEXT: %cast7 = sext i16 %19 to i32
+  // CHECK-NEXT: %cast7 = zext i16 %19 to i32
   // CHECK-NEXT: %iszero8 = icmp eq i16 %18, 0
   // CHECK-NEXT: %20 = load i8, ptr %uc.addr, align 1
   // CHECK-NEXT: %conv9 = zext i8 %20 to i32
