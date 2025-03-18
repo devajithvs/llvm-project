@@ -113,6 +113,8 @@ static void substituteOperandWithArgument(Function *OldF,
   for (Use *Op : OpsToReplace)
     UniqueValues.insert(Op->get());
 
+  // TODO: Preserve range metadata with ranges
+
   // Determine the new function's signature.
   SmallVector<Type *> NewArgTypes;
   llvm::append_range(NewArgTypes, OldF->getFunctionType()->params());
