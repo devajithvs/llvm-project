@@ -176,6 +176,17 @@ float test15() {
   return __builtin_asinf(1.0F);
 }
 
+// CHECK: void test16() {
+// CHECK:   char *ptr;
+// CHECK:   __atomic_test_and_set(ptr, 0);
+// CHECK:   __atomic_clear(ptr, 0);
+// CHECK: }
+void test16() {
+  char *ptr;
+  __atomic_test_and_set(ptr, 0);
+  __atomic_clear(ptr, 0);
+}
+
 namespace PR18776 {
 struct A {
   operator void *();
