@@ -1021,9 +1021,20 @@ OptionalFileEntryRef HeaderSearch::LookupFile(
         assert(HFI && "includer without file info");
         return HFI->DirInfo != SrcMgr::C_User;
       }();
-      if (OptionalFileEntryRef FE = getFileAndSuggestModule(
-              TmpDir, IncludeLoc, IncluderAndDir.second, IncluderIsSystemHeader,
-              RequestingModule, SuggestedModule)) {
+
+      OptionalFileEntryRef FE = getFileAndSuggestModule(
+          TmpDir, IncludeLoc, IncluderAndDir.second, IncluderIsSystemHeader,
+          RequestingModule, SuggestedModule);
+
+      // Check if it is a virtual file from incremental buffer
+      if (!FE && IncluderAndDir.second.getName() == "." &&
+          Filename.starts_with("input_line_")) {
+        FE = getFileAndSuggestModule(
+            Filename, IncludeLoc, IncluderAndDir.second, IncluderIsSystemHeader,
+            RequestingModule, SuggestedModule);
+      }
+
+      if (FE) {
         diagnoseHeaderShadowing(Filename, FE, DiagnosedShadowing, IncludeLoc,
                                 FromDir, Includers, isAngled,
                                 &IncluderAndDir - Includers.begin(), nullptr);
