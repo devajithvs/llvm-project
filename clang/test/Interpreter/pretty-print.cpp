@@ -69,6 +69,10 @@ namespace Outer { template<class T> struct Bar {}; }
 auto y = Outer::Bar<int>(); y
 // CHECK-NEXT: (Outer::Bar<int> &) @0x{{[0-9a-f]+}}
 
+// Check that the qualifiers are not omitted
+const auto x = Outer::Foo(); x
+// CHECK-NEXT: (const Outer::Foo &) @0x{{[0-9a-f]+}}
+
 // int i = 12;
 // int &iref = i;
 // iref
